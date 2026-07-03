@@ -117,10 +117,18 @@ details .body{padding:0 14px 14px;font-size:var(--fs-base)}
 .stat.bad{background:var(--neg-bg);color:var(--neg)}
 .stat i{width:6px;height:6px;border-radius:50%;background:currentColor}
 .foot{color:var(--muted);font-size:var(--fs-sm);margin-top:24px;text-align:center}
+.closed-overlay{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.closed-card{max-width:400px;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px 22px;box-shadow:var(--shadow-1)}
 @media(max-width:520px){.wrap{padding:14px 12px 70px}.stem{font-size:var(--fs-md)}.cc .field{grid-template-columns:74px 1fr}}
 </style>
 </head>
 <body>
+<div class="closed-overlay" id="closed-overlay" style="display:none">
+  <div class="closed-card">
+    <div class="who" style="margin-bottom:8px">Not open right now</div>
+    <p id="closed-msg" class="tag"></p>
+  </div>
+</div>
 <div class="wrap">
 <header>
   <svg viewBox="0 0 150 168" xmlns="http://www.w3.org/2000/svg" class="m-teach" role="img" aria-label="Econ teacher mascot">
@@ -277,6 +285,39 @@ function sendSync(event, extra){
     fetch(SYNC_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body)})
       .catch(()=>{ /* offline or blocked \u2014 fail silently, local data is unaffected */ });
   }catch(e){ /* fetch unavailable in this context \u2014 fail silently */ }
+}
+
+/* ================================================================
+   OPEN/CLOSED gate (optional) \u2014 lets the teacher flip a cell in the
+   Google Sheet's "Config" tab (status: OPEN / CLOSED) to control access
+   without touching code or redeploying anything.
+
+   HONESTY: this is a client-side, best-effort gate. GitHub Pages always
+   serves the full file to anyone with the link \u2014 a determined student
+   who reads the page source or disables JavaScript could bypass this. It
+   stops casual/accidental use outside class hours; it is NOT a hard lock.
+   A hard lock needs hosting the page itself from Apps Script instead of
+   GitHub Pages (ask about this if stronger enforcement is needed).
+
+   Reading Apps Script's response cross-origin needs JSONP, not fetch()
+   \u2014 Apps Script Web Apps don't support CORS, so a plain fetch() can
+   never read the response here (only fire it and ignore the result, which
+   is what sendSync() above does for writes). JSONP loads a <script> tag
+   instead, which isn't subject to that restriction.
+   ================================================================ */
+let siteOpen = true, siteClosedMsg = 'This drill is not open right now.';
+function checkSiteStatus(cb){
+  if(!SYNC_URL){ cb(true); return; } // no backend configured \u2014 never gate
+  const fnName = '__tjxStatus'+Math.random().toString(36).slice(2);
+  let done = false;
+  const finish = (open, msg) => { if(done) return; done=true; siteOpen=open; if(msg) siteClosedMsg=msg; cb(open); };
+  window[fnName] = (data) => { try{ finish(data.open!==false, data.closed_message); }catch(e){ finish(true); } finally{ cleanup(); } };
+  const script = document.createElement('script');
+  script.src = SYNC_URL + (SYNC_URL.includes('?')?'&':'?') + 'callback=' + fnName;
+  script.onerror = () => finish(true); // fail OPEN \u2014 never lock everyone out just because the check failed
+  document.head.appendChild(script);
+  function cleanup(){ try{ delete window[fnName]; script.remove(); }catch(e){} }
+  setTimeout(()=>finish(true), 4000); // fail OPEN on timeout too (slow/offline network)
 }
 
 /* ================================================================
@@ -698,7 +739,21 @@ document.addEventListener('keydown',e=>{
  document.getElementById('acctbtn').textContent = cur?('\u{1F464} '+cur):'Sign in';
  buildDeck(); renderLQ(); renderCon(); renderTrap(); refreshMissUI();
  if(!Store.ok){const b=document.getElementById('review-banner');}
+ applyStatusGate();
 })();
+
+function applyStatusGate(){
+  checkSiteStatus((open)=>{
+    const ov=document.getElementById('closed-overlay');
+    if(open || isAdmin){ ov.style.display='none'; }
+    else{ document.getElementById('closed-msg').textContent=siteClosedMsg; ov.style.display='flex'; }
+  });
+}
+// Re-check every 60s and whenever the tab regains focus, so a teacher
+// flipping the Config sheet mid-class takes effect without a manual reload.
+setInterval(applyStatusGate, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) applyStatusGate(); });
+
 
 </script>
 </body>
