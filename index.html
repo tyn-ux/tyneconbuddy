@@ -1291,7 +1291,30 @@ function applyStatusGate(){
 // flipping the Config sheet mid-class takes effect without a manual reload.
 setInterval(applyStatusGate, 60000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) applyStatusGate(); });
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec';
 
+// 上傳學生成績或紀錄到 Google Sheet
+async function saveToGoogleSheet(studentName, score, mistakes) {
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8', // 避開 CORS 預檢限制
+      },
+      body: JSON.stringify({
+        name: studentName,
+        score: score,
+        mistakes: mistakes,
+        timestamp: new Date().toISOString()
+      })
+    });
+    
+    const result = await response.json();
+    console.log("成功儲存至 Google 雲端：", result);
+  } catch (error) {
+    console.error("傳送失敗：", error);
+  }
+}
 
 </script>
 </body>
