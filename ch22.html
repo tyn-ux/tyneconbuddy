@@ -412,19 +412,22 @@ function fetchClassAggregate(cb){
 }
 
 /* ================================================================
-   GOOGLE SIGN-IN (optional) \u2014 EDIT THESE TWO LINES TO TURN IT ON
-   1. GOOGLE_CLIENT_ID: paste the OAuth Client ID from Google Cloud
-      Console (see GOOGLE_SIGNIN_SETUP.md).
-   2. SCHOOL_HD: your school's Workspace domain (e.g. 'school.edu.hk')
-      to restrict sign-in to school accounts only. Leave '' to allow
-      any Google account.
-   Leaving GOOGLE_CLIENT_ID as '' keeps the local name+PIN sign-in as
-   the only option (today's behaviour) \u2014 nothing breaks either way.
-   Google Sign-In also requires a real https origin: it will not work
-   if this file is opened directly (file://), even with both lines set.
+   GOOGLE SIGN-IN \u2014 REQUIRED LOGIN, OPEN TO ANY GMAIL ACCOUNT
+   1. GOOGLE_CLIENT_ID: the OAuth Client ID from Google Cloud Console.
+      Because this is filled in, Google sign-in is the REQUIRED login
+      for students \u2014 the local name+PIN form is only a fallback for
+      when Google cannot load at all (offline, or opened as file://).
+   2. SCHOOL_HD: '' means ANY Google / Gmail account may sign in.
+      Set it back to a Workspace domain (e.g. 'twghlkss.edu.hk') only
+      if you want to restrict sign-in to that one domain again.
+      NOTE: the Apps Script backend (Code.gs) has its OWN SCHOOL_HD
+      and that one is the real gate. Both must be '' or the server
+      silently rejects @gmail.com sign-ins and the Sheet stays empty.
+   Google Sign-In requires a real https origin: it will not work if
+   this file is opened directly (file://), even with the ID set.
    ================================================================ */
 const GOOGLE_CLIENT_ID = '533999025151-qf44e4dp2k7stspp5r6g8050ererf6st.apps.googleusercontent.com';
-const SCHOOL_HD = 'twghlkss.edu.hk';
+const SCHOOL_HD = '';   // '' = any Gmail / Google account may sign in
 let googleIdToken = null, googleProfile = null;
 function googleAvailable(){
   return !!GOOGLE_CLIENT_ID && location.protocol!=='file:' && typeof google!=='undefined' && google.accounts && google.accounts.id;
@@ -436,6 +439,7 @@ function decodeJwt(tok){
 function onGoogleCredential(resp){
   const payload=decodeJwt(resp.credential);
   if(!payload || !payload.email) return amsg('Could not read the Google account. Try again.');
+  // SCHOOL_HD === '' (default) => every Google/Gmail account is accepted.
   if(SCHOOL_HD && payload.hd!==SCHOOL_HD) return amsg('Please sign in with your school ('+SCHOOL_HD+') account.');
   googleIdToken=resp.credential; googleProfile={email:payload.email,name:payload.name||payload.email,picture:payload.picture};
   cur=payload.email;
@@ -540,7 +544,7 @@ function renderMCQ(){
   const host=document.getElementById('mcq-host');
   if(googleAvailable() && !cur){
     host.innerHTML=`<div class="empty"><div class="who" style="margin-bottom:6px">Sign-in required</div>
-      <div class="tag">Your teacher has set this class up to require ${SCHOOL_HD?('a school ('+esc(SCHOOL_HD)+') '):''}Google sign-in before drilling, so your progress can be recorded.</div>
+      <div class="tag">Your teacher has set this class up to require ${SCHOOL_HD?('a school ('+esc(SCHOOL_HD)+') Google '):'a Google (Gmail) '}sign-in before drilling, so your progress can be recorded.</div>
       <div style="margin-top:12px"><button class="btn primary" id="b-goto-signin">Go to Sign in</button></div></div>`;
     document.getElementById('b-goto-signin').onclick=()=>switchTab('acct');
     return;
@@ -938,12 +942,12 @@ function renderAcct(){
   }
   if(googleAvailable()){
     card.innerHTML=`<div class="who"><b>Sign in to save your progress</b></div>
-      <div class="tag">${SCHOOL_HD?('Use your school ('+esc(SCHOOL_HD)+') Google account.'):'Use your Google account.'} Saves your mistakes notebook &amp; score, and syncs to your teacher's records.</div>
+      <div class="tag">${SCHOOL_HD?('Use your school ('+esc(SCHOOL_HD)+') Google account.'):'Any Gmail or Google account works.'} Saves your mistakes notebook &amp; score, and syncs to your teacher's records.</div>
       <div id="gsi-btn" style="margin-top:14px"></div>
       <div class="note" id="a-msg"></div>
       <div class="note">Teacher admin access is separate \u2014 press Ctrl+Shift+D.</div>`;
     try{
-      google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID, callback:onGoogleCredential, hd:SCHOOL_HD||undefined, auto_select:false});
+      google.accounts.id.initialize(Object.assign({client_id:GOOGLE_CLIENT_ID, callback:onGoogleCredential, auto_select:false}, SCHOOL_HD?{hd:SCHOOL_HD}:{}));
       google.accounts.id.renderButton(document.getElementById('gsi-btn'), {theme:'outline', size:'large', text:'signin_with', shape:'pill'});
     }catch(e){ amsg('Google Sign-In failed to load. Check your connection and reload.'); }
     return;
