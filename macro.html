@@ -242,9 +242,12 @@ const saveBm=()=>Store.set(pfx()+'bm',bookmarks);
 
 /* ================= GOOGLE SIGN-IN + SYNC (same backend as the other tools) =================
    Google Sign-In needs a real https origin; opened as a downloaded file it falls back to a
-   local name/PIN profile. Leaving GOOGLE_CLIENT_ID '' would disable Google entirely. */
+   local name/PIN profile. Leaving GOOGLE_CLIENT_ID '' would disable Google entirely.
+   SCHOOL_HD '' = any Gmail/Google account may sign in (required login, open to all).
+   NOTE: Code.gs backend has its own SCHOOL_HD \u2014 must also be '' or the server
+   silently rejects @gmail.com sign-ins. */
 const GOOGLE_CLIENT_ID = '533999025151-qf44e4dp2k7stspp5r6g8050ererf6st.apps.googleusercontent.com';
-const SCHOOL_HD = 'twghlkss.edu.hk';     // restrict to school accounts; '' = any Google account
+const SCHOOL_HD = '';     // '' = any Gmail / Google account may sign in
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec';
 const SYNC_SESSION = Math.random().toString(36).slice(2)+Date.now().toString(36);
 let googleIdToken=null, googleProfile=null;
@@ -262,6 +265,7 @@ function amsg(t){ const e=$('#a-msg'); if(e)e.textContent=t; }
 function onGoogleCredential(resp){
   const p=decodeJwt(resp.credential);
   if(!p||!p.email) return amsg('Could not read the Google account. Try again.');
+  // SCHOOL_HD === '' (default) => every Google/Gmail account is accepted.
   if(SCHOOL_HD && p.hd!==SCHOOL_HD) return amsg('Please sign in with your school ('+SCHOOL_HD+') account.');
   googleIdToken=resp.credential; googleProfile={email:p.email,name:p.name||p.email,picture:p.picture};
   cur=p.email;
@@ -283,9 +287,9 @@ function renderAcct(){
   }
   if(googleAvailable()){
     card.innerHTML='<div class="who"><b>Sign in to save your progress</b></div>'+
-      '<div class="note" style="margin-top:2px">'+(SCHOOL_HD?('Use your school ('+esc(SCHOOL_HD)+') Google account.'):'Use your Google account.')+' Your score and bookmarks are saved and recorded to your teacher.</div>'+
+      '<div class="note" style="margin-top:2px">'+(SCHOOL_HD?('Use your school ('+esc(SCHOOL_HD)+') Google account.'):'Any Gmail or Google account works.')+' Your score and bookmarks are saved and recorded to your teacher.</div>'+
       '<div id="gsi-btn" style="margin-top:14px"></div><div class="note" id="a-msg"></div>';
-    try{ google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID, callback:onGoogleCredential, hd:SCHOOL_HD||undefined, auto_select:false});
+    try{ google.accounts.id.initialize(Object.assign({client_id:GOOGLE_CLIENT_ID, callback:onGoogleCredential, auto_select:false}, SCHOOL_HD?{hd:SCHOOL_HD}:{}));
       google.accounts.id.renderButton($('#gsi-btn'),{theme:'outline',size:'large',text:'signin_with',shape:'pill'}); }
     catch(e){ amsg('Google Sign-In failed to load. Check your connection and reload.'); }
     return;
