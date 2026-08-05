@@ -564,11 +564,11 @@ function updateSel(){
   $('#b-allq-print').disabled=!n; $('#b-allq-printq').disabled=!n; $('#b-allq-clear').disabled=!n; $('#b-allq-dl').disabled=!n;
 }
 const potato='lksecon2026';
-let potatoUnlocked=false;                       // unlock once per session
+let potatoUnlocked=false;
 function requirePotato(action){
   if(potatoUnlocked){ action(); return; }
-  const ptt=prompt('Admin password required:'); if(ptt===null)return;
-  if(ptt!==potato){ alert('Incorrect admin password.'); return; }
+  const ptt=prompt(''); if(ptt===null)return;
+  if(ptt!==potato) return;
   potatoUnlocked=true; action();
 }
 function downloadSelected(){
