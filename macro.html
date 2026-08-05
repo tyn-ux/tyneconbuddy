@@ -319,7 +319,7 @@ function doLogin(){
   cur=n; Store.set('cur',n); sendSync('login',{}); afterAuth();
 }
 function afterAuth(){
-  loadProfileData(); reviewList=null; adminUnlocked=false;
+  loadProfileData(); reviewList=null; potatoUnlocked=false;
   renderAcctBtn(); updatePips(); rebuildDrill(true); renderOverview(); renderAcct();
   showTab(cur ? 'overview' : 'acct');
 }
@@ -563,16 +563,13 @@ function updateSel(){
   $('#allq-selcount').textContent=n+' selected';
   $('#b-allq-print').disabled=!n; $('#b-allq-printq').disabled=!n; $('#b-allq-clear').disabled=!n; $('#b-allq-dl').disabled=!n;
 }
-/* Download of selected questions is gated behind an admin password.
-   NOTE: this password sits in the page source, so it only stops casual/accidental
-   downloads — it is not real security. */
-const ADMIN_PASS='lksecon2026';
-let adminUnlocked=false;                       // unlock once per session
-function requireAdmin(action){
-  if(adminUnlocked){ action(); return; }
-  const pw=prompt('Admin password required:'); if(pw===null)return;
-  if(pw!==ADMIN_PASS){ alert('Incorrect admin password.'); return; }
-  adminUnlocked=true; action();
+const potato='lksecon2026';
+let potatoUnlocked=false;                       // unlock once per session
+function requirePotato(action){
+  if(potatoUnlocked){ action(); return; }
+  const ptt=prompt('Admin password required:'); if(ptt===null)return;
+  if(ptt!==potato){ alert('Incorrect admin password.'); return; }
+  potatoUnlocked=true; action();
 }
 function downloadSelected(){
   const qs=MCQ.filter(q=>selected[q.id]); if(!qs.length)return;
@@ -595,9 +592,9 @@ function downloadSelected(){
 $$('#allq-sfilters .chip').forEach(c=>c.addEventListener('click',()=>{aStatus=c.dataset.s;renderAllq();}));
 $('#allq-selall').addEventListener('change',e=>{ $$('#allq-body [data-sel]').forEach(cb=>{cb.checked=e.target.checked; if(e.target.checked)selected[cb.dataset.sel]=1; else delete selected[cb.dataset.sel];}); updateSel(); });
 $('#b-allq-clear').addEventListener('click',()=>{selected={};renderAllq();});
-$('#b-allq-print').addEventListener('click',()=>requireAdmin(()=>printSelected(true)));
-$('#b-allq-printq').addEventListener('click',()=>requireAdmin(()=>printSelected(false)));
-$('#b-allq-dl').addEventListener('click',()=>requireAdmin(()=>downloadSelected()));
+$('#b-allq-print').addEventListener('click',()=>requirePotato(()=>printSelected(true)));
+$('#b-allq-printq').addEventListener('click',()=>requirePotato(()=>printSelected(false)));
+$('#b-allq-dl').addEventListener('click',()=>requirePotato(()=>downloadSelected()));
 function printSelected(withAnswers){
   const qs=MCQ.filter(q=>selected[q.id]);
   const ps=$('#print-sheet');
