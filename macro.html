@@ -117,8 +117,62 @@ select.sel{min-height:40px;border:1px solid var(--line);background:var(--surface
 .acct label{display:block;font-size:var(--fs-sm);color:var(--muted);margin:10px 0 3px}
 .acct input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:var(--fs-md);background:var(--surface);color:var(--ink)}
 .note{font-size:var(--fs-xs);color:var(--muted);margin-top:10px}
+.pos-input {
+  width: 48px;
+  text-align: center;
+  font-size: inherit;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px;
+  background: transparent;
+  color: inherit;
+}
+
+.pos-input::-webkit-outer-spin-button,
+.pos-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pos-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.pos-input:focus {
+  outline: none;
+  border-color: #007bff;
+  background-color: #fff;
+}
 </style>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  (function loadGoogleSDK() {
+    var script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    
+    // Set a timeout to abort or handle blocked connections
+    var timer = setTimeout(function() {
+      console.warn('Google Identity Services timed out or was blocked by VPN/Firewall.');
+      // Disable or hide the Sign-in tab if unreachable
+      var acctBtn = document.getElementById('acctbtn');
+      if (acctBtn) acctBtn.style.opacity = '0.5';
+    }, 5000);
+
+    script.onload = function() {
+      clearTimeout(timer);
+      console.log('Google Identity Services loaded successfully.');
+    };
+
+    script.onerror = function() {
+      clearTimeout(timer);
+      console.error('Failed to load Google Identity Services.');
+    };
+
+    document.head.appendChild(script);
+  })();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -416,7 +470,7 @@ function cardHTML(q,pos,total){
   const gb='b-'+q.g;
   let h='<div class="card">';
   h+='<div class="meta" style="margin-bottom:6px"><span><span class="badge '+gb+'">'+esc(GROUPS[q.g].label)+'</span><span class="subtag">'+esc(q.sub)+'</span><span class="qid">'+esc(q.id)+'</span></span>';
-  h+='<span class="score">'+pos+' / '+total+' '+starBtn(q)+'</span></div>';
+  h+='<span class="score"><input type="number" class="pos-input" value="'+pos+'" min="1" max="'+total+'" onchange="jumpToPage(this.value, '+total+')" onkeydown="if(event.key===\'Enter\') this.blur()"> / '+total+' '+starBtn(q)+'</span></div>';
   if(q.img){
     if(q.mode==='full'){ h+='<img class="qimg" alt="Question '+esc(q.id)+'" src="'+q.img+'">'; h+=optButtons(q); }
     else { h+='<img class="qimg" alt="Question '+esc(q.id)+'" src="'+q.img+'">'; h+=optList(q); }
@@ -425,6 +479,14 @@ function cardHTML(q,pos,total){
   }
   h+='<div class="fb" id="fb"></div></div>';
   return h;
+}
+function jumpToPage(val, total) {
+  let pagepage = parseInt(val, 10);
+  if (isNaN(pagepage) || pagepage < 1) pagepage = 1;
+  if (pagepage > total) pagepage = total;
+  const targetIndex = pagepage - 1;
+  dIdx = targetIndex;
+  renderDrill(); 
 }
 function starBtn(q){
   const on=bookmarks[q.id]?' on':'';
@@ -715,6 +777,22 @@ $('#sub-line').textContent = MCQ.length+' past-paper MCQs · '+Object.keys(byId)
 initAuth();
 refreshSubSel(); rebuildDrill(true); updatePips(); renderOverview();
 
+</script>
+
+<script>
+  (function() {
+    var gscript = document.createElement('script');
+    gscript.src = 'https://accounts.google.com/gsi/client';
+    gscript.async = true;
+    gscript.defer = true;
+    
+    // Optional: Log when it finally connects over the VPN
+    gscript.onload = function() {
+      console.log('Google SDK ready');
+    };
+
+    document.head.appendChild(gscript);
+  })();
 </script>
 </body>
 </html>
