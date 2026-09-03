@@ -1212,5 +1212,17 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) applySt
 
 
 </script>
+<script>
+/* ---- Progress layer config (read by game.js) ----------------------------- */
+window.GAME_CONFIG = {
+  pageId: 'pubfin',
+  pageLabel: 'Tax, P-R-P & Factor Markets',
+  sections: Object.keys(TOPIC).map(function(k){ return {key:'pubfin:'+k, label:TOPIC[k][1]}; }),
+  sectionOf: function(q){ return TOPIC[q.topic] ? 'pubfin:'+q.topic : null; },
+  topicOf: function(q){ return {key:q.topic, label:(TOPIC[q.topic]||[,q.topic])[1]}; },
+  questions: function(){ return DATA.mcq; }
+};
+</script>
+<script src="game.js" defer></script>
 </body>
 </html>

@@ -362,7 +362,7 @@ const DIA=DATA.dia||{};
    SERVER_SYNC_SETUP.md). Leave it as '' to keep the tool 100% local
    (everything still works fully offline \u2014 sync is opt-in only).
    ================================================================ */
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbzwCpKJ2TQqqD-IkUo6O8WIWJRCXCcuev9LNTFkOXZHx4tBoAiVUF2UuLwODqIEL2Fuog/exec';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec';
 
 const SYNC_SESSION = Math.random().toString(36).slice(2)+Date.now().toString(36);
 function sendSync(event, extra){
@@ -1250,5 +1250,17 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) applySt
 
 
 </script>
+<script>
+/* ---- Progress layer config (read by game.js) ----------------------------- */
+window.GAME_CONFIG = {
+  pageId: 'gov',
+  pageLabel: 'Government Intervention',
+  sections: Object.keys(TOPIC).map(function(k){ return {key:'gov:'+k, label:TOPIC[k][1]}; }),
+  sectionOf: function(q){ return TOPIC[q.topic] ? 'gov:'+q.topic : null; },
+  topicOf: function(q){ return {key:q.topic, label:(TOPIC[q.topic]||[,q.topic])[1]}; },
+  questions: function(){ return DATA.mcq; }
+};
+</script>
+<script src="game.js" defer></script>
 </body>
 </html>
