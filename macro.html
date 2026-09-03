@@ -794,5 +794,17 @@ refreshSubSel(); rebuildDrill(true); updatePips(); renderOverview();
     document.head.appendChild(gscript);
   })();
 </script>
+<script>
+/* ---- Progress layer config (read by game.js) ----------------------------- */
+window.GAME_CONFIG = {
+  pageId: 'macro',
+  pageLabel: 'Macroeconomics',
+  sections: Object.keys(GROUPS).map(function(k){ return {key:'macro:'+k, label:GROUPS[k].label}; }),
+  sectionOf: function(q){ return GROUPS[q.g] ? 'macro:'+q.g : null; },
+  topicOf: function(q){ return {key:(q.sub||q.g), label:(q.sub||GROUPS[q.g].label)}; },
+  questions: function(){ return MCQ; }
+};
+</script>
+<script src="game.js" defer></script>
 </body>
 </html>
