@@ -296,77 +296,234 @@
     }, force);
   }
 
+  /* ==========================================================================
+     PIXEL LAYER
+     --------------------------------------------------------------------------
+     Every sprite below is a grid of characters, one per pixel, rendered to SVG
+     <rect> runs at publish time. No image files, no external requests: the
+     whole thing works offline and stays crisp at any zoom, which matters on the
+     phones most students actually drill on.
+
+     The mascot is ONE base body plus accessory layers that unlock with level,
+     rather than ten separate drawings. Adding a level means adding a layer, and
+     the character visibly gains gear instead of being swapped out.
+     ========================================================================== */
+  var MPAL = {
+    o: '#1b1030',   // outline
+    s: '#f3c9a2',   // skin
+    e: '#1b1030',   // eyes
+    r: '#3f6fd8',   // robe
+    w: '#eef2ff',   // paper
+    n: '#a9713f',   // wood
+    h: '#7b46b8',   // scholar cap
+    c: '#c8402f',   // cape
+    g: '#ffcc4d',   // gold
+    a: '#7ee8ff',   // aura
+    y: '#c08a4a',   // signpost wood
+    d: '#5a6488'    // stone
+  };
+
+  var SPR_BASE = ['................','................','....oooooooo....','...osssssssso...','...ossessesso...','...osssssssso...','...osssoossso...','....oooooooo....','.....rrrrrr.....','...rrrrrrrrrr...','..srrrrrrrrrrs..','..srrrrrrrrrrs..','...rrrrrrrrrr...','...rrrr..rrrr...','...oooo..oooo...','................'];
+  var SPR_LAYERS = {
+    book: ['................','................','................','................','................','................','................','................','................','................','.www............','.wnw............','.www............','................','................','................'],
+    hat: ['...hhhhhhhhhh...','....hhhhhhhh....','................','................','................','................','................','................','................','................','................','................','................','................','................','................'],
+    trim: ['................','................','................','................','................','................','................','................','.....gggggg.....','................','................','................','...gggggggggg...','................','................','................'],
+    cape: ['................','................','................','................','................','................','................','................','................','.c............c.','.c............c.','.c............c.','.cc..........cc.','..c..........c..','................','................'],
+    staff: ['................','................','................','................','................','................','.............g..','.............n..','.............n..','.............n..','.............n..','.............n..','.............n..','.............n..','.............n..','................'],
+    pads: ['................','................','................','................','................','................','................','................','................','...gg......gg...','................','................','................','................','................','................'],
+    crown: ['...g..g..g..g...','...gggggggggg...','................','................','................','................','................','................','................','................','................','................','................','................','................','................'],
+    aura: ['.a............a.','................','................','................','a..............a','................','................','................','................','................','................','................','a..............a','................','.a............a.','................'],
+    halo: ['..aaaaaaaaaaaa..','................','................','................','................','................','................','................','................','................','................','................','................','................','................','................'],
+  };
+  var LEVEL_GEAR = {
+    1: [],
+    2: ["book"],
+    3: ["book", "hat"],
+    4: ["book", "hat", "trim"],
+    5: ["cape", "book", "hat", "trim"],
+    6: ["cape", "book", "hat", "trim", "staff"],
+    7: ["cape", "book", "hat", "trim", "staff", "pads"],
+    8: ["cape", "book", "trim", "staff", "pads", "crown"],
+    9: ["aura", "cape", "book", "trim", "staff", "pads", "crown"],
+    10: ["aura", "halo", "cape", "book", "trim", "staff", "pads", "crown"],
+  };
+  var SPR_ICON = {
+    flag: ['............','..o.........','..ooooooo...','..oggggggo..','..oggggggo..','..ooooooo...','..o.........','..o.........','..o.........','.ooo........','ooooo.......','............'],
+    sign: ['............','.ooooooooo..','.oyyyyyyyo..','.oyyyyyyyo..','.ooooooooo..','.....o......','.....o......','.....o......','.....o......','....ooo.....','............','............'],
+    rock: ['............','............','....oooo....','...oddddo...','..oddddddo..','..oddddddo..','.oddddddddo.','.oddddddddo.','.oooooooooo.','............','............','............'],
+  };
+  var SPR_MEDAL = ['..oo..oo..','..oo..oo..','...oooo...','..oMMMMo..','.oMMMMMMo.','.oMMMMMMo.','.oMMMMMMo.','..oMMMMo..','...oooo...','..........'];
+
+  /* Render a character grid to SVG, merging horizontal runs so a 16x16 sprite
+     costs a few dozen rects rather than 256. crispEdges keeps the pixels hard
+     at every zoom level. */
+  function pixSVG(rows, pal, cls, label) {
+    var w = rows[0].length, h = rows.length;
+    var out = '<svg class="' + cls + '" viewBox="0 0 ' + w + ' ' + h + '" ' +
+      'shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet" ' +
+      (label ? 'role="img" aria-label="' + esc(label) + '"' : 'aria-hidden="true"') + '>';
+    for (var y = 0; y < h; y++) {
+      var row = rows[y], x = 0;
+      while (x < w) {
+        var c = row.charAt(x), fill = pal[c];
+        if (!fill) { x++; continue; }
+        var run = 1;
+        while (x + run < w && row.charAt(x + run) === c) run++;
+        out += '<rect x="' + x + '" y="' + y + '" width="' + run + '" height="1" fill="' + fill + '"/>';
+        x += run;
+      }
+    }
+    return out + '</svg>';
+  }
+
+  function mascotRows(level) {
+    var grid = SPR_BASE.map(function (r) { return r.split(''); });
+    (LEVEL_GEAR[level] || []).forEach(function (name) {
+      var layer = SPR_LAYERS[name];
+      if (!layer) return;
+      layer.forEach(function (row, y) {
+        for (var x = 0; x < row.length; x++) {
+          var c = row.charAt(x);
+          if (c !== '.') grid[y][x] = c;
+        }
+      });
+    });
+    return grid.map(function (r) { return r.join(''); });
+  }
+  function mascot(level, cls, label) {
+    return pixSVG(mascotRows(level), MPAL, cls || 'px-mascot', label);
+  }
+  function icon(name, cls) { return pixSVG(SPR_ICON[name], MPAL, cls || 'px-icon'); }
+  function medal(rank) {
+    var col = ['#ffcc4d', '#d4dce8', '#c9803f'][rank - 1] || '#5a6488';
+    var pal = { o: '#1b1030', M: col };
+    return pixSVG(SPR_MEDAL, pal, 'px-medal');
+  }
+
+  /* A chunky segmented bar reads as a game meter; a smooth gradient would not. */
+  function meter(p, segs) {
+    segs = segs || 20;
+    var on = Math.round(p / 100 * segs), h = '';
+    for (var i = 0; i < segs; i++) h += '<i class="' + (i < on ? 'on' : '') + '"></i>';
+    return '<div class="px-meter" role="img" aria-label="' + Math.round(p) + '%">' + h + '</div>';
+  }
+
   /* ---------- UI: styles -------------------------------------------------- */
   var CSS = [
-    '.g-toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,120%);max-width:min(520px,92vw);',
-    'background:var(--ink,#1e293b);color:#fff;padding:11px 15px;border-radius:10px;font-size:13px;line-height:1.5;',
-    'box-shadow:0 6px 24px rgba(15,23,42,.22);z-index:9999;transition:transform .22s ease;pointer-events:none}',
+    '@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");',
+
+    /* one dark world, scoped so the rest of the site keeps its own look */
+    '#p-game,.g-strip{',
+    '--px-bg:#10142b; --px-panel:#1b2246; --px-panel-2:#252e5c; --px-edge:#0a0d1d;',
+    '--px-line:#4a57a0; --px-ink:#eaeeff; --px-dim:#98a3d8; --px-gold:#ffcc4d;',
+    '--px-green:#5ce07f; --px-cyan:#7ee8ff; --px-red:#ff7a6b;',
+    "--px-font:'Press Start 2P',ui-monospace,monospace}",
+
+    /* chunky stepped border, built from shadows so there is no anti-aliased radius */
+    '.px-frame{background:var(--px-panel);border:3px solid var(--px-edge);',
+    'box-shadow:0 0 0 3px var(--px-line), 0 6px 0 3px rgba(4,6,18,.45);',
+    'padding:16px;margin:0 0 22px}',
+    '#p-game{background:var(--px-bg);padding:18px 14px 26px;color:var(--px-ink);',
+    'image-rendering:pixelated}',
+    '#p-game h3{font-family:var(--px-font);font-size:11px;line-height:1.7;margin:0 0 12px;',
+    'color:var(--px-gold);letter-spacing:.02em}',
+    '#p-game .g-sub{color:var(--px-dim);font-size:13px;margin:0}',
+    '#p-game .btn{background:var(--px-panel-2);border:2px solid var(--px-edge);',
+    'box-shadow:0 0 0 2px var(--px-line);color:var(--px-ink);border-radius:0;font-weight:700}',
+    '#p-game .btn:hover{background:var(--px-line);border-color:var(--px-edge)}',
+    '#p-game .btn:active{transform:translateY(2px)}',
+
+    /* --- hero --- */
+    '.px-hero{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}',
+    '.px-mascot{width:96px;height:96px;flex:0 0 auto;',
+    'background:var(--px-panel-2);border:2px solid var(--px-edge);box-shadow:0 0 0 2px var(--px-line);padding:4px}',
+    '.px-lv{font-family:var(--px-font);font-size:15px;color:var(--px-gold);margin:0 0 8px;line-height:1.5}',
+    '.px-lv small{display:block;font-family:inherit;font-size:11px;color:var(--px-dim);margin-top:6px}',
+    '.px-stat{font-size:13px;color:var(--px-dim);margin:9px 0 0}',
+    '.px-stat b{color:var(--px-ink);font-family:var(--px-font);font-size:11px}',
+
+    '.px-meter{display:flex;gap:2px;margin:4px 0 2px;max-width:360px}',
+    '.px-meter i{flex:1 1 0;height:12px;background:var(--px-edge);',
+    'box-shadow:inset 0 0 0 1px rgba(74,87,160,.5)}',
+    '.px-meter i.on{background:var(--px-green);box-shadow:inset 0 -3px 0 rgba(0,0,0,.28)}',
+
+    /* --- quest path --- */
+    '.px-path{display:flex;flex-wrap:wrap;gap:0;align-items:flex-start}',
+    '.px-node{flex:0 0 auto;width:104px;text-align:center;background:none;border:none;',
+    'padding:8px 2px;cursor:pointer;color:inherit;font:inherit}',
+    '.px-node:focus-visible{outline:2px solid var(--px-gold);outline-offset:2px}',
+    '.px-icon{width:44px;height:44px;display:block;margin:0 auto 7px;',
+    'background:var(--px-panel-2);border:2px solid var(--px-edge);box-shadow:0 0 0 2px var(--px-line);padding:3px}',
+    '.px-node.done .px-icon{box-shadow:0 0 0 2px var(--px-gold)}',
+    '.px-node.locked .px-icon{opacity:.55}',
+    '.px-node.locked .px-nname{color:var(--px-dim)}',
+    /* Fixed height, not min-height: section names run to two or three lines
+       and a growing box pushes each percentage to a different baseline, so
+       the row of nodes stops reading as one row. */
+    '.px-nname{display:block;font-size:11px;line-height:1.4;color:var(--px-ink);',
+    'height:46px;overflow:hidden;margin-bottom:4px}',
+    '.px-npct{font-family:var(--px-font);font-size:10px;color:var(--px-dim)}',
+    '.px-node.done .px-npct{color:var(--px-gold)}',
+    '.px-node.part .px-npct{color:var(--px-green)}',
+    '.px-link{flex:0 0 auto;align-self:flex-start;margin-top:29px;width:22px;height:6px;',
+    'background:repeating-linear-gradient(90deg,var(--px-line) 0 4px,transparent 4px 8px)}',
+    '@media (max-width:560px){.px-node{width:33.333%}.px-link{display:none}}',
+
+    /* --- topic leaves --- */
+    '.px-leaves{display:none;gap:8px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));',
+    'margin-top:14px;padding-top:14px;border-top:2px solid var(--px-line)}',
+    '.px-leaves.open{display:grid}',
+    '.px-leaf{background:var(--px-panel-2);border:2px solid var(--px-edge);padding:9px 10px}',
+    '.px-leaf b{display:block;font-size:12px;margin-bottom:6px;color:var(--px-ink);font-weight:600}',
+    '.px-leaf span{font-family:var(--px-font);font-size:9px;color:var(--px-dim)}',
+
+    /* --- leaderboard --- */
+    '.px-row{display:grid;grid-template-columns:26px 34px 1fr auto;gap:10px;align-items:center;',
+    'padding:8px 10px;background:var(--px-panel-2);border:2px solid var(--px-edge);margin-bottom:5px}',
+    '.px-row.me{box-shadow:0 0 0 2px var(--px-gold);background:#2c3568}',
+    '.px-rank{font-family:var(--px-font);font-size:10px;color:var(--px-dim);text-align:right}',
+    '.px-medal{width:26px;height:26px;display:block}',
+    '.px-who{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.px-who em{font-style:normal;font-family:var(--px-font);font-size:8px;color:var(--px-dim);margin-left:8px}',
+    '.px-pct{font-family:var(--px-font);font-size:10px;color:var(--px-gold)}',
+    '.px-gap{margin:12px 0 0;font-size:13px;color:var(--px-dim);line-height:1.7}',
+    '.px-gap b{color:var(--px-cyan)}',
+    '.px-rule{font-size:12px;color:var(--px-dim);line-height:1.8;margin:14px 0 0;',
+    'padding-top:12px;border-top:2px solid var(--px-line)}',
+    '.px-rule b{color:var(--px-ink)}',
+    '.px-nickrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}',
+    '.px-nickrow input{flex:1 1 190px;min-height:44px;padding:0 12px;border:2px solid var(--px-edge);',
+    'box-shadow:0 0 0 2px var(--px-line);border-radius:0;background:var(--px-edge);',
+    'color:var(--px-ink);font:inherit;font-size:14px}',
+    '.px-nickrow input:focus{outline:none;box-shadow:0 0 0 2px var(--px-gold)}',
+
+    /* --- overview strip --- */
+    '.g-strip{background:var(--px-bg);color:var(--px-ink);border:3px solid var(--px-edge);',
+    'box-shadow:0 0 0 3px var(--px-line);padding:12px 14px;margin-bottom:16px;',
+    'display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;image-rendering:pixelated}',
+    '.g-strip .px-mascot{width:52px;height:52px;padding:2px}',
+    '.px-slv{font-family:var(--px-font);font-size:10px;color:var(--px-gold);line-height:1.6}',
+    '.px-slv span{display:block;font-family:inherit;font-size:8px;color:var(--px-dim);margin-top:5px}',
+    '.px-srank{min-width:0;font-size:14px}',
+    '.px-srank b{color:var(--px-ink)}',
+    '.px-sdim{color:var(--px-dim);font-size:12px;margin-top:3px}',
+    '.px-stop{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}',
+    '.px-stop i{font-style:normal;font-family:var(--px-font);font-size:8px;padding:4px 7px;',
+    'background:var(--px-panel-2);color:var(--px-dim);border:1px solid var(--px-edge)}',
+    '.px-stop i:first-child{background:var(--px-gold);color:#2a1c00}',
+    '.g-strip .btn{background:var(--px-panel-2);border:2px solid var(--px-edge);',
+    'box-shadow:0 0 0 2px var(--px-line);color:var(--px-ink);border-radius:0;white-space:nowrap;font-weight:700}',
+    '@media (max-width:620px){.g-strip{grid-template-columns:auto 1fr;row-gap:10px}',
+    '.g-strip .btn{grid-column:1/-1}}',
+
+    /* --- toast --- */
+    '.g-toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,150%);',
+    'max-width:min(520px,92vw);background:#1b2246;color:#eaeeff;padding:12px 15px;',
+    'border:2px solid #0a0d1d;box-shadow:0 0 0 2px #4a57a0;font-size:13px;line-height:1.55;',
+    'z-index:9999;transition:transform .18s steps(4);pointer-events:none}',
     '.g-toast.show{transform:translate(-50%,0)}',
-    '.g-toast.ok{background:#065f46}.g-toast.warn{background:#92400e}',
-
-    '.g-hero{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}',
-    '.g-ring{width:96px;height:96px;flex:0 0 auto}',
-    '.g-lvl{font-size:21px;font-weight:700;letter-spacing:-.01em;margin:0 0 2px}',
-    '.g-lvl small{font-weight:600;font-size:13px;color:var(--muted,#64748b);margin-left:6px}',
-    '.g-sub{color:var(--muted,#64748b);font-size:13px;margin:0}',
-    '.g-nextbar{height:6px;background:var(--line,#e2e8f0);border-radius:999px;overflow:hidden;margin:9px 0 5px;max-width:340px}',
-    '.g-nextbar>i{display:block;height:100%;background:var(--brand,#2563eb);border-radius:999px;transition:width .35s ease}',
-
-    '.g-tree{margin:0;padding:0;list-style:none;position:relative}',
-    '.g-node{position:relative;padding:0 0 4px 30px;border-left:2px solid var(--line,#e2e8f0);margin-left:11px}',
-    '.g-node:last-child{border-left-color:transparent}',
-    '.g-node>.g-dot{position:absolute;left:-11px;top:12px;width:20px;height:20px;border-radius:50%;',
-    'background:var(--surface,#fff);border:2px solid var(--line,#e2e8f0);display:flex;align-items:center;justify-content:center;',
-    'font-size:10px;font-weight:700;color:var(--muted,#64748b)}',
-    '.g-node.part>.g-dot{border-color:var(--brand,#2563eb);color:var(--brand,#2563eb)}',
-    '.g-node.full>.g-dot{border-color:var(--pos,#059669);background:var(--pos,#059669);color:#fff}',
-    '.g-secbtn{width:100%;text-align:left;background:none;border:none;padding:9px 0;cursor:pointer;font:inherit;color:inherit;',
-    'display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;min-height:44px}',
-    '.g-secname{font-weight:600;font-size:14px}',
-    '.g-secpct{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;color:var(--muted,#64748b)}',
-    '.g-node.part .g-secpct{color:var(--brand,#2563eb)}.g-node.full .g-secpct{color:var(--pos,#059669)}',
-    '.g-secbar{grid-column:1/-1;height:7px;background:var(--surface-2,#f1f5f9);border-radius:999px;overflow:hidden}',
-    '.g-secbar>i{display:block;height:100%;background:var(--brand,#2563eb);border-radius:999px;transition:width .35s ease}',
-    '.g-node.full .g-secbar>i{background:var(--pos,#059669)}',
-    '.g-leaves{display:none;padding:6px 0 12px;gap:6px;grid-template-columns:repeat(auto-fill,minmax(148px,1fr))}',
-    '.g-leaves.open{display:grid}',
-    '.g-leaf{border:1px solid var(--line,#e2e8f0);border-radius:8px;padding:8px 10px;background:var(--surface,#fff)}',
-    '.g-leaf b{display:block;font-size:12px;font-weight:600;margin-bottom:5px}',
-    '.g-leaf .g-lb{height:5px;background:var(--surface-2,#f1f5f9);border-radius:999px;overflow:hidden}',
-    '.g-leaf .g-lb>i{display:block;height:100%;background:var(--brand,#2563eb)}',
-    '.g-leaf span{font-size:11px;color:var(--muted,#64748b);font-variant-numeric:tabular-nums}',
-
-    '.g-lbrow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:9px 10px;border-radius:8px}',
-    '.g-lbrow+.g-lbrow{margin-top:3px}',
-    '.g-lbrow.me{background:var(--surface-2,#f1f5f9);outline:1px solid var(--brand,#2563eb)}',
-    '.g-rank{font-variant-numeric:tabular-nums;font-weight:700;color:var(--muted,#64748b);text-align:right;font-size:13px}',
-    '.g-lbrow.top1 .g-rank,.g-lbrow.top2 .g-rank,.g-lbrow.top3 .g-rank{color:var(--star,#b45309)}',
-    '.g-nick{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    '.g-nick em{font-style:normal;color:var(--muted,#64748b);font-weight:600;font-size:12px;margin-left:6px}',
-    '.g-score{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px}',
-    '.g-gap{margin-top:10px;font-size:13px;color:var(--muted,#64748b)}',
-    '.g-rule{font-size:12px;color:var(--muted,#64748b);line-height:1.6;margin:10px 0 0}',
-    '.g-nickrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}',
-    '.g-nickrow input{flex:1 1 180px;min-height:44px;padding:0 12px;border:1px solid var(--line,#e2e8f0);',
-    'border-radius:8px;font:inherit;font-size:14px;background:var(--surface,#fff);color:var(--ink,#1e293b)}',
-
-    /* --- compact strip on the Overview page --- */
-    '.g-strip{background:var(--surface,#fff);border:1px solid var(--line,#e2e8f0);border-radius:10px;',
-    'padding:12px 14px;margin-bottom:14px;box-shadow:var(--shadow-1,0 1px 2px rgba(30,41,59,.04));',
-    'display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}',
-    '@media (max-width:620px){.g-strip{grid-template-columns:auto 1fr;row-gap:10px}.g-strip .g-stripbtn{grid-column:1/-1}}',
-    '.g-striplv{display:flex;align-items:center;gap:9px}',
-    '.g-stripring{width:44px;height:44px;flex:0 0 auto}',
-    '.g-striplv b{display:block;font-size:14px;line-height:1.25}',
-    '.g-striplv span{display:block;font-size:11px;color:var(--muted,#64748b)}',
-    '.g-striprank{min-width:0}',
-    '.g-striprank b{font-size:15px}',
-    '.g-striprank .g-strdim{color:var(--muted,#64748b);font-weight:600;font-size:12px}',
-    '.g-strtop{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}',
-    '.g-strtop i{font-style:normal;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;',
-    'background:var(--surface-2,#f1f5f9);color:var(--muted,#64748b);white-space:nowrap}',
-    '.g-strtop i:first-child{background:#fef3c7;color:#92400e}',
-    '.g-stripbtn{white-space:nowrap}'
+    '.g-toast.ok{box-shadow:0 0 0 2px #5ce07f}.g-toast.warn{box-shadow:0 0 0 2px #ffcc4d}',
+    '@media (prefers-reduced-motion:reduce){.g-toast{transition:none}}'
   ].join('');
 
   function injectCSS() {
@@ -375,19 +532,7 @@
     document.head.appendChild(s);
   }
 
-  /* ---------- UI: the level ring ------------------------------------------ */
-  function ring(p) {
-    var r = 40, c = 2 * Math.PI * r, on = c * Math.min(100, p) / 100;
-    return '<svg class="g-ring" viewBox="0 0 96 96" role="img" aria-label="' + p + '% complete">' +
-      '<circle cx="48" cy="48" r="' + r + '" fill="none" stroke="var(--line,#e2e8f0)" stroke-width="8"/>' +
-      '<circle cx="48" cy="48" r="' + r + '" fill="none" stroke="var(--brand,#2563eb)" stroke-width="8" ' +
-      'stroke-linecap="round" stroke-dasharray="' + on.toFixed(1) + ' ' + c.toFixed(1) + '" ' +
-      'transform="rotate(-90 48 48)"/>' +
-      '<text x="48" y="53" text-anchor="middle" font-size="21" font-weight="700" fill="currentColor">' + p + '%</text>' +
-      '</svg>';
-  }
-
-  /* ---------- UI: the panel ----------------------------------------------- */
+  /* ---------- UI: the Progress panel -------------------------------------- */
   var openSections = {};
 
   function render() {
@@ -401,60 +546,65 @@
 
     var h = '';
 
-    /* --- level card --- */
-    h += '<div class="card"><div class="g-hero">' + ring(Math.round(o.pct)) +
-      '<div><p class="g-lvl">Lv.' + lv.i + ' ' + lv.name.zh +
-      '<small>' + esc(lv.name.en) + '</small></p>' +
-      '<p class="g-sub">已攻下 <b>' + o.cleared + '</b> / ' + o.total + ' 題 · ' + esc(CFG.pageLabel || '') + '</p>' +
+    /* --- hero: the character, and what it takes to level up --- */
+    h += '<div class="px-frame"><div class="px-hero">' +
+      mascot(lv.i, 'px-mascot', 'Level ' + lv.i + ' character') +
+      '<div><p class="px-lv">LV.' + lv.i + ' ' + lv.name.zh +
+      '<small>' + esc(lv.name.en.toUpperCase()) + '</small></p>' +
+      meter(into) +
       (lv.next
-        ? '<div class="g-nextbar"><i style="width:' + into.toFixed(1) + '%"></i></div>' +
-          '<p class="g-sub">再答啱 <b>' + toNext + '</b> 題就升到 Lv.' + (lv.i + 1) + ' ' + lv.next.zh + '</p>'
-        : '<p class="g-sub">全清。冇得再升。</p>') +
-      (st.dayN ? '<p class="g-sub" style="margin-top:6px">今日已答 ' + st.dayN + ' 題</p>' : '') +
+        ? '<p class="px-stat">再答啱 <b>' + toNext + '</b> 題 &rarr; LV.' + (lv.i + 1) + ' ' + lv.next.zh + '</p>'
+        : '<p class="px-stat">全清。冇得再升。</p>') +
+      '<p class="px-stat">已攻下 <b>' + o.cleared + '</b> / ' + o.total + ' 題' +
+      (st.dayN ? ' &middot; 今日 <b>' + st.dayN + '</b> 題' : '') + '</p>' +
       '</div></div></div>';
 
-    /* --- skill tree --- */
+    /* --- quest path: one node per section, in course order --- */
     var t = sectionTotals();
-    h += '<div class="card"><h3 style="margin:0 0 4px">技能樹 Skill tree</h3>' +
-      '<p class="g-sub" style="margin-bottom:10px">撳一個 section 睇入面每個 topic 嘅進度。</p><ul class="g-tree">';
-    CFG.sections.forEach(function (sec) {
+    h += '<div class="px-frame"><h3>QUEST MAP &mdash; ' + esc(CFG.pageLabel || '') + '</h3>' +
+      '<p class="g-sub" style="margin-bottom:14px">撳一個關卡睇入面每個 topic 嘅進度。</p>' +
+      '<div class="px-path">';
+    CFG.sections.forEach(function (sec, i) {
       var r = t[sec.key] || { total: 0, cleared: 0 };
       var p = pct(r.cleared, r.total);
-      var cls = p >= 100 ? 'full' : (p > 0 ? 'part' : '');
-      var open = !!openSections[sec.key];
-      h += '<li class="g-node ' + cls + '">' +
-        '<span class="g-dot" aria-hidden="true">' + (p >= 100 ? '✓' : p) + '</span>' +
-        '<button class="g-secbtn" data-sec="' + esc(sec.key) + '" aria-expanded="' + open + '">' +
-        '<span class="g-secname">' + esc(sec.label) + '</span>' +
-        '<span class="g-secpct">' + p + '%</span>' +
-        '<span class="g-secbar"><i style="width:' + p + '%"></i></span>' +
-        '</button>' +
-        '<div class="g-leaves' + (open ? ' open' : '') + '" data-leaves="' + esc(sec.key) + '">';
-      if (open) {
-        topicRows(sec.key).forEach(function (lf) {
-          h += '<div class="g-leaf"><b>' + esc(lf.label) + '</b>' +
-            '<div class="g-lb"><i style="width:' + lf.pct + '%"></i></div>' +
-            '<span>' + lf.cleared + '/' + lf.total + '</span></div>';
-        });
-      }
-      h += '</div></li>';
+      var cls = p >= 100 ? 'done' : (p > 0 ? 'part' : 'locked');
+      var ic = p >= 100 ? 'flag' : (p > 0 ? 'sign' : 'rock');
+      if (i) h += '<span class="px-link" aria-hidden="true"></span>';
+      h += '<button class="px-node ' + cls + '" data-sec="' + esc(sec.key) + '" ' +
+        'aria-expanded="' + (!!openSections[sec.key]) + '">' +
+        icon(ic) +
+        '<span class="px-nname">' + esc(sec.label) + '</span>' +
+        '<span class="px-npct">' + p + '%</span>' +
+        '</button>';
     });
-    h += '</ul></div>';
+    h += '</div>';
+
+    CFG.sections.forEach(function (sec) {
+      if (!openSections[sec.key]) return;
+      h += '<div class="px-leaves open">';
+      topicRows(sec.key).forEach(function (lf) {
+        h += '<div class="px-leaf"><b>' + esc(lf.label) + '</b>' +
+          meter(lf.pct, 10) +
+          '<span>' + lf.cleared + '/' + lf.total + '</span></div>';
+      });
+      h += '</div>';
+    });
+    h += '</div>';
 
     /* --- leaderboard --- */
-    h += '<div class="card" id="g-lb-card"><h3 style="margin:0 0 4px">班際排行榜 Class leaderboard</h3>' +
-      '<div id="g-lb-body"><p class="g-sub">Loading…</p></div>' +
-      '<div class="g-nickrow"><input id="g-nick" maxlength="16" placeholder="你嘅花名（會喺榜上顯示）" value="' + esc(st.nick) + '">' +
+    h += '<div class="px-frame" id="g-lb-card"><h3>CLASS RANKING 班際排行榜</h3>' +
+      '<div id="g-lb-body"><p class="g-sub">Loading&hellip;</p></div>' +
+      '<div class="px-nickrow"><input id="g-nick" maxlength="16" placeholder="你嘅花名（會喺榜上顯示）" value="' + esc(st.nick) + '">' +
       '<button class="btn" id="g-nick-save">Save</button>' +
-      '<button class="btn" id="g-lb-refresh">↻ Refresh</button></div>' +
-      '<p class="g-rule">計分規則：<b>答啱先計</b>。同一題答錯之後，要隔 ' + ANTI_FARM_GAP +
-      ' 題或 10 分鐘再答啱先計入進度 — 撳兩次係唔會加分嘅。排名按全部 section 嘅總完成率計，' +
-      '所以掃細 section 唔會拉高排名。榜上只顯示花名，唔會顯示 email。</p>' +
+      '<button class="btn" id="g-lb-refresh">&#8635; Refresh</button></div>' +
+      '<p class="px-rule">計分規則：<b>答啱先計</b>。同一題答錯之後，要隔 ' + ANTI_FARM_GAP +
+      ' 題或 10 分鐘再答啱先計入進度 — 撳兩次係唔會加分嘅。排名按全部關卡嘅總完成率計，' +
+      '所以掃細關卡唔會拉高排名。榜上只顯示花名，唔會顯示 email。</p>' +
       '</div>';
 
     host.innerHTML = h;
 
-    host.querySelectorAll('.g-secbtn').forEach(function (b) {
+    host.querySelectorAll('.px-node').forEach(function (b) {
       b.onclick = function () { var k = b.dataset.sec; openSections[k] = !openSections[k]; render(); };
     });
     var nickInput = el('g-nick');
@@ -477,15 +627,16 @@
       body.innerHTML = '<p class="g-sub">未登入 — 排行榜要 Google sign-in 先睇到。你嘅進度會照計，登入之後會上榜。</p>';
       return;
     }
-    if (force) body.innerHTML = '<p class="g-sub">Loading…</p>';
+    if (force) body.innerHTML = '<p class="g-sub">Loading&hellip;</p>';
     fetchBoardRetrying(function (d) {
       if (!el('g-lb-body')) return;
       if (d.off) {
-        el('g-lb-body').innerHTML = '<p class="g-sub">呢一頁未接後端（SYNC_URL 係空），所以冇班際排名。上面嘅等級同技能樹照計，全部存喺你部機。</p>';
+        el('g-lb-body').innerHTML = '<p class="g-sub">呢一頁未接後端，所以冇班際排名。上面嘅等級同關卡照計，全部存喺你部機。</p>';
         return;
       }
       if (d.error || !d.top) {
-        el('g-lb-body').innerHTML = '<p class="g-sub">排行榜讀唔到（' + esc(d.error || 'no data') + '）。後端第一次叫醒要成十幾秒，等一陣再撳 <b>↻ Refresh</b> 通常就得。你嘅進度全部安全，冇受影響。</p>';
+        el('g-lb-body').innerHTML = '<p class="g-sub">排行榜讀唔到（' + esc(d.error || 'no data') +
+          '）。後端第一次叫醒要成十幾秒，等一陣再撳 <b>&#8635; Refresh</b> 通常就得。你嘅進度全部安全。</p>';
         return;
       }
       var h = '';
@@ -494,44 +645,35 @@
       } else {
         d.top.forEach(function (r, i) {
           var mine = d.you && d.you.rank === (i + 1);
-          h += '<div class="g-lbrow ' + (mine ? 'me ' : '') + (i < 3 ? 'top' + (i + 1) : '') + '">' +
-            '<span class="g-rank">' + (i + 1) + '</span>' +
-            '<span class="g-nick">' + esc(r.nick || '（未改花名）') +
-            (r.lvl ? '<em>Lv.' + r.lvl + '</em>' : '') + '</span>' +
-            '<span class="g-score">' + r.pct + '%</span></div>';
+          h += '<div class="px-row' + (mine ? ' me' : '') + '">' +
+            '<span class="px-rank">' + (i + 1) + '</span>' +
+            (i < 3 ? medal(i + 1) : '<span></span>') +
+            '<span class="px-who">' + esc(r.nick || '（未改花名）') +
+            (r.lvl ? '<em>LV.' + r.lvl + '</em>' : '') + '</span>' +
+            '<span class="px-pct">' + r.pct + '%</span></div>';
         });
       }
       if (d.you && d.you.rank) {
         if (d.you.rank > d.top.length) {
-          h += '<div class="g-lbrow me" style="margin-top:8px">' +
-            '<span class="g-rank">' + d.you.rank + '</span>' +
-            '<span class="g-nick">你</span>' +
-            '<span class="g-score">' + d.you.pct + '%</span></div>';
+          h += '<div class="px-row me" style="margin-top:9px">' +
+            '<span class="px-rank">' + d.you.rank + '</span><span></span>' +
+            '<span class="px-who">你<em>LV.' + (d.you.lvl || 1) + '</em></span>' +
+            '<span class="px-pct">' + d.you.pct + '%</span></div>';
         }
-        h += '<p class="g-gap">你排第 <b>' + d.you.rank + '</b> / ' + d.n + ' 人。' +
+        h += '<p class="px-gap">你排第 <b>' + d.you.rank + '</b> / ' + d.n + ' 人。' +
           (d.you.gap > 0
-            ? '追上前一位仲差 <b>' + d.you.gap + '%</b>（大約 ' + d.you.gapQ + ' 題）。'
+            ? '追上前一位仲差 <b>' + d.you.gap + '%</b>（大約 <b>' + d.you.gapQ + '</b> 題）。'
             : '你而家喺榜首。') + '</p>';
       } else {
-        h += '<p class="g-gap">你仲未上榜 — 答啱幾題，撳 Refresh 就會出現。</p>';
+        h += '<p class="px-gap">你仲未上榜 — 答啱幾題，撳 Refresh 就會出現。</p>';
       }
       el('g-lb-body').innerHTML = h;
     }, force);
   }
 
   /* ---------- compact strip on the Overview page -------------------------- */
-  /* The full board lives in the Progress tab; this is the bit students see the
+  /* The full board lives in the Progress tab; this is what students see the
      moment the page opens, so the ranking is not hidden behind a click. */
-  function smallRing(p) {
-    var r = 18, c = 2 * Math.PI * r, on = c * Math.min(100, p) / 100;
-    return '<svg class="g-stripring" viewBox="0 0 44 44" aria-hidden="true">' +
-      '<circle cx="22" cy="22" r="' + r + '" fill="none" stroke="var(--line,#e2e8f0)" stroke-width="4"/>' +
-      '<circle cx="22" cy="22" r="' + r + '" fill="none" stroke="var(--brand,#2563eb)" stroke-width="4" ' +
-      'stroke-linecap="round" stroke-dasharray="' + on.toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 22 22)"/>' +
-      '<text x="22" y="26" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">' + Math.round(p) + '</text>' +
-      '</svg>';
-  }
-
   function renderStrip() {
     var slot = el('game-ov');
     if (!slot) return;
@@ -543,45 +685,45 @@
     function paint(rankHTML) {
       var o = overall(), lv = levelFor(o.pct);
       slot.innerHTML = '<div class="g-strip">' +
-        '<div class="g-striplv">' + smallRing(o.pct) +
-        '<span><b>Lv.' + lv.i + ' ' + lv.name.zh + '</b>' +
-        '<span>' + o.cleared + ' / ' + o.total + ' 題</span></span></div>' +
-        '<div class="g-striprank">' + rankHTML + '</div>' +
-        '<button class="btn g-stripbtn" id="g-strip-go">睇全榜 ›</button>' +
+        '<div>' + mascot(lv.i, 'px-mascot', 'Level ' + lv.i) +
+        '<p class="px-slv" style="margin:6px 0 0;text-align:center">LV.' + lv.i +
+        '<span>' + Math.round(o.pct) + '%</span></p></div>' +
+        '<div class="px-srank">' + rankHTML + '</div>' +
+        '<button class="btn" id="g-strip-go">睇全榜 &rsaquo;</button>' +
         '</div>';
       var go = el('g-strip-go');
       if (go) go.onclick = function () { if (window.GameProgress) window.GameProgress.show(); };
     }
 
     if (who() === 'guest') {
-      paint('<b>班際排行榜</b><div class="g-strdim">登入之後就會見到自己排第幾。</div>');
+      paint('<b>班際排行榜</b><div class="px-sdim">登入之後就會見到自己排第幾。</div>');
       return;
     }
     if (!syncUrl()) {
-      paint('<b>班際排行榜未開</b><div class="g-strdim">呢一頁未接後端，只有個人進度。</div>');
+      paint('<b>班際排行榜未開</b><div class="px-sdim">呢一頁未接後端，只有個人進度。</div>');
       return;
     }
 
-    paint('<b>班際排行榜</b><div class="g-strdim">讀緊…</div>');
+    paint('<b>班際排行榜</b><div class="px-sdim">讀緊&hellip;</div>');
     fetchBoardRetrying(function (d) {
       if (!el('game-ov')) return;
       if (d.error || !d.top) {
-        paint('<b>班際排行榜</b><div class="g-strdim">暫時讀唔到，撳「睇全榜」再試。</div>');
+        paint('<b>班際排行榜</b><div class="px-sdim">暫時讀唔到，撳「睇全榜」再試。</div>');
         return;
       }
       var top3 = d.top.slice(0, 3).map(function (r, i) {
-        return '<i>' + (i + 1) + '. ' + esc(r.nick || '未改花名') + ' ' + r.pct + '%</i>';
+        return '<i>' + (i + 1) + ' ' + esc(r.nick || '?') + ' ' + r.pct + '%</i>';
       }).join('');
       var line;
       if (d.you && d.you.rank) {
         line = '<b>你排第 ' + d.you.rank + ' / ' + d.n + ' 人</b>' +
-          '<div class="g-strdim">' + (d.you.gap > 0
+          '<div class="px-sdim">' + (d.you.gap > 0
             ? '追上前一位差 ' + d.you.gap + '%（約 ' + d.you.gapQ + ' 題）'
             : '你而家喺榜首。') + '</div>';
       } else {
-        line = '<b>你仲未上榜</b><div class="g-strdim">答啱幾題就會出現，記得去 Progress 改個花名。</div>';
+        line = '<b>你仲未上榜</b><div class="px-sdim">答啱幾題就會出現，記得去 Progress 改個花名。</div>';
       }
-      paint(line + '<div class="g-strtop">' + top3 + '</div>');
+      paint(line + '<div class="px-stop">' + top3 + '</div>');
     }, false);
   }
 
