@@ -302,7 +302,39 @@ const saveBm=()=>Store.set(pfx()+'bm',bookmarks);
    silently rejects @gmail.com sign-ins. */
 const GOOGLE_CLIENT_ID = '533999025151-qf44e4dp2k7stspp5r6g8050ererf6st.apps.googleusercontent.com';
 const SCHOOL_HD = '';     // '' = any Gmail / Google account may sign in
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec';
+/* ================================================================
+   SYNC_URL \u2014 AUTO-DETECTED, DO NOT HARD-CODE ONE AGAIN
+   This project has had more than one Apps Script deployment, and a
+   deleted deployment answers with a Google error page rather than an
+   error the page can see. A wrong URL here silently kills both the
+   logging and the leaderboard, and the only symptom is an empty Sheet.
+   So list every deployment we know about: the page pings them all on
+   load and keeps whichever one actually answers. Add a new deployment
+   to the front of SYNC_CANDIDATES and leave the old ones \u2014 a dead
+   entry costs one failed request and nothing else.
+   ================================================================ */
+const SYNC_CANDIDATES = [
+  'https://script.google.com/macros/s/AKfycbzwCpKJ2TQqqD-IkUo6O8WIWJRCXCcuev9LNTFkOXZHx4tBoAiVUF2UuLwODqIEL2Fuog/exec',
+  'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec'
+];
+let SYNC_URL = SYNC_CANDIDATES[0];   // used until a probe answers
+let SYNC_RESOLVED = false;
+(function probeSyncUrls(){
+  SYNC_CANDIDATES.forEach(function(url){
+    const fn = '__tynPing' + Math.random().toString(36).slice(2);
+    const s = document.createElement('script');
+    let done = false;
+    function cleanup(){ if(done) return; done = true; try{ delete window[fn]; s.remove(); }catch(e){} }
+    window[fn] = function(){
+      if(!SYNC_RESOLVED){ SYNC_RESOLVED = true; SYNC_URL = url; }
+      cleanup();
+    };
+    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + fn;
+    s.onerror = cleanup;                 // dead deployment, just ignore it
+    document.head.appendChild(s);
+    setTimeout(cleanup, 6000);
+  });
+})();
 const SYNC_SESSION = Math.random().toString(36).slice(2)+Date.now().toString(36);
 let googleIdToken=null, googleProfile=null;
 function googleAvailable(){ return !!GOOGLE_CLIENT_ID && location.protocol!=='file:' && typeof google!=='undefined' && google.accounts && google.accounts.id; }
