@@ -34,6 +34,8 @@
   var ANTI_FARM_MS = 10 * 60 * 1000;               // or ten minutes
   var PUSH_THROTTLE_MS = 20000;                    // min gap between score pushes
   var LB_TTL_MS = 60000;                           // leaderboard cache lifetime
+  var LB_TIMEOUT_MS = 25000;                       // Apps Script cold start is slow
+  var LB_RETRY_MS = 2500;                          // one silent retry after a timeout
 
   var LEVELS = [
     { at: 0,  en: 'Starter',    zh: '起步' },
@@ -259,7 +261,11 @@
       if (done) return;
       done = true; lbPending = false;
       if (data && !data.error) { lbCache = data; lbAt = Date.now(); }
-      try { delete window[fn]; s.remove(); } catch (e) {}
+      /* Leave a no-op behind instead of deleting: a JSONP reply that arrives
+         after we gave up would otherwise hit an undefined function and throw
+         a ReferenceError into the console. Clear it once it cannot fire. */
+      try { window[fn] = function () {}; s.remove(); } catch (e) {}
+      setTimeout(function () { try { delete window[fn]; } catch (e) {} }, 60000);
       var payload = data || { error: 'no response' };
       var waiting = lbQueue; lbQueue = [];
       cb(payload);
@@ -270,7 +276,24 @@
       'lb=1&uid=' + encodeURIComponent(uid()) + '&callback=' + fn;
     s.onerror = function () { finish({ error: 'network' }); };
     document.head.appendChild(s);
-    setTimeout(function () { finish({ error: 'timeout' }); }, 8000);
+    /* Apps Script cold-starts. The first call of the day routinely takes
+       10-15s while Google spins up a container, opens the spreadsheet and
+       runs the authorisation check, so a tight limit reports a timeout on a
+       backend that is merely waking up. */
+    setTimeout(function () { finish({ error: 'timeout' }); }, LB_TIMEOUT_MS);
+  }
+
+  /* A cold Apps Script container often misses the first request and answers
+     the second one immediately, so absorb one timeout before telling the
+     student anything is wrong. */
+  function fetchBoardRetrying(cb, force) {
+    fetchBoard(function (d) {
+      if (d && d.error === 'timeout') {
+        setTimeout(function () { fetchBoard(cb, true); }, LB_RETRY_MS);
+        return;
+      }
+      cb(d);
+    }, force);
   }
 
   /* ---------- UI: styles -------------------------------------------------- */
@@ -455,14 +478,14 @@
       return;
     }
     if (force) body.innerHTML = '<p class="g-sub">Loading…</p>';
-    fetchBoard(function (d) {
+    fetchBoardRetrying(function (d) {
       if (!el('g-lb-body')) return;
       if (d.off) {
         el('g-lb-body').innerHTML = '<p class="g-sub">呢一頁未接後端（SYNC_URL 係空），所以冇班際排名。上面嘅等級同技能樹照計，全部存喺你部機。</p>';
         return;
       }
       if (d.error || !d.top) {
-        el('g-lb-body').innerHTML = '<p class="g-sub">排行榜暫時讀唔到（' + esc(d.error || 'no data') + '）。你嘅進度冇受影響，遲啲再撳 Refresh。</p>';
+        el('g-lb-body').innerHTML = '<p class="g-sub">排行榜讀唔到（' + esc(d.error || 'no data') + '）。後端第一次叫醒要成十幾秒，等一陣再撳 <b>↻ Refresh</b> 通常就得。你嘅進度全部安全，冇受影響。</p>';
         return;
       }
       var h = '';
@@ -540,7 +563,7 @@
     }
 
     paint('<b>班際排行榜</b><div class="g-strdim">讀緊…</div>');
-    fetchBoard(function (d) {
+    fetchBoardRetrying(function (d) {
       if (!el('game-ov')) return;
       if (d.error || !d.top) {
         paint('<b>班際排行榜</b><div class="g-strdim">暫時讀唔到，撳「睇全榜」再試。</div>');
