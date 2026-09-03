@@ -367,25 +367,36 @@ const DATA=JSON.parse(document.getElementById('data').textContent);
    entry costs one failed request and nothing else.
    ================================================================ */
 const SYNC_CANDIDATES = [
+  'https://script.google.com/macros/s/AKfycbwL2xGqx-xNIprKm3UGRHYPCsH-_2cwgXcMzrzAa9f2aeixG2YxZLdfG-DZnbqi4FZCjg/exec',
   'https://script.google.com/macros/s/AKfycbzwCpKJ2TQqqD-IkUo6O8WIWJRCXCcuev9LNTFkOXZHx4tBoAiVUF2UuLwODqIEL2Fuog/exec',
   'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec'
 ];
 let SYNC_URL = SYNC_CANDIDATES[0];   // used until a probe answers
 let SYNC_RESOLVED = false;
 (function probeSyncUrls(){
-  SYNC_CANDIDATES.forEach(function(url){
+  /* A stale deployment is still ALIVE: it answers, it just runs the old code
+     with no leaderboard endpoint. So "first to reply" is the wrong test and
+     would happily pick the stale one. Probe with ?lb=1 instead and accept
+     only a reply carrying the leaderboard shape, then keep the match that
+     sits earliest in SYNC_CANDIDATES rather than the one that arrives first. */
+  let bestRank = Infinity;
+  SYNC_CANDIDATES.forEach(function(url, rank){
     const fn = '__tynPing' + Math.random().toString(36).slice(2);
     const s = document.createElement('script');
     let done = false;
-    function cleanup(){ if(done) return; done = true; try{ delete window[fn]; s.remove(); }catch(e){} }
-    window[fn] = function(){
-      if(!SYNC_RESOLVED){ SYNC_RESOLVED = true; SYNC_URL = url; }
+    function cleanup(){ if(done) return; done = true;
+      /* no-op rather than delete: a late reply must not throw a ReferenceError */
+      try{ window[fn] = function(){}; s.remove(); }catch(e){}
+      setTimeout(function(){ try{ delete window[fn]; }catch(e){} }, 60000); }
+    window[fn] = function(d){
+      const isNewBackend = d && Object.prototype.toString.call(d.top) === '[object Array]';
+      if(isNewBackend && rank < bestRank){ bestRank = rank; SYNC_URL = url; SYNC_RESOLVED = true; }
       cleanup();
     };
-    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + fn;
+    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'lb=1&uid=probe&callback=' + fn;
     s.onerror = cleanup;                 // dead deployment, just ignore it
     document.head.appendChild(s);
-    setTimeout(cleanup, 6000);
+    setTimeout(cleanup, 20000);   // Apps Script cold start
   });
 })();
 
