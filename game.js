@@ -89,7 +89,7 @@
 
   /* ---------- per-student state ------------------------------------------ */
   /* cleared: {qid: timestamp}   wrong: {qid: {t, n}}   n: lifetime answers   */
-  function blank() { return { cleared: {}, wrong: {}, n: 0, nick: '', day: '', dayN: 0 }; }
+  function blank() { return { cleared: {}, wrong: {}, n: 0, nick: '', day: '', dayN: 0, lq: {} }; }
   var stateCache = null, stateOwner = null;
 
   function S() {
@@ -202,6 +202,40 @@
       var left = ANTI_FARM_GAP - (st.n - w.n);
       toast('答啱咗，但呢題頭先先答錯 — 隔多 ' + left + ' 題（或 10 分鐘）再答啱先計入進度。', 'warn');
     }
+  }
+
+  /* ---------- long-question progress ---------------------------------------
+     A long question cannot be auto-marked, so this is the student's own
+     judgement after reading the official scheme: got it / half / missed.
+
+     Self-marked progress is shown but NEVER fed into the class ranking. If it
+     counted, tapping "got it" 327 times would top the board — the same farming
+     hole the cooldown rule closes on the MCQs. Ranking stays on the questions
+     the page can actually verify.
+     ---------------------------------------------------------------------- */
+  function lqPool() {
+    try { if (typeof DATA !== 'undefined' && DATA && DATA.lq) return DATA.lq; } catch (e) {}
+    return [];
+  }
+  function markLQ(id, state) {
+    if (!id) return '';
+    var st = S();
+    if (!st.lq) st.lq = {};
+    if (st.lq[id] === state) delete st.lq[id];   // tap the same button again to clear
+    else st.lq[id] = state;
+    saveState(); refreshBadge();
+    return st.lq[id] || '';
+  }
+  function lqStateOf(id) { var st = S(); return (st.lq && st.lq[id]) || ''; }
+  function lqStats() {
+    var pool = lqPool(), st = S(), lq = st.lq || {}, got = 0, half = 0, miss = 0;
+    pool.forEach(function (q) {
+      var v = lq[q.id];
+      if (v === 'got') got++; else if (v === 'half') half++; else if (v === 'miss') miss++;
+    });
+    var seen = got + half + miss;
+    return { total: pool.length, got: got, half: half, miss: miss, seen: seen,
+             pct: pool.length ? Math.round(seen / pool.length * 100) : 0 };
   }
 
   /* ---------- server sync ------------------------------------------------- */
@@ -478,6 +512,12 @@
     '.px-leaf span{font-family:var(--px-font);font-size:9px;color:var(--px-dim)}',
 
     /* --- leaderboard --- */
+    '.px-lqrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}',
+    '.px-lqchip{font-size:12px;font-weight:600;padding:7px 11px;background:var(--px-panel-2);',
+    'border:2px solid var(--px-edge);color:var(--px-dim)}',
+    '.px-lqchip b{font-family:var(--px-font);font-size:10px;margin-left:7px}',
+    '.px-lqchip.got{color:var(--px-green)}.px-lqchip.half{color:var(--px-gold)}',
+    '.px-lqchip.miss{color:var(--px-red)}',
     '.px-row{display:grid;grid-template-columns:26px 34px 1fr auto;gap:10px;align-items:center;',
     'padding:8px 10px;background:var(--px-panel-2);border:2px solid var(--px-edge);margin-bottom:5px}',
     '.px-row.me{box-shadow:0 0 0 2px var(--px-gold);background:#2c3568}',
@@ -590,6 +630,23 @@
       h += '</div>';
     });
     h += '</div>';
+
+    /* --- long questions: self-marked, deliberately outside the ranking --- */
+    var L = lqStats();
+    if (L.total) {
+      h += '<div class="px-frame"><h3>LONG QUESTIONS \u9577\u984c\u9032\u5ea6</h3>' +
+        '<p class="g-sub" style="margin-bottom:12px">' + L.seen + ' / ' + L.total +
+        ' \u689d\u5df2\u7d93\u81ea\u8a55\u904e\u3002\u5462\u90e8\u5206\u4fc2\u4f60\u81ea\u5df1\u5224\u65b7\uff0c<b>\u5514\u6703\u8a08\u5165\u73ed\u969b\u6392\u540d</b>\u3002</p>' +
+        meter(L.pct) +
+        '<div class="px-lqrow">' +
+        '<span class="px-lqchip got">\u2713 Got it <b>' + L.got + '</b></span>' +
+        '<span class="px-lqchip half">~ Half <b>' + L.half + '</b></span>' +
+        '<span class="px-lqchip miss">\u2717 Missed <b>' + L.miss + '</b></span>' +
+        '</div>' +
+        (L.miss ? '<p class="g-sub" style="margin-top:10px">\u5148\u57cb\u90a3 <b>' + L.miss +
+          '</b> \u689d Missed \u2014\u2014 \u932f\u904e\u5605\u984c\u91cd\u505a\u4e00\u6b21\uff0c\u56de\u5831\u9ad8\u904e\u63a0\u65b0\u984c\u3002</p>' : '') +
+        '</div>';
+    }
 
     /* --- leaderboard --- */
     h += '<div class="px-frame" id="g-lb-card"><h3>CLASS RANKING 班際排行榜</h3>' +
@@ -829,7 +886,8 @@
       t.addEventListener('click', function () { panel.classList.remove('on'); btn.classList.remove('on'); });
     });
 
-    window.GameProgress = { show: show, render: render, onAnswer: onAnswer, push: pushScore };
+    window.GameProgress = { show: show, render: render, onAnswer: onAnswer, push: pushScore,
+                            markLQ: markLQ, lqStateOf: lqStateOf, lqStats: lqStats };
   }
 
   function start() {
