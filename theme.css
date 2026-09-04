@@ -1,0 +1,187 @@
+/* ============================================================================
+   theme.css — "Exam Paper" skin for the HKDSE Econ drilling pages
+   ----------------------------------------------------------------------------
+   Loaded AFTER each page's own <style> block, so it wins on equal specificity
+   without any !important. It only redefines colour tokens, type and a handful
+   of surface rules: no question data, no answer logic, no marking key and no
+   leaderboard code is touched by this file.
+
+   To go back to the original look, delete the one <link> line that loads this
+   file from each HTML page. Nothing else has to be undone.
+
+   The idea: a student sitting in front of this should feel the same thing they
+   feel opening a real DSE paper. Cream stock, ink serif for the questions,
+   and one red — the marker's pen — used for exactly two jobs: the margin rule
+   down the left edge of the sheet, and being wrong.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+:root{
+  /* --- paper and ink --- */
+  --bg:#ebe4d5;            /* the desk the sheet sits on */
+  --surface:#faf7ef;       /* the sheet itself */
+  --surface-2:#efe9db;     /* a shaded box */
+  --ink:#211d16;           /* printing ink, not pure black */
+  --muted:#6f6455;         /* pencil grey, warm to match the stock */
+  --line:#cdc3ad;          /* rule lines */
+  --brand:#c9412e;         /* the marker's red — used sparingly, on purpose */
+  --on-dark:#f4efe3;
+
+  --pos:#3f7a4b; --pos-bg:#eef6ee; --pos-line:#b6d4ba;
+  --neg:#c9412e; --neg-bg:#faeee9; --neg-line:#e6bfb4;
+  --warn-bg:#f6eccd;
+  --star:#8a5b2a;          /* the annotator's brown */
+
+  /* --- print has square corners --- */
+  --r-xs:2px; --r-sm:2px; --r-md:3px; --r-lg:3px; --r-pill:2px;
+
+  /* --- a card sits ON the sheet, so the shadow is a hard offset, not a blur --- */
+  --shadow-1:3px 3px 0 #dbd2bf;
+  --ring:2px solid var(--brand);
+
+  /* --- fonts --- */
+  --f-serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+  --f-sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+/* ----------------------------------------------------------------------------
+   Topic badges.
+   The original palette is a set of fully saturated web colours, which read as
+   fine on white and as loud stickers on cream. These are the same hues pulled
+   down to printing-ink weight: still distinguishable at a glance, so the
+   colour-coding keeps doing its job, but no single badge shouts over the
+   question it is labelling.
+   -------------------------------------------------------------------------- */
+:root{
+  /* Ch1 — basic concepts */
+  --c-scarcity:#3b4a7a;  --c-oppcost:#7a3f6b;  --c-goods:#2f6157;
+  --c-types:#8a3b52;     --c-posnorm:#5a6b32;  --c-property:#8a5b2a;
+  --c-economy:#2d5f7a;   --c-interest:#5f4a86; --c-basic:#2f5d66;
+  /* Ch2 — factors and labour */
+  --c-factors:#3b4a7a;   --c-dol:#2f6157;      --c-labprod:#7a3f6b;
+  --c-labmob:#8a3b52;    --c-labsup:#5a6b32;   --c-wage:#5f4a86;
+  /* Ch3 — firms and production */
+  --c-cprod:#8a5b2a;     --c-typeprod:#34558c; --c-dimret:#93392f;
+  --c-shortlong:#2f5d66; --c-scale:#3f7a4b;    --c-expansion:#93552a;
+  --c-profitmax:#5f4a86; --c-ownership:#8a3b52;--c-sharesbonds:#4a4f5c;
+  --c-pubpriv:#2f6157;
+  /* Ch4 — price theory */
+  --c-supdem:#34558c;    --c-relprice:#7a3f6b; --c-elasticity:#8a5b2a;
+  --c-shortsurp:#93392f; --c-funcprice:#5a6b32;
+  /* Ch5 — market structures and welfare */
+  --c-market:#2d5f7a;    --c-efficiency:#3b4a7a;--c-extern:#8a6a2a;
+  --c-equity:#8a3b52;
+
+  /* ch11 / ch22 — government intervention, tax, factor markets */
+  --topic-tax:#93392f;   --topic-sub:#3f7a4b;  --topic-quo:#34558c;
+  --topic-flr:#7a3f6b;   --topic-cel:#8a5b2a;  --topic-prp:#2f6157;
+  --topic-fm:#5f4a86;
+
+  /* macro groups */
+  --g-micro:#3b4a7a;     --g-natl:#2f6157;     --g-money:#8a5b2a;
+  --g-macro:#93392f;     --g-trade:#2d5f7a;
+
+  /* diagram strokes stay strong: these are read as lines, not decoration */
+  --dia-ad:#34558c;      --dia-sras:#a3552a;
+}
+
+/* ----------------------------------------------------------------------------
+   Type. Questions and prose set in serif — that is what makes it read as a
+   paper rather than an app. Controls, labels and anything numeric stay in the
+   sans and mono, where a serif would only cost legibility at small sizes.
+   -------------------------------------------------------------------------- */
+body{ font-family:var(--f-serif); }
+.stem, .fb, .why, p, li, td, th, summary, .quote{ font-family:var(--f-serif); }
+.tab, .chip, .btn, .badge, .tag, .score, .note, label, input, select, textarea,
+.ov-stat span, .chapter-bar label, .foot, .lqgroup, .empty, .who{
+  font-family:var(--f-sans);
+}
+.qid, .examtimer, .ov-stat b, .prog-num{ font-family:var(--f-mono); }
+
+.quote{ font-style:italic; }
+.stem{ font-size:15px; line-height:1.5; }
+
+/* ----------------------------------------------------------------------------
+   The sheet itself. One red rule down the left edge, the way a printed exam
+   paper carries its margin — this is the whole reason the skin reads as paper
+   before you have consciously registered anything else.
+   -------------------------------------------------------------------------- */
+/* min-height so the sheet runs the whole window: a page that stops halfway
+   down reads as a card floating on a desk, not as the paper you are writing on. */
+.wrap{
+  min-height:100vh;
+  background:var(--surface);
+  border-left:2px solid var(--brand);
+  border-right:1px solid var(--line);
+  box-shadow:0 0 0 1px var(--line);
+  padding-left:22px;
+  padding-right:22px;
+}
+@media (max-width:640px){
+  .wrap{ padding-left:14px; padding-right:14px; }
+}
+
+header .mark{ background:var(--ink); color:var(--bg); border-radius:2px; }
+header h1{ font-weight:700; letter-spacing:0; }
+
+/* Tabs read as printed section markers, not pills. */
+.tabs{ background:var(--surface); border-bottom:1.5px solid var(--ink); }
+.tab{ border:1.5px solid var(--line); background:transparent; letter-spacing:.01em; }
+.tab:hover:not(.on){ border-color:var(--ink); }
+.tab.on{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.tab .pip{ border-radius:2px; }
+
+.chip{ border:1.5px solid var(--line); background:transparent; }
+.chip.on{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.chip.chip-trap{ background:transparent; border-color:var(--neg); color:var(--neg); }
+.chip.chip-trap.on{ background:var(--neg); color:var(--bg); }
+
+.btn{ border:1.5px solid var(--ink); background:transparent; }
+.btn:hover{ background:var(--surface-2); }
+.btn.primary{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.btn.primary:hover{ background:var(--brand); border-color:var(--brand); }
+
+/* A question card is a slip of paper laid on the sheet. */
+.card{ border:1.5px solid var(--ink); box-shadow:var(--shadow-1); }
+.badge{ border-radius:2px; letter-spacing:.04em; text-transform:uppercase; font-size:10px; }
+
+/* Options: the mark goes in the left margin of the option, like a tick would. */
+.opt{ border:1.5px solid var(--line); }
+.opt:hover{ border-color:var(--ink); }
+.opt .lab{ color:var(--star); font-family:var(--f-sans); }
+.opt.picked{ border-color:var(--brand); background:var(--neg-bg); }
+.opt.correct{ border-color:var(--pos); box-shadow:inset 3px 0 0 var(--pos); }
+.opt.correct .lab{ color:var(--pos); }
+.opt.wrong{ border-color:var(--neg); box-shadow:inset 3px 0 0 var(--neg); }
+.opt.wrong .lab{ color:var(--neg); }
+
+.fb{ border-radius:2px; }
+.fb.r{ border-left:3px solid var(--pos); }
+.fb.w{ border-left:3px solid var(--neg); }
+
+.ov-stat{ border:1.5px solid var(--ink); border-radius:2px; box-shadow:var(--shadow-1); }
+.ov-stat b{ font-weight:600; }
+.ov-topic-bar{ border:1px solid var(--line); border-radius:2px; background:var(--surface-2); }
+.prog{ border:1px solid var(--line); border-radius:2px; background:var(--surface-2); }
+.prog > i{ background:var(--brand); }
+
+.examrow{ border:1.5px solid var(--line); }
+.examrow.wrong{ border-color:var(--neg); }
+.examrow.right{ border-color:var(--pos); }
+
+.banner{ border:1.5px solid #d9c489; border-radius:2px; }
+.chapter-select{ border:1.5px solid var(--ink); border-radius:2px; background:var(--surface); }
+.tab-more-menu{ border:1.5px solid var(--ink); border-radius:2px; box-shadow:var(--shadow-1); }
+
+table.qtbl th, table.qtbl td{ border-color:var(--line); }
+table.qtbl th{ background:var(--surface-2); font-family:var(--f-sans); }
+
+/* ----------------------------------------------------------------------------
+   The Progress tab keeps its own dark pixel world — it is deliberately a
+   different place, and switching to it should feel like leaving the paper.
+   The one concession: give the Overview strip the same hard offset shadow as
+   every other card, so it sits ON the sheet rather than floating above it.
+   -------------------------------------------------------------------------- */
+.g-strip{ box-shadow:0 0 0 3px var(--px-line), var(--shadow-1); }
