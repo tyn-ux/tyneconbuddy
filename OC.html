@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>When does opportunity cost change?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,800&family=Public+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17211c; --muted:#5b6861; --paper:#f5f7f4; --card:#ffffff; --line:#d7dfd9;
+  --ferry:#1e5e47; --ferry-soft:#e2eee7; --harbour:#274a61; --harbour-soft:#e4ecf2;
+  --buoy:#dfa91f; --buoy-soft:#fbf0cf; --trap:#b0372c; --trap-soft:#f8e2de;
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"Literata",Georgia,serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:740px;margin:0 auto;padding:40px 20px 120px}
+h1,h2,h3{font-family:var(--serif);line-height:1.2;margin:0}
+h1{font-size:clamp(34px,7vw,52px);font-weight:800;letter-spacing:-.015em}
+h2{font-size:26px;font-weight:800;margin:0 0 6px}
+h3{font-size:19px;font-weight:600;margin:22px 0 6px}
+p{margin:0 0 12px}
+.sub{color:var(--muted);font-size:16px;margin:10px 0 22px}
+a{color:var(--harbour)}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;font-size:15px}
+button:hover{border-color:var(--ferry)}
+button:focus-visible,input:focus-visible,summary:focus-visible,textarea:focus-visible{outline:3px solid var(--buoy);outline-offset:2px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 30px}
+.toolbar button.on{background:var(--ferry);border-color:var(--ferry);color:#fff}
+
+.voice{border-left:4px solid var(--harbour);background:var(--harbour-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:18px 0;color:#1d3a4d}
+
+.stage{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin:10px 0 16px}
+.stage-head{font-size:14.5px;color:var(--muted);margin-bottom:12px}
+.ladder{display:flex;flex-direction:column;gap:8px}
+.rung{display:grid;grid-template-columns:46px 1fr 170px 64px;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;transition:background .25s,border-color .25s}
+.rung .rank{font-family:var(--serif);font-weight:800;font-size:18px;color:var(--muted)}
+.rung .rname strong{display:block;font-weight:700;line-height:1.35}
+.rung .rtag{font-size:13px;color:var(--muted)}
+.rung .pick{font-size:13.5px;color:var(--harbour);display:inline-flex;gap:4px;align-items:center;margin-top:2px;cursor:pointer}
+.rung output{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.rung input[type=range]{width:100%;accent-color:var(--harbour)}
+.rung.chosen{border-left:7px solid var(--ferry);background:var(--ferry-soft)}
+.rung.chosen .rtag{color:var(--ferry);font-weight:700}
+.rung.best{background:var(--buoy-soft);border-color:var(--buoy)}
+.rung.best .rtag{color:#7a5a05;font-weight:700}
+.ladder-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 8px}
+.ladder-sum div{border-radius:10px;padding:10px 12px;background:var(--paper)}
+.ladder-sum b{display:block;font-size:22px;font-variant-numeric:tabular-nums;font-family:var(--serif)}
+.ladder-sum small{color:var(--muted)}
+.verdict-line{font-size:15px;margin:6px 0 0}
+.ladder-log{min-height:3.2em;margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--harbour-soft);color:#1d3a4d;font-size:15.5px}
+.small-btn{font-size:13.5px;padding:5px 10px}
+@media (max-width:560px){
+  .rung{grid-template-columns:40px 1fr 56px}
+  .rung input[type=range]{grid-column:1/-1}
+}
+
+.sit{margin:56px 0 0;padding-top:26px;border-top:2px solid var(--ink)}
+.sit-no{font-family:var(--serif);font-size:16px;color:var(--ferry);font-weight:600;margin-bottom:4px}
+details{border:1px solid var(--line);border-radius:10px;background:var(--card);margin:10px 0}
+details>summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none;display:flex;gap:10px;align-items:center}
+details>summary::-webkit-details-marker{display:none}
+details>summary::after{content:"+";margin-left:auto;color:var(--muted);font-weight:400;font-size:20px}
+details[open]>summary::after{content:"\2212"}
+details>.in{padding:0 16px 14px}
+.lab{font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;color:#fff;flex:none}
+.lab.story{background:var(--harbour)} .lab.exam{background:var(--ferry)}
+.date{font-variant-numeric:tabular-nums;font-weight:700;color:var(--harbour)}
+
+.predict{background:var(--card);border:2px dashed var(--harbour);border-radius:12px;padding:16px;margin:16px 0}
+.predict .q{font-weight:700;margin-bottom:10px}
+.predict .q::before{content:"What do you think? ";color:var(--harbour)}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opts.col{flex-direction:column}
+.opts.col button{text-align:left}
+.opts button.right{background:var(--ferry-soft);border-color:var(--ferry);font-weight:700}
+.opts button.wrong{background:var(--trap-soft);border-color:var(--trap)}
+.predict .after{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.predict.done .after{display:block}
+.predict .verdict{font-weight:700;margin-bottom:6px}
+
+.rule{background:var(--ferry);color:#fff;border-radius:12px;padding:16px 18px;margin:16px 0}
+.rule .rk{font-size:13px;opacity:.8;margin-bottom:4px}
+.rule p{margin:0;font-size:16.5px;line-height:1.6}
+.rule .gloss{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.3);font-size:15.5px}
+body.show-plain .rule .gloss{display:block}
+
+.trapbox{background:var(--trap-soft);border-left:4px solid var(--trap);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.trapbox b{color:var(--trap)}
+
+.bars{margin:12px 0}
+.barrow{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin:6px 0}
+.barrow .bl{font-size:13.5px;color:var(--muted);text-align:right}
+.track{display:flex;height:34px;border-radius:7px;overflow:hidden;background:var(--paper);border:1px solid var(--line)}
+.seg{display:flex;align-items:center;justify-content:center;font-size:12.5px;color:#fff;white-space:nowrap;overflow:hidden;padding:0 6px}
+.seg.money{background:var(--harbour)} .seg.time{background:var(--ferry)} .seg.risk{background:var(--trap)} .seg.forgo{background:#8a7a4a}
+.note{font-size:13px;color:var(--muted)}
+
+.steps{counter-reset:s;list-style:none;padding:0;margin:14px 0}
+.steps li{counter-increment:s;position:relative;padding:12px 14px 12px 52px;border:1px solid var(--line);background:var(--card);border-radius:10px;margin:8px 0}
+.steps li::before{content:counter(s);position:absolute;left:14px;top:11px;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:700}
+.reveal{display:inline-block;margin-top:6px;border:0;border-bottom:2px dotted var(--harbour);color:var(--harbour);cursor:pointer;background:none;border-radius:0;padding:0}
+.reveal-body{display:none;margin-top:6px}
+.reveal-body.shown{display:block}
+table{border-collapse:collapse;width:100%;font-size:15px;background:#fff}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--paper)}
+td.up{color:var(--trap);font-weight:700} td.down{color:var(--harbour);font-weight:700} td.same{color:var(--muted);font-weight:700}
+
+#drill{margin-top:60px;padding:24px 18px;background:var(--ink);color:#eef2ef;border-radius:16px}
+#drill h2{color:#fff}
+#drill .sub{color:#b8c4bd}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 16px}
+.chips button{background:transparent;color:#dfe7e2;border-color:#4a5a52;font-size:14px;padding:5px 10px}
+.chips button.on{background:var(--buoy);color:var(--ink);border-color:var(--buoy);font-weight:700}
+.qcard{background:#fff;color:var(--ink);border-radius:12px;padding:18px}
+.pref{margin:8px 0 12px;padding:0;list-style:none}
+.pref li{padding:6px 10px;border:1px solid var(--line);border-radius:8px;margin:4px 0;font-size:15.5px}
+.pref li.asked{border-left:6px solid var(--ferry);background:var(--ferry-soft);font-weight:700}
+.event{background:var(--buoy-soft);border-radius:8px;padding:10px 12px;margin:10px 0;font-weight:700}
+.qcard textarea{width:100%;min-height:64px;font:inherit;font-size:15.5px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin:6px 0 10px;resize:vertical}
+.fb{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.fb.shown{display:block}
+.fb .cat{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--harbour);color:#fff;margin-bottom:6px}
+.model{background:var(--paper);border-radius:8px;padding:12px 14px;font-size:15.5px;margin-top:8px}
+.mk{display:inline-block;font-size:11.5px;font-weight:700;color:#fff;background:var(--ferry);border-radius:5px;padding:0 6px;margin:0 3px;vertical-align:1px}
+.drill-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.drill-bar .score{margin-left:auto;font-variant-numeric:tabular-nums;color:#dfe7e2}
+.drill-bar button.primary{background:var(--buoy);border-color:var(--buoy);color:var(--ink);font-weight:700}
+.drill-bar button.ghost{background:transparent;color:#eef2ef;border-color:#4a5a52}
+.ai-note{font-size:13.5px;color:#b8c4bd;margin-top:8px;min-height:1.4em}
+.watch{font-size:14px;color:var(--trap);margin:4px 0 0}
+
+footer{margin-top:50px;font-size:13.5px;color:var(--muted)}
+footer li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>When does opportunity cost change?</h1>
+  <p class="sub">Changes in opportunity cost | Textbook Section 1.3C (p.15–21): five situations, one question</p>
+  <div class="toolbar">
+    <button id="plainBtn" type="button">Show plain-words version of rules</button>
+    <button id="openBtn" type="button">Open all stories</button>
+    <a href="#drill"><button type="button">Go to practice</button></a>
+  </div>
+</header>
+
+<div class="voice">🎙️ — Don't memorise the table yet. The summary table on p.21 has more than ten rows. If you memorise it, you will mix it up. Today we use five real events to understand one idea: <b>cost is what you give up to get your choice.</b> Remember this, and you can build the whole table yourself.</div>
+
+<!-- ========== HERO LADDER ========== -->
+<section aria-labelledby="lad-h">
+  <h2 id="lad-h">Try it first: the cost ladder</h2>
+  <p>On the night of 4 February 2024, Inter Miami played a Hong Kong team at Hong Kong Stadium. Think of a fan with three options. Each slider shows how much an option is worth to the fan (the numbers are only examples). <b>Green</b> is the option the fan chose. <b>Yellow</b> is the cost: the highest-valued option forgone.</p>
+  <div class="stage">
+    <div class="stage-head">Move a slider and let go. Then read the explanation below. You can also click "Choose this" to see what happens when the chosen option is not the top choice.</div>
+    <div id="heroLadder"></div>
+    <button type="button" class="small-btn" id="heroReset" style="margin-top:10px">Reset</button>
+  </div>
+  <div class="voice">🎙️ — Try three things. ① Move "Watch the match" down to $450. Does the yellow box change? ② Move "Part-time job" up to $650. What happens? ③ Move "Dinner with family" up to $550. How does the order change? After this, read the five situations. You will find you have already discovered most of them.</div>
+</section>
+
+<!-- ========== SITUATION 1 ========== -->
+<section class="sit" id="s1">
+  <div class="sit-no">Situation 1</div>
+  <h2>The value of the chosen option changes</h2>
+
+  <details open>
+    <summary><span class="lab story">Story</span>The night 40,000 people shouted "refund"</summary>
+    <div class="in">
+      <p><span class="date">4 February 2024</span>, Hong Kong Stadium. Inter Miami came to Hong Kong on its pre-season tour to play a team of Hong Kong league players. About 40,000 tickets sold out fast. The cheapest ticket was HK$880. The most expensive was almost HK$5,000. Most people bought tickets to see Lionel Messi.</p>
+      <p>Messi had a hamstring injury. He sat on the bench for all 90 minutes. Luis Suárez did not play either. At the end, fans shouted "refund", and David Beckham was booed when he thanked the crowd. The government said it was very disappointed. The organiser, Tatler Asia, withdrew its application for HK$16 million of government funding. Later it offered a 50% refund to fans who bought tickets through official channels.</p>
+    </div>
+  </details>
+
+  <div class="predict" data-correct="U">
+    <p class="q">A fan already has a ticket and is sitting in the stadium. Because Messi does not play, "watching this match" is worth much less to the fan. What happens to the opportunity cost of watching the match?</p>
+    <div class="opts">
+      <button type="button" data-a="I">It increases</button>
+      <button type="button" data-a="D">It decreases</button>
+      <button type="button" data-a="U">It stays the same</button>
+    </div>
+    <div class="after">
+      <p class="verdict"></p>
+      <p>It stays the same. To watch the match, the fan gave up two things: the ticket money, and the best other use of that evening (for example, a part-time job). Whether Messi plays or not changes what the fan <b>gets</b>, not what the fan <b>gives up</b>. The value of the chosen option is the benefit, not the cost.</p>
+      <p>So why did so many fans feel they "lost"? Because the benefit fell below the cost. If they had known, they would have chosen the job instead. <b>Feeling that you lost comes from comparing cost and benefit. It does not mean the cost went up.</b></p>
+    </div>
+  </div>
+
+  <div class="rule">
+    <div class="rk">Exam-precise rule</div>
+    <p>A change in the value of the chosen option will <b>not</b> affect the opportunity cost of choosing it, because the value of the highest-valued option forgone is not affected. It only affects the <b>benefit</b> of the choice, which matters in cost-benefit analysis.</p>
+    <p class="gloss">In plain words: if your choice becomes better or worse, the best thing you gave up has not changed. So the cost stays the same. Only the benefit changes.</p>
+  </div>
+
+  <div class="trapbox"><b>Common mistake:</b> "If the chosen option falls below the second choice, the cost changes." Wrong. Even if watching the match falls to $300, below the $500 job, the cost is still $500. The only change is that the cost is now bigger than the benefit, so a rational person would not choose it again.</div>
+
+  <div class="predict" data-correct="D">
+    <p class="q">Now look at it another way. Tatler later gave a 50% refund. For a fan who gets the refund, what happens to the cost of having watched the match?</p>
+    <div class="opts">
+      <button type="button" data-a="I">It increases</button>
+      <button type="button" data-a="D">It decreases</button>
+      <button type="button" data-a="U">It stays the same</button>
+    </div>
+    <div class="after">
+      <p class="verdict"></p>
+      <p>It decreases. The refund does not change the value of watching the match. It reduces the <b>money</b> the fan paid for it. Money cost goes down, so the full cost goes down. This is not Situation 1 anymore. It is <a href="#s2">Situation 2</a>. One news story, two different economics questions.</p>
+      <p>Think further: reports said fans had to agree not to take legal action in order to get the refund. Does "accepting the refund" have its own opportunity cost? What does the fan give up?</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SITUATION 2 ========== -->
+<section class="sit" id="s2">
+  <div class="sit-no">Situation 2</div>
+  <h2>The money or time spent on the chosen option changes</h2>
+
+  <details open>
+    <summary><span class="lab story">Story A</span>Five cents and a riot: the 1966 Star Ferry fare rise</summary>
+    <div class="in">
+      <p>The Cross-Harbour Tunnel did not open until 1972. In the 1960s, most people crossed the harbour by ferry. From 1946, the Star Ferry first-class fare was 20 cents, and the second-class fare was 10 cents. In <span class="date">April 1966</span>, the government approved a rise in the first-class fare to 25 cents. The second-class fare stayed the same.</p>
+      <p>A young man called So Sau-chung went on a hunger strike at the Star Ferry pier to protest. He was arrested the next day. Riots then broke out in Kowloon for several nights, and the government ordered a curfew. Historians generally say the fare rise was only the spark. People were also angry about poverty, corruption and colonial rule. So do not say "five cents made people riot". That is too simple.</p>
+    </div>
+  </details>
+
+  <div class="predict" data-correct="I">
+    <p class="q">A clerk takes the Star Ferry first class to work every day. The boat and the journey time are the same as before. What happens to the opportunity cost of taking first class?</p>
+    <div class="opts">
+      <button type="button" data-a="I">It increases</button>
+      <button type="button" data-a="D">It decreases</button>
+      <button type="button" data-a="U">It stays the same, because the service is the same</button>
+    </div>
+    <div class="after">
+      <p class="verdict"></p>
+      <p>It increases. The same service means the value (benefit) has not changed. But to choose first class, the clerk must now give up 5 more cents, which could have been used for something else. Money cost goes up, so full cost goes up.</p>
+      <div class="bars" id="barsFerry"></div>
+      <p class="note">The fares are the real prices. The size of the time cost is different for each person, so the bar width is only an example.</p>
+      <p>Think further: when the cost goes up, what do some people do? They switch to second class. The higher cost means the benefit is no longer bigger than the cost for some people. This is cost-benefit analysis in real life.</p>
+    </div>
+  </div>
+
+  <details>
+    <summary><span class="lab story">Story B</span>The 2022 World Cup final: extra time and penalties</summary>
+    <div class="in">
+      <p><span class="date">18 December 2022</span>, Lusail Stadium, Qatar. Argentina played France. The match started at 11 p.m. Hong Kong time. It was 2–2 after 90 minutes and 3–3 after extra time. Argentina won 4–2 on penalties. Many fans in Hong Kong expected to sleep before 1 a.m., but they watched until after 2 a.m.</p>
+    </div>
+  </details>
+
+  <div class="predict" data-correct="I">
+    <p class="q">A Hong Kong student stays up to watch the final. The student loves the extra time and thinks it was worth it. Because of extra time, what happens to the opportunity cost of watching the final?</p>
+    <div class="opts">
+      <button type="button" data-a="I">It increases</button>
+      <button type="button" data-a="U">It stays the same, because the student enjoyed it</button>
+      <button type="button" data-a="D">It decreases, because it was worth it</button>
+    </div>
+    <div class="after">
+      <p class="verdict"></p>
+      <p>It increases. The student spends more time on this choice. That time had a best other use (for example, sleeping before a test the next morning). More time means a higher time cost, so a higher opportunity cost. <b>Enjoying it is about the benefit.</b> Just like Situation 1, do not mix the two up.</p>
+      <div class="bars" id="barsFinal"></div>
+      <p class="note">Bar widths are only examples.</p>
+    </div>
+  </div>
+
+  <div class="rule">
+    <div class="rk">Exam-precise rule</div>
+    <p>When the expenses for the chosen option increase (decrease), the money cost and hence the opportunity cost of choosing it increase (decrease). When the time spent on the chosen option increases (decreases), the time cost and hence the opportunity cost increase (decrease).</p>
+    <p class="gloss">In plain words: if you must pay more money or spend more time to get your choice, you give up more, so the cost goes up. Time has a cost because you could use it for something else.</p>
+  </div>
+</section>
+
+<!-- ========== SITUATION 3 ========== -->
+<section class="sit" id="s3">
+  <div class="sit-no">Situation 3</div>
+  <h2>The value of the highest-valued option forgone changes</h2>
+
+  <details open>
+    <summary><span class="lab story">Story</span>1849: San Francisco Bay full of empty ships</summary>
+    <div class="in">
+      <p>In <span class="date">January 1848</span>, James Marshall found gold at Sutter's Mill in California. When the news spread, huge numbers of people rushed to California in 1849. This is called the Gold Rush.</p>
+      <p>Something strange happened in San Francisco. When ships sailed into the bay, their sailors left the ships and went to look for gold. Hundreds of empty ships sat in the bay. Records from that time say many shops closed and workers quit their jobs to go to the goldfields.</p>
+      <p>A sailor's job had not become worse. The pay had not fallen. So why did so many sailors stop working?</p>
+    </div>
+  </details>
+
+  <div class="predict" data-correct="I">
+    <p class="q">A sailor arrives in San Francisco in 1849. His best other option is "going to find gold". The expected reward from gold-digging rises a lot. What happens to the opportunity cost of "staying on the ship as a sailor"?</p>
+    <div class="opts">
+      <button type="button" data-a="I">It increases</button>
+      <button type="button" data-a="U">It stays the same, because the pay is the same</button>
+      <button type="button" data-a="D">It decreases</button>
+    </div>
+    <div class="after">
+      <p class="verdict"></p>
+      <p>It increases. Opportunity cost is the value of the highest-valued option forgone. When the best option given up becomes more valuable, the cost goes up with it. When the cost becomes bigger than the benefit of being a sailor, a rational sailor leaves the ship. <b>A job with exactly the same pay can become very costly because of changes outside the job.</b></p>
+      <p>Now the other way round: historians generally say that by the early 1850s, easy-to-find surface gold was running out, and individual miners earned less. What would happen then to the cost of doing other jobs in San Francisco?</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="stage-head">Try it: move "Go find gold" from low to high and watch the yellow box and the cost. Then move it below "Go back east for work". Where does the cost stop falling?</div>
+    <div id="goldLadder"></div>
+  </div>
+
+  <div class="rule">
+    <div class="rk">Exam-precise rule</div>
+    <p>When the value of the highest-valued option forgone increases (decreases), the opportunity cost increases (decreases).</p>
+    <p class="gloss">In plain words: the cost is the value of the best option you gave up. If that value moves, the cost moves in the same direction.</p>
+  </div>
+
+  <div class="trapbox"><b>Trap:</b> If the best option forgone falls a lot, the cost does not always fall that far. If it falls below the third option, the third option becomes the new highest-valued option forgone. The cost only falls to the value of the third option. You can see this in the ladder above.</div>
+</section>
+
+<!-- ========== SITUATION 4 ========== -->
+<section class="sit" id="s4">
+  <div class="sit-no">Situation 4</div>
+  <h2>The value of another option forgone (not the best one) changes</h2>
+
+  <details open>
+    <summary><span class="lab story">Story</span>March 2024: the Eras Tour's only Southeast Asia stop</summary>
+    <div class="in">
+      <p>From <span class="date">2 to 9 March 2024</span>, Taylor Swift played six Eras Tour shows at the National Stadium in Singapore. It was the tour's only stop in Southeast Asia, and many fans from nearby places flew there to watch.</p>
+      <p>The student below is made up so we can do the numbers, but the concert dates and place are real. On a weekend in early March, the student has three options: stay in Hong Kong and study for Monday's mock exam (chosen), hike the MacLehose Trail with friends, or fly to Singapore for the Eras Tour (no ticket at first, so its value is very low).</p>
+    </div>
+  </details>
+
+  <div class="predict" data-correct="M">
+    <p class="q">Suddenly the student wins a concert ticket in a lucky draw. "Fly to Singapore for the concert" becomes more valuable. What happens to the opportunity cost of "studying in Hong Kong"?</p>
+    <div class="opts">
+      <button type="button" data-a="I">It must increase</button>
+      <button type="button" data-a="U">It must stay the same</button>
+      <button type="button" data-a="M">It may not stay the same: it depends on whether it passes "hiking"</button>
+    </div>
+    <div class="after">
+      <p class="verdict"></p>
+      <p>"Fly to Singapore" was third, so it was not the cost. When it becomes more valuable, there are two possibilities. If it stays below "hiking", the best option forgone is still hiking, so the cost stays the same. If it goes above "hiking", it replaces hiking as the new highest-valued option forgone, so the cost increases. <b>So your answer must state the condition.</b> Try it in the ladder below.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="stage-head">Only "Fly to Singapore" can move. Push it up slowly. Watch when it passes "hiking", and what happens when it passes "studying".</div>
+    <div id="swiftLadder"></div>
+  </div>
+
+  <div class="rule">
+    <div class="rk">Exam-precise rule</div>
+    <p>When the value of another option forgone changes, the opportunity cost increases <b>only if</b> that option replaces the original highest-valued option forgone.<br>Decrease → not affected. Increase → may increase, depending on whether the order of preference changes.</p>
+    <p class="gloss">In plain words: if a lower option becomes worse, it can never become the best option given up, so the cost stays the same. If it becomes better, check whether it moves above the best option given up.</p>
+  </div>
+
+  <div class="trapbox"><b>DSE wording trap:</b> The question asks, "Will the opportunity cost <b>necessarily</b> remain unchanged?" If the cost <i>may</i> increase, the answer is <b>No</b>: "It does not necessarily remain unchanged." Many students see "may not change" and answer Yes. They lose all the marks.</div>
+</section>
+
+<!-- ========== SITUATION 5 ========== -->
+<section class="sit" id="s5">
+  <div class="sit-no">Situation 5</div>
+  <h2>The risk of something bad happening changes</h2>
+
+  <details open>
+    <summary><span class="lab story">Story</span>The 2013 "killer pitch" at Hong Kong Stadium</summary>
+    <div class="in">
+      <p>In <span class="date">July 2013</span>, Hong Kong Stadium held five international football matches in a few days, including the Barclays Asia Trophy. There was also very heavy rain. The grass turned into mud. Tottenham defender Jan Vertonghen hurt his ankle and was carried off on a stretcher. Sunderland manager Paolo Di Canio called it a "killer pitch".</p>
+      <p>Manchester United were due to play Kitchee there on <span class="date">29 July</span>. Manager David Moyes said in public that he was worried about the pitch. The team cancelled an open training session, and people feared the match might be cancelled. On the day, United checked the pitch, agreed to play, and won 5–2. After the match, the pitch was closed for repair until September, and the government department in charge had to review how it looked after the grass.</p>
+      <p>HKDSE 2014 Paper 1 Question 1 was based on this news.</p>
+    </div>
+  </details>
+
+  <div class="predict mc" data-correct="A">
+    <p class="q">(Adapted from HKDSE 2014 Paper 1 Q1) If Manchester United decide to play on this bad pitch, the opportunity cost of playing will ____, because ____.</p>
+    <div class="opts col">
+      <button type="button" data-a="A" data-why="Correct. The bad pitch raises the risk that players get injured. Playing may mean giving up more money (medical costs, injured players missing games) and non-money resources (health). Higher risk means higher cost.">A. increase … the players are more likely to get injured</button>
+      <button type="button" data-a="B" data-why="Right direction, wrong reason. Playing badly affects the value of playing, which is the benefit. That is Situation 1, so it does not change the cost.">B. increase … the team may play worse</button>
+      <button type="button" data-a="C" data-why="The travel costs were already paid. They are a historical cost, so they do not matter to the decision now. That part is true. But 'something irrelevant did not change' does not mean 'the cost did not change'. The risk changed.">C. stay the same … the travel costs were already paid</button>
+      <button type="button" data-a="D" data-why="The players stay in Hong Kong for the same time, so the time cost is the same. But cost is not only time. The risk of injury went up.">D. stay the same … the players stay in Hong Kong for the same length of time</button>
+    </div>
+    <div class="after"><p class="verdict"></p><p class="why"></p></div>
+  </div>
+
+  <div class="bars" id="barsPitch"></div>
+  <p class="note">Example only: the cost of playing = the best other option given up + the expected loss from injuries. Bar widths are not real numbers.</p>
+
+  <div class="rule">
+    <div class="rk">Exam-precise rule</div>
+    <p>When the risk of undesired events arising from choosing an option increases (decreases), the opportunity cost of choosing it increases (decreases), as the decision maker may have to give up more money or non-money resources (e.g., safety and health).</p>
+    <p class="gloss">In plain words: if something bad is more likely to happen after you choose, you may lose more money, health or safety. So the cost goes up.</p>
+  </div>
+</section>
+
+<!-- ========== FRAMEWORK ========== -->
+<section class="sit" id="framework">
+  <div class="sit-no">Putting it together</div>
+  <h2>Build the summary table yourself</h2>
+  <p>All five situations can be reduced to one question. Don't click yet. What is the question?</p>
+  <button type="button" class="reveal" data-target="oneQ">Click when you have an idea</button>
+  <div class="reveal-body" id="oneQ">
+    <div class="voice">🎙️ — "Has what I give up to get my choice changed?" There are two kinds of things you give up. First, what you pay for your choice: money, time and risk. Second, the best option you cannot have because of your choice. If a change does not touch either of these, the cost does not change.</div>
+  </div>
+
+  <h3>The order of questions to ask yourself in the exam</h3>
+  <ol class="steps">
+    <li>First, find <b>the option the question asks about</b>, and <b>the most valuable of the other options</b>. The option asked about is not always the top choice.</li>
+    <li>Does the change affect the value of the chosen option itself?<br><button type="button" class="reveal" data-target="r2">Answer</button><span class="reveal-body" id="r2">→ The cost stays the same. The benefit changes. (Situation 1)</span></li>
+    <li>Does the change mean you pay more or less money, time or risk for the chosen option?<br><button type="button" class="reveal" data-target="r3">Answer</button><span class="reveal-body" id="r3">→ The cost changes in the same direction. (Situations 2 and 5)</span></li>
+    <li>Does the change affect the highest-valued option forgone?<br><button type="button" class="reveal" data-target="r4">Answer</button><span class="reveal-body" id="r4">→ The cost changes in the same direction. If it falls below the third option, the cost only falls to the value of the third option. (Situation 3)</span></li>
+    <li>Does the change affect another option forgone?<br><button type="button" class="reveal" data-target="r5">Answer</button><span class="reveal-body" id="r5">→ If it falls: no change. If it rises: check whether it passes the best option forgone, so the cost "does not necessarily remain unchanged". (Situation 4)</span></li>
+    <li>Is the change about money or resources already used that cannot be got back?<br><button type="button" class="reveal" data-target="r6">Answer</button><span class="reveal-body" id="r6">→ This is a historical cost, not a cost of the decision. No change. (Textbook 1.3D, p.23. DSE MC questions often use this as a wrong option.)</span></li>
+  </ol>
+
+  <h3>Answer structure: "Explain whether the opportunity cost of X will change"</h3>
+  <p>Based on the usual HKDSE marking logic, each part is often worth 2–3 marks, roughly like this:</p>
+  <table>
+    <tr><th>Step</th><th>What to write</th><th>Mark</th></tr>
+    <tr><td>State</td><td>Give a clear conclusion: will increase / will decrease / will remain unchanged / does not necessarily remain unchanged (may increase)</td><td>1</td></tr>
+    <tr><td>Explain</td><td>Say what the change affects: the value of the chosen option / money or time cost / the value of the highest-valued option forgone (name the option) / another option forgone / risk</td><td>1</td></tr>
+    <tr><td>Link</td><td>Link back to the definition: because opportunity cost is the value of the highest-valued option forgone. For Situation 4, state the condition: "if it replaces …, then …"</td><td>1 (3-mark questions)</td></tr>
+  </table>
+  <p class="note">Actual marks depend on the question and that year's marking scheme.</p>
+
+  <details>
+    <summary><span class="lab exam">Exam version</span>Summary table (compare with textbook p.21)</summary>
+    <div class="in">
+      <table>
+        <tr><th>Situation</th><th>Change</th><th>Effect on OC</th></tr>
+        <tr><td rowspan="2">Value of the chosen option</td><td>Increases</td><td class="same" rowspan="2">Not affected</td></tr>
+        <tr><td>Decreases</td></tr>
+        <tr><td rowspan="2">Expenses / time spent on the chosen option</td><td>Increase(s)</td><td class="up">Increases</td></tr>
+        <tr><td>Decrease(s)</td><td class="down">Decreases</td></tr>
+        <tr><td rowspan="2">Value of the highest-valued option forgone</td><td>Increases</td><td class="up">Increases</td></tr>
+        <tr><td>Decreases</td><td class="down">Decreases</td></tr>
+        <tr><td rowspan="3">Value of another option forgone</td><td>Decreases</td><td class="same">Not affected</td></tr>
+        <tr><td>Increases, does NOT replace the highest-valued option forgone</td><td class="same">Not affected</td></tr>
+        <tr><td>Increases and replaces it</td><td class="up">Increases</td></tr>
+        <tr><td rowspan="2">Risk of undesired events from choosing an option</td><td>Increases</td><td class="up">Increases</td></tr>
+        <tr><td>Decreases</td><td class="down">Decreases</td></tr>
+      </table>
+    </div>
+  </details>
+</section>
+
+<!-- ========== DRILL ========== -->
+<section id="drill" aria-labelledby="drill-h">
+  <h2 id="drill-h">Scenario practice</h2>
+  <p class="sub">Each time you click "Next question", a new question is built from a bank of Hong Kong scenarios. Write your reason in your own words first, then choose an answer. You can practise one situation at a time.</p>
+  <div class="chips" id="chips"></div>
+  <div class="qcard" id="qcard"></div>
+  <div class="drill-bar">
+    <button type="button" class="primary" id="nextBtn">Next question</button>
+    <button type="button" class="ghost" id="aiBtn">Make a new scenario with Claude</button>
+    <span class="score" id="score">Correct: 0 / 0</span>
+  </div>
+  <p class="ai-note" id="aiNote"></p>
+</section>
+
+<footer>
+  <p><b>Sources (for checking facts)</b></p>
+  <ul>
+    <li>Inter Miami in Hong Kong (2024): Al Jazeera, 5 Feb 2024; China Daily HK, 9 Feb 2024</li>
+    <li>Star Ferry fare rise (1966): SCMP Post Magazine, "The hunger striker who sparked April 1966 Star Ferry riots"; Gwulo: Old Hong Kong fare records</li>
+    <li>Hong Kong Stadium pitch (2013): Legislative Council Panel on Home Affairs paper CB(2)203/13-14(06); news.gov.hk, 29 July 2013</li>
+    <li>Gold Rush, 2022 World Cup final, Eras Tour in Singapore: general historical and match records</li>
+  </ul>
+  <p>All values are examples for teaching. Textbook reference: Chapter 1, Section 1.3C.</p>
+</footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+$('#plainBtn').addEventListener('click', e => {
+  const on = document.body.classList.toggle('show-plain');
+  e.currentTarget.classList.toggle('on', on);
+  e.currentTarget.textContent = on ? 'Hide plain-words version of rules' : 'Show plain-words version of rules';
+});
+let allOpen = false;
+$('#openBtn').addEventListener('click', e => {
+  allOpen = !allOpen;
+  document.querySelectorAll('.sit details').forEach(d => d.open = allOpen);
+  e.currentTarget.textContent = allOpen ? 'Close all stories' : 'Open all stories';
+});
+
+/* ---------- ladder ---------- */
+function makeLadder(root, cfg){
+  const init = cfg.options.map(o => ({...o}));
+  let opts = cfg.options.map(o => ({...o}));
+  let chosen = cfg.chosen;
+  const list = document.createElement('div'); list.className = 'ladder';
+  const sum = document.createElement('div'); sum.className = 'ladder-sum';
+  const verdict = document.createElement('p'); verdict.className = 'verdict-line';
+  const log = document.createElement('p'); log.className = 'ladder-log'; log.setAttribute('aria-live','polite');
+  const els = {};
+  const ranks = ['1st','2nd','3rd','4th'];
+
+  opts.forEach(o => {
+    const r = document.createElement('div'); r.className = 'rung';
+    const locked = cfg.editable && !cfg.editable.includes(o.id);
+    r.innerHTML = `<span class="rank"></span>
+      <div class="rname"><strong>${esc(o.name)}</strong><span class="rtag"></span>
+      ${cfg.canChoose ? `<br><label class="pick"><input type="radio" name="${cfg.id}-c" value="${o.id}"> Choose this</label>` : ''}</div>
+      <input type="range" min="${cfg.min||0}" max="${cfg.max||1000}" step="${cfg.step||10}" value="${o.value}" ${locked?'disabled':''} aria-label="Value of ${esc(o.name)}">
+      <output></output>`;
+    list.appendChild(r); els[o.id] = r;
+    const sl = r.querySelector('input[type=range]');
+    sl.addEventListener('input', () => { get(o.id).value = +sl.value; update(); });
+    sl.addEventListener('change', () => explain(o.id));
+    const rd = r.querySelector('input[type=radio]');
+    if (rd){
+      rd.checked = o.id === chosen;
+      rd.addEventListener('change', () => {
+        chosen = o.id; update(); const c = calc();
+        log.textContent = `You changed the chosen option to "${get(o.id).name}". Its opportunity cost is the most valuable of the other options: "${c.best.name}", which is $${c.oc}. Note: the option a question asks about is not always the top choice.`;
+        snap = snapshot();
+      });
+    }
+  });
+  root.append(list, sum, verdict, log);
+
+  function get(id){ return opts.find(x => x.id === id); }
+  function calc(){
+    const sorted = [...opts].sort((a,b) => b.value - a.value);
+    const best = sorted.filter(o => o.id !== chosen)[0];
+    const ch = get(chosen);
+    return {sorted, best, oc: best.value, benefit: ch.value, ch};
+  }
+  function snapshot(){ const c = calc(); return {oc:c.oc, bestId:c.best.id, bestName:c.best.name}; }
+  let snap;
+
+  function update(){
+    const c = calc();
+    c.sorted.forEach((o,i) => {
+      const r = els[o.id];
+      r.style.order = i;
+      r.querySelector('.rank').textContent = ranks[i];
+      r.querySelector('output').textContent = '$' + o.value;
+      r.classList.toggle('chosen', o.id === chosen);
+      r.classList.toggle('best', o.id === c.best.id);
+      r.querySelector('.rtag').textContent = o.id === chosen ? 'Chosen option (benefit)'
+        : o.id === c.best.id ? 'Highest-valued option forgone = the cost' : 'Other option forgone';
+    });
+    sum.innerHTML = `<div><small>Benefit: value of "${esc(c.ch.name)}"</small><b>$${c.benefit}</b></div>
+      <div><small>Opportunity cost: value of "${esc(c.best.name)}"</small><b>$${c.oc}</b></div>`;
+    verdict.innerHTML = c.benefit > c.oc
+      ? '✓ Benefit is bigger than cost: this is a rational choice.'
+      : '✗ Cost is not smaller than benefit: a rational person would switch to "' + esc(c.best.name) + '". But the cost itself has not changed because of this.';
+  }
+
+  function explain(id){
+    const before = snap, now = calc(), o = get(id);
+    const d = now.oc - before.oc;
+    const dir = d > 0 ? `goes up ($${before.oc} → $${now.oc})` : d < 0 ? `goes down ($${before.oc} → $${now.oc})` : `stays the same (still $${now.oc})`;
+    let m;
+    if (id === chosen) m = `You changed the value of the chosen option itself. That is the benefit, not the cost. The opportunity cost ${dir}. [Situation 1]`;
+    else if (before.bestId === id && now.best.id === id) m = `You changed the value of the highest-valued option forgone. The cost follows it: it ${dir}. [Situation 3]`;
+    else if (before.bestId !== id && now.best.id === id) m = `"${o.name}" has passed "${before.bestName}" and is now the highest-valued option forgone. The opportunity cost ${dir}. [Situation 4, Case B: the order changed]`;
+    else if (before.bestId === id && now.best.id !== id) m = `"${o.name}" fell below "${now.best.name}", so it is no longer the best option forgone. The cost only falls to the value of "${now.best.name}": it ${dir}. [Situation 3 trap]`;
+    else m = `"${o.name}" is only another option forgone. It has not passed "${now.best.name}", so the opportunity cost ${dir}. [Situation 4]`;
+    log.textContent = m;
+    snap = snapshot();
+  }
+
+  function reset(){
+    opts.forEach((o,i) => { o.value = init[i].value; els[o.id].querySelector('input[type=range]').value = o.value; });
+    chosen = cfg.chosen;
+    root.querySelectorAll('input[type=radio]').forEach(x => x.checked = x.value === chosen);
+    update(); snap = snapshot(); log.textContent = cfg.hint;
+  }
+  update(); snap = snapshot(); log.textContent = cfg.hint;
+  return {reset};
+}
+
+const hero = makeLadder($('#heroLadder'), {
+  id:'hero', canChoose:true, chosen:'match',
+  options:[
+    {id:'match', name:'Watch the match', value:700},
+    {id:'job', name:'Part-time job at a cha chaan teng', value:500},
+    {id:'dinner', name:'Dinner with family', value:300}
+  ],
+  hint:'Move any slider and let go. This box will tell you what happened and which situation it is.'
+});
+$('#heroReset').addEventListener('click', () => hero.reset());
+
+makeLadder($('#goldLadder'), {
+  id:'gold', chosen:'ship', max:2000, step:20,
+  options:[
+    {id:'ship', name:'Stay on the ship as a sailor', value:1000},
+    {id:'gold', name:'Go find gold', value:600},
+    {id:'home', name:'Go back east for work', value:400}
+  ],
+  hint:'The values are only examples. Try moving "Go find gold".'
+});
+
+makeLadder($('#swiftLadder'), {
+  id:'swift', chosen:'study', editable:['sg'], max:1500,
+  options:[
+    {id:'study', name:'Study in Hong Kong for the mock', value:1000},
+    {id:'hike', name:'Hike the MacLehose Trail with friends', value:600},
+    {id:'sg', name:'Fly to Singapore for the Eras Tour', value:300}
+  ],
+  hint:'"Fly to Singapore" is third now, so it is not the cost. Push it up and see when it starts to affect the cost.'
+});
+
+/* ---------- predict blocks ---------- */
+document.querySelectorAll('.predict').forEach(p => {
+  const ans = p.dataset.correct;
+  p.querySelectorAll('.opts button').forEach(b => b.addEventListener('click', () => {
+    if (p.classList.contains('done')) return;
+    p.classList.add('done');
+    p.querySelectorAll('.opts button').forEach(x => { if (x.dataset.a === ans) x.classList.add('right'); });
+    const ok = b.dataset.a === ans;
+    if (!ok) b.classList.add('wrong');
+    p.querySelector('.verdict').textContent = ok ? 'Correct. Check if your reason matches this:' : 'Not quite. Read the reason first, then compare with your idea:';
+    const why = p.querySelector('.why');
+    if (why) why.textContent = b.dataset.why + (ok ? '' : ' The correct answer is A: ' + p.querySelector('[data-a="A"]').dataset.why);
+  }));
+});
+
+document.querySelectorAll('.reveal').forEach(b => b.addEventListener('click', () => {
+  $('#' + b.dataset.target).classList.add('shown'); b.style.display = 'none';
+}));
+
+/* ---------- bars ---------- */
+function bars(el, rows, max){
+  el.innerHTML = rows.map(r => `<div class="barrow"><span class="bl">${r.label}</span><div class="track">${
+    r.segs.map(s => `<span class="seg ${s.k}" style="width:${s.v/max*100}%">${s.t}</span>`).join('')
+  }</div></div>`).join('');
+}
+bars($('#barsFerry'), [
+  {label:'Before', segs:[{k:'money',v:20,t:'Fare 20 cents'},{k:'time',v:30,t:'Time cost of crossing'}]},
+  {label:'After (1966)', segs:[{k:'money',v:25,t:'Fare 25 cents'},{k:'time',v:30,t:'Time cost of crossing'}]}
+], 60);
+bars($('#barsFinal'), [
+  {label:'Expected', segs:[{k:'time',v:50,t:'90 minutes + half-time'}]},
+  {label:'Actual', segs:[{k:'time',v:50,t:'90 minutes + half-time'},{k:'time',v:22,t:'Extra time + penalties'}]}
+], 80);
+bars($('#barsPitch'), [
+  {label:'Normal pitch', segs:[{k:'forgo',v:40,t:'Best other option'},{k:'risk',v:8,t:'Risk'}]},
+  {label:'2013 muddy pitch', segs:[{k:'forgo',v:40,t:'Best other option'},{k:'risk',v:34,t:'Injury risk ↑'}]}
+], 80);
+
+/* ---------- drill: scenario bank ---------- */
+const CTX = [
+  {
+    setup:'Ching has just finished the DSE and is planning her summer.',
+    c:'working as a part-time tutor in Tseung Kwan O',
+    b:'joining a university summer exchange tour to Seoul',
+    o:'staying at home playing video games',
+    ev:[
+      {t:'chosen_up', text:'The tutoring centre offers her a pay rise.', en:'The pay rise offered by the tutoring centre'},
+      {t:'chosen_down', text:'She finds the students difficult and does not enjoy the job.', en:'Her unhappiness with the difficult students'},
+      {t:'expense_up', text:'The tutoring centre asks tutors to buy teaching materials with their own money.', en:'The requirement to buy teaching materials at her own expense'},
+      {t:'time_up', text:'The tutoring centre asks her to arrive one hour early every day to prepare.', en:'The extra hour of preparation required each day'},
+      {t:'best_up', text:'The exchange tour now offers a full scholarship.', en:'The full scholarship offered for the exchange tour'},
+      {t:'best_down', text:'The exchange tour is cut from two weeks to three days.', en:'The shortening of the exchange tour'},
+      {t:'other_down', text:'Her game console breaks.', en:'The breakdown of her game console'},
+      {t:'other_up', text:'Her favourite video game releases a big update.', en:'The major update of her favourite video game'},
+      {t:'risk_up', text:'It is reported that the fire safety equipment in the tutoring centre\u2019s old building has not been repaired for years.', en:'The poor fire safety of the tutoring centre\u2019s building'},
+      {t:'sunk', text:'Last month she paid a $800 non-refundable registration fee for the exchange tour.', en:'The non-refundable $800 registration fee she paid last month'}
+    ]
+  },
+  {
+    setup:'Mrs Chan owns a shop in Sham Shui Po and uses it to run her own cha chaan teng.',
+    c:'running the cha chaan teng in her own shop',
+    b:'renting the shop out to someone else',
+    o:'selling the shop and putting the money in a bank',
+    ev:[
+      {t:'chosen_up', text:'The cha chaan teng appears on a TV food show, and business booms.', en:'The boom in business after a TV food show'},
+      {t:'chosen_down', text:'A fast-food chain opens next door and takes away customers.', en:'The competition from a new fast-food chain next door'},
+      {t:'expense_up', text:'The prices of frozen meat and eggs rise sharply.', en:'The rise in the prices of frozen meat and eggs'},
+      {t:'expense_down', text:'Her suppliers cut their prices.', en:'The fall in suppliers\u2019 prices'},
+      {t:'best_up', text:'Rents for similar shops in the district go up.', en:'The rise in the rental value of shops in the district'},
+      {t:'best_down', text:'Rents for shops in the district fall.', en:'The fall in the rental value of shops in the district'},
+      {t:'other_up', text:'Bank deposit interest rates rise sharply.', en:'The sharp rise in the deposit interest rate'},
+      {t:'other_down', text:'The market price of the shop falls.', en:'The fall in the market value of the shop'},
+      {t:'risk_up', text:'Hygiene inspections become stricter, and her kitchen has hygiene problems, so the risk of being prosecuted rises.', en:'The higher risk of prosecution due to stricter hygiene inspections'},
+      {t:'sunk', text:'She paid $3 million for the shop ten years ago.', en:'The $3 million she paid for the shop ten years ago'}
+    ]
+  },
+  {
+    setup:'Long plans to go to Cheung Chau during the Bun Festival to watch the Bun Scrambling Competition.',
+    c:'going to Cheung Chau to watch the Bun Scrambling Competition',
+    b:'working a weekend shift at a local Chinese restaurant',
+    o:'visiting Ocean Park',
+    ev:[
+      {t:'chosen_up', text:'This year\u2019s competition has a record attempt, so it is extra exciting.', en:'The more exciting competition this year'},
+      {t:'chosen_down', text:'Part of the festival parade is cancelled.', en:'The cancellation of part of the parade'},
+      {t:'expense_up', text:'The holiday ferry fare goes up.', en:'The increase in the holiday ferry fare'},
+      {t:'time_up', text:'He has to queue one extra hour at Central Pier to get on the ferry.', en:'The extra hour of queuing at the pier'},
+      {t:'best_up', text:'The restaurant raises its weekend hourly wage.', en:'The rise in the weekend hourly wage at the restaurant'},
+      {t:'best_down', text:'The restaurant cuts staff, so he can only work two hours.', en:'The cut in his working hours at the restaurant'},
+      {t:'other_up', text:'Ocean Park offers half-price tickets.', en:'The half-price ticket offer at Ocean Park'},
+      {t:'other_down', text:'His favourite ride at Ocean Park closes for repair.', en:'The closure of his favourite ride at Ocean Park'},
+      {t:'risk_up', text:'The Hong Kong Observatory issues the Very Hot Weather Warning.', en:'The Very Hot Weather Warning issued by the Hong Kong Observatory'},
+      {t:'risk_down', text:'The police add more crowd control, so the risk of crowd accidents falls.', en:'The stricter crowd control measures'}
+    ]
+  },
+  {
+    setup:'The government has a piece of land in the city and is thinking of using it to build a new public hospital.',
+    c:'building a new public hospital',
+    b:'building public housing',
+    o:'turning the site into a park',
+    ev:[
+      {t:'chosen_up', text:'The ageing population increases the demand for hospital services.', en:'The increased demand for hospital services due to an ageing population'},
+      {t:'chosen_down', text:'More people buy medical insurance and use private hospitals instead.', en:'The shift of more patients to private hospitals'},
+      {t:'expense_up', text:'The price of building materials rises.', en:'The rise in the price of building materials'},
+      {t:'best_up', text:'The waiting time for public housing becomes much longer.', en:'The longer waiting time for public housing'},
+      {t:'best_down', text:'The demand for public housing falls.', en:'The fall in demand for public housing'},
+      {t:'other_up', text:'Local residents strongly ask for more open space.', en:'The strong demand for more open space from local residents'},
+      {t:'other_down', text:'Another new park has just opened nearby.', en:'The opening of another new park nearby'},
+      {t:'risk_up', text:'A ground survey finds cavities under the site, so the risk of construction accidents rises.', en:'The discovery of underground cavities, raising the risk of construction accidents'},
+      {t:'sunk', text:'The government has already spent a lot of money on a feasibility study.', en:'The money already spent on the feasibility study'}
+    ]
+  }
+];
+
+const ANS = {chosen_up:'U',chosen_down:'U',expense_up:'I',expense_down:'D',time_up:'I',time_down:'D',
+  best_up:'I',best_down:'D',other_down:'U',other_up:'M',risk_up:'I',risk_down:'D',sunk:'U'};
+const GROUP = t => t.startsWith('chosen') ? 's1' : (t.startsWith('expense')||t.startsWith('time')) ? 's2'
+  : t.startsWith('best') ? 's3' : t.startsWith('other') ? 's4' : t.startsWith('risk') ? 's5' : 'sunk';
+const GROUP_LABEL = {s1:'Situation 1: value of the chosen option', s2:'Situation 2: money or time', s3:'Situation 3: best option forgone', s4:'Situation 4: another option forgone', s5:'Situation 5: risk', sunk:'Extension: historical cost'};
+const LABELS = {I:'Increase', D:'Decrease', U:'Unchanged', M:'Not necessarily unchanged (may increase)'};
+
+function why(t, c, b, o){
+  return {
+    chosen_up:`This change only makes "${c}" itself more valuable, which means the benefit goes up. The best option forgone, "${b}", has not changed, so the cost stays the same.`,
+    chosen_down:`This change only makes "${c}" itself less valuable, which means the benefit goes down. The best option forgone, "${b}", has not changed, so the cost stays the same. The person may regret the choice, but regret does not change the cost.`,
+    expense_up:`More money must be paid to choose "${c}". Money cost goes up, so full cost goes up.`,
+    expense_down:`Less money must be paid to choose "${c}". Money cost goes down, so full cost goes down.`,
+    time_up:`More time must be spent on "${c}", and that time had a best other use. Time cost goes up, so opportunity cost goes up.`,
+    time_down:`Less time must be spent on "${c}". Time cost goes down, so opportunity cost goes down.`,
+    best_up:`"${b}" is the highest-valued option forgone. Its value goes up, so the cost goes up with it.`,
+    best_down:`"${b}" is the highest-valued option forgone. Its value goes down, so the cost goes down. (If it falls below "${o}", the cost only falls to the value of "${o}".)`,
+    other_down:`"${o}" was never the best option forgone. If it becomes worse, it still cannot replace "${b}", so the cost stays the same.`,
+    other_up:`"${o}" becomes more valuable. If it becomes more valuable than "${b}", it replaces it as the new highest-valued option forgone, and the cost goes up. If not, the cost stays the same. So the answer is "not necessarily unchanged", and you must state the condition.`,
+    risk_up:`The risk of something bad happening after choosing "${c}" goes up. More money or non-money resources (like health and safety) may have to be given up, so the cost goes up.`,
+    risk_down:`The risk of something bad happening after choosing "${c}" goes down. Fewer resources are expected to be given up, so the cost goes down.`,
+    sunk:`This money was already spent and cannot be got back, whatever the choice. It is a historical cost and does not affect the decision now, so the cost stays the same.`
+  }[t];
+}
+function model(t, E, c, b, o){
+  const M = '<span class="mk">1 mark</span>';
+  return {
+    chosen_up:`The opportunity cost of ${c} will remain unchanged. ${M} ${E} only increases the value of the chosen option (i.e., its benefit), but does not affect the value of the highest-valued option forgone, i.e., ${b}. ${M}`,
+    chosen_down:`The opportunity cost of ${c} will remain unchanged. ${M} ${E} only decreases the value of the chosen option (i.e., its benefit), but does not affect the value of the highest-valued option forgone, i.e., ${b}. ${M}`,
+    expense_up:`The opportunity cost of ${c} will increase. ${M} ${E} increases the money expenses of ${c}. The money cost and hence the full cost increase. ${M}`,
+    expense_down:`The opportunity cost of ${c} will decrease. ${M} ${E} reduces the money expenses of ${c}. The money cost and hence the full cost decrease. ${M}`,
+    time_up:`The opportunity cost of ${c} will increase. ${M} ${E} increases the time spent on ${c}. As the extra time has a best alternative use, the time cost and hence the opportunity cost increase. ${M}`,
+    time_down:`The opportunity cost of ${c} will decrease. ${M} ${E} reduces the time spent on ${c}, so the time cost and hence the opportunity cost decrease. ${M}`,
+    best_up:`The opportunity cost of ${c} will increase. ${M} ${E} increases the value of the highest-valued option forgone, i.e., ${b}. ${M} As opportunity cost is the value of the highest-valued option forgone, it increases. ${M}`,
+    best_down:`The opportunity cost of ${c} will decrease. ${M} ${E} decreases the value of the highest-valued option forgone, i.e., ${b}. ${M} As opportunity cost is the value of the highest-valued option forgone, it decreases. ${M}`,
+    other_down:`The opportunity cost of ${c} will remain unchanged. ${M} ${E} only decreases the value of ${o}, which is not the highest-valued option forgone. It cannot replace ${b}, so the value of the highest-valued option forgone is unaffected. ${M}`,
+    other_up:`The opportunity cost of ${c} does not necessarily remain unchanged / may increase. ${M} ${E} increases the value of ${o}. ${M} If its value becomes higher than that of ${b}, ${o} will replace ${b} as the highest-valued option forgone, and the opportunity cost will increase. ${M}`,
+    risk_up:`The opportunity cost of ${c} will increase. ${M} ${E} increases the risk of undesired events arising from ${c}. The decision maker may have to give up more money or non-money resources (e.g., safety and health). ${M}`,
+    risk_down:`The opportunity cost of ${c} will decrease. ${M} ${E} reduces the risk of undesired events arising from ${c}, so fewer money or non-money resources are expected to be given up. ${M}`,
+    sunk:`The opportunity cost of ${c} will remain unchanged. ${M} ${E} is a historical cost which cannot be recovered whatever the choice, so it is irrelevant to the current decision. ${M}`
+  }[t];
+}
+
+/* ---------- drill: engine ---------- */
+let filter = 'all', cur = null, right = 0, total = 0, lastKey = '';
+const chipDefs = [['all','All'],['s1','Situation 1'],['s2','Situation 2'],['s3','Situation 3'],['s4','Situation 4'],['s5','Situation 5'],['sunk','Historical cost']];
+$('#chips').innerHTML = chipDefs.map(([k,l]) => `<button type="button" data-k="${k}" class="${k==='all'?'on':''}">${l}</button>`).join('');
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  filter = b.dataset.k;
+  $('#chips').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  nextQ();
+});
+
+function pickFromBank(){
+  const pool = [];
+  CTX.forEach((ctx,ci) => ctx.ev.forEach((ev,ei) => { if (filter==='all' || GROUP(ev.t)===filter) pool.push({ctx,ev,key:ci+'-'+ei}); }));
+  let p, tries = 0;
+  do { p = pool[Math.floor(Math.random()*pool.length)]; tries++; } while (p.key === lastKey && pool.length > 1 && tries < 10);
+  lastKey = p.key;
+  return {setup:p.ctx.setup, c:p.ctx.c, b:p.ctx.b, o:p.ctx.o, ev:p.ev, swap: Math.random() < 0.3};
+}
+
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+function renderQ(q){
+  cur = q;
+  const order = q.swap ? [['b',q.b],['c',q.c],['o',q.o]] : [['c',q.c],['b',q.b],['o',q.o]];
+  $('#qcard').innerHTML = `
+    <p>${esc(q.setup)} The order of preference is:</p>
+    <ul class="pref">${order.map(([k,x],i) => `<li class="${k==='c'?'asked':''}">${['1st','2nd','3rd'][i]}: ${esc(cap(x))}${k==='c'?' ← the question asks about this':''}</li>`).join('')}</ul>
+    ${q.swap ? '<p class="watch">Careful: the option asked about is not the top choice. The best option forgone is the one ranked first.</p>' : ''}
+    <div class="event">Now: ${esc(q.ev.text)}</div>
+    <p>What happens to the opportunity cost of ${esc(q.c)}?</p>
+    <label for="own" style="font-size:14px;color:var(--muted)">Write your reason in your own words first (not marked). Then choose.</label>
+    <textarea id="own" placeholder="For example: This change affects … so …"></textarea>
+    <div class="opts" id="ansOpts">${['I','D','U','M'].map(k => `<button type="button" data-a="${k}">${LABELS[k]}</button>`).join('')}</div>
+    <div class="fb" id="fb"></div>`;
+  $('#ansOpts').addEventListener('click', onAnswer);
+}
+
+function onAnswer(e){
+  const btn = e.target.closest('button'); if (!btn || !cur || cur.answered) return;
+  cur.answered = true;
+  const t = cur.ev.t, correct = ANS[t], a = btn.dataset.a;
+  $('#ansOpts').querySelectorAll('button').forEach(x => { if (x.dataset.a === correct) x.classList.add('right'); });
+  if (a !== correct) btn.classList.add('wrong'); else right++;
+  total++; $('#score').textContent = `Correct: ${right} / ${total}`;
+  $('#fb').innerHTML = `
+    <span class="cat">${GROUP_LABEL[GROUP(t)]}</span>
+    <p><b>${a===correct ? 'Correct. ' : 'Not correct. The answer is: ' + LABELS[correct] + '. '}</b>${esc(why(t, cur.c, cur.b, cur.o))}</p>
+    ${a !== correct && a==='U' && correct==='M' ? '<p class="watch">"May change" is not the same as "unchanged". If the question asks "necessarily", answer No.</p>' : ''}
+    ${a !== correct && t.startsWith('chosen') ? '<p class="watch">You may have mixed up benefit and cost. A change in the chosen option itself does not change what you give up.</p>' : ''}
+    ${a !== correct && t==='sunk' ? '<p class="watch">Money already spent that cannot be got back does not affect any choice now, so it is not a cost.</p>' : ''}
+    <div class="model"><b>Model answer</b> (marks shown using usual DSE marking logic)<br>${model(t, esc(cur.ev.en), esc(cur.c), esc(cur.b), esc(cur.o))}</div>
+    <p style="font-size:14px;color:var(--muted);margin-top:8px">Check your own reason: did you name the highest-valued option forgone? Did you say what the change affects?</p>`;
+  $('#fb').classList.add('shown');
+}
+
+function nextQ(){ renderQ(pickFromBank()); $('#aiNote').textContent = ''; }
+$('#nextBtn').addEventListener('click', nextQ);
+
+/* ---------- drill: AI-generated scenario ---------- */
+const TYPES = Object.keys(ANS);
+$('#aiBtn').addEventListener('click', async () => {
+  const note = $('#aiNote'), btn = $('#aiBtn');
+  const pool = filter === 'all' ? TYPES : TYPES.filter(t => GROUP(t) === filter);
+  const wanted = pool[Math.floor(Math.random()*pool.length)];
+  btn.disabled = true; note.textContent = 'Claude is writing a new scenario…';
+  const prompt = `You write practice scenarios for Hong Kong HKDSE Economics students on "changes in opportunity cost".
+Write in simple English that a secondary school student can read easily. Short sentences.
+Create ONE new everyday Hong Kong scenario (real Hong Kong places are fine; do NOT invent specific historical facts, dates or statistics).
+There are three options: c = the option being asked about (chosen option), b = the highest-valued option forgone, o = another (lower-valued) option forgone.
+Then write ONE change event of this exact type: "${wanted}".
+Type meanings: chosen_up/chosen_down = value of c rises/falls; expense_up/expense_down = money expenses of c rise/fall; time_up/time_down = time spent on c rises/falls; best_up/best_down = value of b rises/falls; other_up/other_down = value of o rises/falls; risk_up/risk_down = risk of undesired events from choosing c rises/falls; sunk = a past, unrecoverable expense related to the decision.
+Option names are short lowercase gerund phrases (e.g. "working as a part-time tutor"). "event_text" is one full sentence describing the change. "event_en" is a noun phrase starting with "The" that can begin a sentence in an exam answer.
+Respond ONLY with JSON, no markdown:
+{"setup":"One sentence introducing the person and situation.","c":"","b":"","o":"","event_text":"","event_en":"","type":"${wanted}"}`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user', content:prompt}]})
+    });
+    const data = await res.json();
+    const text = (data.content||[]).map(i => i.type==='text' ? i.text : '').join('\n').replace(/```json|```/g,'').trim();
+    const j = JSON.parse(text);
+    if (!TYPES.includes(j.type)) throw new Error('bad type');
+    renderQ({setup:j.setup, c:j.c, b:j.b, o:j.o, ev:{t:j.type, text:j.event_text, en:j.event_en}, swap:false});
+    note.textContent = 'Claude wrote this scenario just now. The answer and model answer come from fixed rules. Teachers: check that the scenario makes sense before using it.';
+  } catch(err){
+    nextQ();
+    note.textContent = 'AI scenarios only work when this file is opened inside Claude. A question from the bank is shown instead.';
+  } finally { btn.disabled = false; }
+});
+
+nextQ();
+</script>
+</body>
+</html>
