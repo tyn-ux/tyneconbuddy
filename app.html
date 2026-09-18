@@ -23,116 +23,82 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{
-  background:var(--bg); color:var(--ink); font-family:var(--f-serif);
-  line-height:1.6; -webkit-font-smoothing:antialiased;
-}
+body{background:var(--bg); color:var(--ink); font-family:var(--f-serif);
+     line-height:1.6; -webkit-font-smoothing:antialiased}
 
-/* The sheet has a marker's rule down its left edge, like a marked script. */
 .wrap{max-width:820px; margin:0 auto; padding:0 16px 80px}
-header{
-  background:var(--surface); border-bottom:1px solid var(--line);
-  border-left:3px solid var(--brand);
-  position:sticky; top:0; z-index:20;
-}
+header{background:var(--surface); border-bottom:1px solid var(--line);
+       border-left:3px solid var(--brand); position:sticky; top:0; z-index:20}
 .hd{max-width:820px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px}
-.hd h1{font-size:15px; margin:0; font-family:var(--f-sans); font-weight:600; letter-spacing:.01em}
+.hd h1{font-size:15px; margin:0; font-family:var(--f-sans); font-weight:600}
 .hd .sp{flex:1}
 .who{font-family:var(--f-sans); font-size:12px; color:var(--muted)}
 
 nav{display:flex; gap:2px; max-width:820px; margin:0 auto; padding:0 16px 8px; flex-wrap:wrap}
-nav button{
-  font-family:var(--f-sans); font-size:13px; padding:6px 12px; cursor:pointer;
-  background:transparent; border:1px solid transparent; border-radius:var(--r-sm); color:var(--muted);
-}
-nav button[aria-selected="true"]{background:var(--surface-2); border-color:var(--line); color:var(--ink); font-weight:600}
+nav button{font-family:var(--f-sans); font-size:13px; padding:6px 12px; cursor:pointer;
+           background:transparent; border:1px solid transparent; border-radius:var(--r-sm); color:var(--muted)}
+nav button[aria-selected="true"]{background:var(--surface-2); border-color:var(--line);
+                                 color:var(--ink); font-weight:600}
 
-.card{
-  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
-  box-shadow:var(--shadow-1); padding:18px; margin:16px 0;
-}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
+      box-shadow:var(--shadow-1); padding:18px; margin:16px 0}
 h2{font-family:var(--f-sans); font-size:14px; text-transform:uppercase; letter-spacing:.06em;
    color:var(--muted); margin:0 0 12px; font-weight:600}
 .muted{color:var(--muted); font-size:14px}
-.mono{font-family:var(--f-mono); font-size:12px; color:var(--muted)}
+.mono{font-family:var(--f-mono); font-size:12px; color:var(--muted); word-break:break-word}
 
-button.btn{
-  font-family:var(--f-sans); font-size:14px; font-weight:500; cursor:pointer;
+button.btn{font-family:var(--f-sans); font-size:14px; font-weight:500; cursor:pointer;
   padding:9px 16px; border:1px solid var(--line); border-radius:var(--r-sm);
-  background:var(--surface-2); color:var(--ink);
-}
+  background:var(--surface-2); color:var(--ink)}
 button.btn:hover{border-color:var(--ink)}
 button.btn.primary{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
-button.btn:disabled{opacity:.45; cursor:default}
 
-/* --- section list --- */
 .secgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px}
-.sec{
-  text-align:left; padding:10px 12px; background:var(--surface-2);
-  border:1px solid var(--line); border-radius:var(--r-sm); cursor:pointer;
-  font-family:var(--f-sans); font-size:13px; color:var(--ink);
-}
+.sec{text-align:left; padding:10px 12px; background:var(--surface-2);
+     border:1px solid var(--line); border-radius:var(--r-sm); cursor:pointer;
+     font-family:var(--f-sans); font-size:13px; color:var(--ink)}
 .sec:hover{border-color:var(--brand)}
 .sec small{display:block; color:var(--muted); font-size:11px; margin-top:2px}
 
-/* --- question --- */
-.qid{font-family:var(--f-mono); font-size:11px; color:var(--muted); letter-spacing:.03em}
+.qid{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
 .stem{font-size:17px; margin:10px 0 16px; white-space:pre-wrap}
 .stem img{max-width:100%; height:auto; border:1px solid var(--line); background:#fff}
-.opt{
-  display:flex; gap:10px; width:100%; text-align:left; align-items:flex-start;
+.opt{display:flex; gap:10px; width:100%; text-align:left; align-items:flex-start;
   padding:11px 13px; margin:6px 0; cursor:pointer; font-size:15px;
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm);
-  font-family:var(--f-serif); color:var(--ink);
-}
+  font-family:var(--f-serif); color:var(--ink)}
 .opt:hover{border-color:var(--ink)}
 .opt .lab{font-family:var(--f-mono); font-weight:600; color:var(--muted)}
 .opt.right{background:var(--pos-bg); border-color:var(--pos-line)}
 .opt.wrong{background:var(--neg-bg); border-color:var(--neg-line)}
 .opt:disabled{cursor:default}
-.why{
-  background:var(--surface-2); border-left:3px solid var(--star);
-  padding:12px 14px; margin-top:14px; font-size:15px;
-}
+.why{background:var(--surface-2); border-left:3px solid var(--star);
+     padding:12px 14px; margin-top:14px; font-size:15px}
 
-/* --- mistake book --- */
 .mrow{border-top:1px solid var(--line); padding:14px 0}
 .mrow:first-child{border-top:0}
 .mhead{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
-.pill{
-  font-family:var(--f-sans); font-size:11px; padding:2px 8px; border-radius:var(--r-sm);
-  border:1px solid var(--line); background:var(--surface-2); color:var(--muted);
-}
+.pill{font-family:var(--f-sans); font-size:11px; padding:2px 8px; border-radius:var(--r-sm);
+      border:1px solid var(--line); background:var(--surface-2); color:var(--muted)}
 .pill.understood{background:var(--pos-bg); border-color:var(--pos-line); color:var(--pos)}
 .pill.partly{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
 .pill.not{background:var(--neg-bg); border-color:var(--neg-line); color:var(--neg)}
-textarea{
-  width:100%; min-height:72px; margin-top:8px; padding:10px;
+textarea{width:100%; min-height:72px; margin-top:8px; padding:10px;
   font-family:var(--f-serif); font-size:15px; line-height:1.5; color:var(--ink);
-  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm);
-  resize:vertical;
-}
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); resize:vertical}
 .statusrow{display:flex; gap:6px; margin-top:8px; align-items:center; flex-wrap:wrap}
-.statusrow button{
-  font-family:var(--f-sans); font-size:12px; padding:5px 11px; cursor:pointer;
-  border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--muted);
-}
+.statusrow button{font-family:var(--f-sans); font-size:12px; padding:5px 11px; cursor:pointer;
+  border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--muted)}
 .statusrow button[aria-pressed="true"]{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
 
 .hide{display:none}
-.notice{background:var(--warn-bg); border:1px solid #dcc78a; padding:12px 14px;
-        border-radius:var(--r-sm); font-size:14px; margin:16px 0}
 
-/*
- * Printing is off. Only one question is ever in the DOM at a time, so even a
- * reader that ignores this rule cannot lift a set from the page.
- */
+/* Printing is off. Only one question is ever in the DOM at a time, so even a
+   reader that ignores this rule cannot lift a set from the page. */
 @media print{
   body *{display:none !important}
-  body::after{
-    content:"Printing is disabled. Use the mistake book to revise.";
-    display:block !important; font-family:sans-serif; padding:40px;
-  }
+  body::after{content:"Printing is disabled. Use the mistake book to revise.";
+              display:block !important; font-family:sans-serif; padding:40px}
 }
 </style>
 </head>
@@ -152,21 +118,18 @@ textarea{
 
 <div class="wrap">
 
-  <!-- ================= sign in ================= -->
   <div id="gate" class="card">
     <h2>Sign in</h2>
     <p class="muted">Questions load only after you sign in with your Google account.</p>
     <div id="gbtn"></div>
-    <p class="mono" id="gmsg"></p>
+    <p class="mono" id="gmsg">Loading Google Sign-In…</p>
   </div>
 
-  <!-- ================= drill ================= -->
   <div id="tab-drill" class="hide">
     <div id="picker" class="card">
       <h2>Choose a section</h2>
       <div class="secgrid" id="secgrid"></div>
     </div>
-
     <div id="qcard" class="card hide">
       <div class="qid" id="qid"></div>
       <div class="stem" id="stem"></div>
@@ -180,13 +143,11 @@ textarea{
     </div>
   </div>
 
-  <!-- ================= mistake book ================= -->
   <div id="tab-book" class="hide">
     <div class="card">
       <h2>錯題本</h2>
       <p class="muted">
-        每一條答錯過嘅題目都會永久留喺呢度，刪唔走。你可以寫低自己嘅理解，
-        同埋標返而家明唔明。<br>
+        每一條答錯過嘅題目都會永久留喺呢度，刪唔走。你可以寫低自己嘅理解，同埋標返而家明唔明。<br>
         <span class="mono">Write the idea in your own words — not the answer.</span>
       </p>
     </div>
@@ -197,8 +158,8 @@ textarea{
 
 <script>
 /* ============================================================================
-   CONFIG — the one line you may need to change.
-   This must be the /exec URL of the SAME Apps Script deployment Code.gs runs in.
+   CONFIG — must be the /exec URL of the SAME Apps Script deployment Code.gs
+   is deployed in, and the OAuth client the pages sign in with.
    ========================================================================== */
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec';
 const GOOGLE_CLIENT_ID = '533999025151-qf44e4dp2k7stspp5r6g8050ererf6st.apps.googleusercontent.com';
@@ -206,16 +167,16 @@ const GOOGLE_CLIENT_ID = '533999025151-qf44e4dp2k7stspp5r6g8050ererf6st.apps.goo
 const LAB = ['A','B','C','D','E'];
 const LABELS = {"scarcity": "Scarcity", "oppcost": "Opp. Cost", "goods": "Econ/Free", "types": "Types of Goods", "posnorm": "Pos/Normative", "property": "Property Rights", "economy": "Types of Economy", "interest": "Interest", "basic": "3 Basic Problems", "factors": "Factors", "dol": "Div. of Labour", "labprod": "Lab. Productivity", "labmob": "Lab. Mobility", "labsup": "Lab. Supply", "wage": "Wage Payment", "cprod": "Consumer/Producer", "typeprod": "Types of Prod.", "dimret": "Dim. Returns", "shortlong": "Short/Long Run", "scale": "Econ. of Scale", "expansion": "Expansion", "profitmax": "Profit Max.", "ownership": "Ownership", "sharesbonds": "Shares & Bonds", "pubpriv": "Public/Private", "supdem": "Supply & Demand", "relprice": "Relative Price", "elasticity": "Elasticity", "shortsurp": "Shortage/Surplus", "funcprice": "Function of Price", "market": "Market Structures", "efficiency": "Efficiency", "extern": "Externalities", "equity": "Equity", "tax": "Tax", "sub": "Subsidy", "quo": "Quota", "flr": "Floor", "cel": "Ceiling", "prp": "P-R-P", "fm": "F-M", "Efficiency": "Efficiency", "Externalities": "Externalities", "Equity": "Equity", "Principles of Taxation": "Principles of Taxation", "Circular Flow": "Circular Flow", "GNP / GNI": "GNP / GNI", "Real / Nominal GDP": "Real / Nominal GDP", "AD-AS": "AD-AS", "Problems of Barter": "Problems of Barter", "Functions of Money": "Functions of Money", "Properties of Good Money": "Properties of Good Money", "Banking System": "Banking System", "Liquidity": "Liquidity", "M1 / M2 / M3": "M1 / M2 / M3", "Function of HKMA": "Function of HKMA", "Deposit Creation / Contraction": "Deposit Creation / Contraction", "Monetary Base": "Monetary Base", "Money Demand": "Money Demand", "Money Market Equilibrium": "Money Market Equilibrium", "Quantity Theory of Money": "Quantity Theory of Money", "Business Cycle": "Business Cycle", "Inflation / Deflation": "Inflation / Deflation", "Nominal / Real Interest Rate": "Nominal / Real Interest Rate", "Unemployment": "Unemployment", "Int'l Trade (Calculation)": "Int'l Trade (Calculation)", "Int'l Trade (Concept)": "Int'l Trade (Concept)", "Trade Barriers": "Trade Barriers", "Balance of Payments": "Balance of Payments", "Exchange Rate": "Exchange Rate", "Linked Exchange Rate": "Linked Exchange Rate"};
 
-let SESS = null;          // session token from the backend
-let PROFILE = null;
+let SESS = null, PROFILE = null;
 let QUEUE = [], POS = 0, SECTION = null;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const msg = t => { $('gmsg').textContent = t; };
 
 /* --------------------------------------------------------------- transport */
-/* Reads go out as JSONP: Apps Script does not answer CORS preflight, so a
-   normal fetch can never read the reply. */
+/* Reads go out as JSONP: Apps Script does not answer CORS preflight, so an
+   ordinary fetch could never read the reply. */
 function jsonp(params, cb, ms){
   const fn = '__cb' + Math.random().toString(36).slice(2);
   let done = false;
@@ -230,8 +191,7 @@ function jsonp(params, cb, ms){
   setTimeout(() => finish(null), ms || 12000);
 }
 
-/* Writes are fire-and-forget. We cannot read the reply, and we do not need to:
-   nothing the student sees depends on the write landing. */
+/* Writes are fire-and-forget: nothing the student sees depends on the reply. */
 function post(body){
   if(SESS) body.t = SESS;
   try{
@@ -241,14 +201,12 @@ function post(body){
 }
 
 /* ------------------------------------------------------------------- auth */
-/*
- * The ID token is long and must never end up in a URL (browser history, server
- * logs). So: POST the token with a random nonce, then collect a short session
- * token by nonce over JSONP. Every later read carries only the short token.
- */
+/* The ID token is long and must never reach a URL (browser history, server
+   logs). So: POST the token with a random nonce, then collect a short session
+   token by nonce over JSONP. Every later read carries only the short token. */
 function onCredential(resp){
   const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  $('gmsg').textContent = 'Checking with Google…';
+  msg('Checking with Google…');
   try{
     const p = JSON.parse(decodeURIComponent(atob(resp.credential.split('.')[1]
       .replace(/-/g,'+').replace(/_/g,'/')).split('').map(c =>
@@ -265,16 +223,17 @@ function onCredential(resp){
     jsonp({claim:nonce}, r => {
       if(r && r.t){ SESS = r.t; afterAuth(); return; }
       if(r && r.error && r.error !== 'not ready'){
-        $('gmsg').textContent = ({
+        msg(({
           blocked: 'This account cannot use the drill. Speak to your teacher.',
           domain : 'Please sign in with your school account.',
           roster : 'Your account is not on the class list. Ask your teacher to add you.',
           expired: 'That sign-in timed out. Please try again.'
-        })[r.error] || 'Sign-in was refused.';
+        })[r.error] || ('Sign-in refused: ' + r.error));
         return;
       }
       if(tries < 6) return setTimeout(claim, 1200);
-      $('gmsg').textContent = 'Could not reach the server. Check your connection and try again.';
+      msg('Signed in with Google, but the server never confirmed. Check that Code.gs is '
+        + 'deployed at the SYNC_URL in this page.');
     }, 8000);
   })();
 }
@@ -285,6 +244,16 @@ function afterAuth(){
   $('who').textContent = PROFILE;
   show('drill');
   loadIndex();
+}
+
+/* Session refused or revoked while the page was open. */
+function lockOut(){
+  SESS = null;
+  $('nav').classList.add('hide');
+  ['drill','book'].forEach(t => $('tab-'+t).classList.add('hide'));
+  $('gate').classList.remove('hide');
+  $('who').textContent = '';
+  msg('Your session has ended. Sign in again, or speak to your teacher.');
 }
 
 /* -------------------------------------------------------------------- nav */
@@ -322,8 +291,7 @@ function loadIndex(){
 
 $('secgrid').addEventListener('click', e => {
   const b = e.target.closest('.sec');
-  if(!b) return;
-  startSection(b.dataset.page, b.dataset.topic, b.textContent);
+  if(b) startSection(b.dataset.page, b.dataset.topic, b.textContent);
 });
 
 function startSection(page, topic, label){
@@ -333,9 +301,10 @@ function startSection(page, topic, label){
   $('stem').textContent = 'Loading…';
   $('opts').innerHTML = '';
   jsonp({bank:1, type:'mcq', page:page, topic:topic, t:SESS}, r => {
+    if(r && r.error){ lockOut(); return; }
     if(!r || !r.items || !r.items.length){ $('stem').textContent = 'No questions came back.'; return; }
     QUEUE = r.items.filter(q => q.opts && q.opts.length);
-    for(let i = QUEUE.length - 1; i > 0; i--){        // shuffle
+    for(let i = QUEUE.length - 1; i > 0; i--){
       const j = Math.floor(Math.random() * (i+1)); [QUEUE[i],QUEUE[j]] = [QUEUE[j],QUEUE[i]];
     }
     POS = 0; render();
@@ -345,15 +314,17 @@ function startSection(page, topic, label){
 /* ---------------------------------------------------------------- question */
 function render(){
   const q = QUEUE[POS];
-  if(!q){ $('stem').textContent = 'Section finished. 做完呢個 section 喇。'; $('opts').innerHTML=''; $('why').classList.add('hide'); $('next').classList.add('hide'); return; }
+  if(!q){
+    $('stem').textContent = 'Section finished. 做完呢個 section 喇。';
+    $('opts').innerHTML = ''; $('why').classList.add('hide'); $('next').classList.add('hide');
+    return;
+  }
   $('qid').textContent = q.id;
   $('why').classList.add('hide');
   $('next').classList.add('hide');
-  $('prog').textContent = (POS+1) + ' / ' + QUEUE.length + ' · ' + (SECTION.label||'');
-
-  if(q.img){ $('stem').innerHTML = '<img src="'+esc(q.img)+'" alt="Question diagram">'; }
-  else { $('stem').textContent = q.q || ''; }
-
+  $('prog').textContent = (POS+1) + ' / ' + QUEUE.length + ' · ' + (SECTION.label || '');
+  if(q.img) $('stem').innerHTML = '<img src="'+esc(q.img)+'" alt="Question diagram">';
+  else $('stem').textContent = q.q || '';
   $('opts').innerHTML = q.opts.map((o,i) =>
     '<button class="opt" data-i="'+i+'"><span class="lab">'+LAB[i]+'</span><span>'+esc(o)+'</span></button>'
   ).join('');
@@ -371,13 +342,13 @@ $('opts').addEventListener('click', e => {
   });
 
   if(q.why){ $('why').innerHTML = esc(q.why); $('why').classList.remove('hide'); }
-  $('next').classList.remove('hide');
-
-  post({event:'mistake', key:q.key, chose:chose, correct:ok, page:SECTION.page});
   if(!ok){
     $('why').innerHTML += '<p class="mono" style="margin:10px 0 0">'
       + '呢條題已經入咗你嘅錯題本。喺嗰度用自己嘅話寫低你嘅理解。</p>';
+    $('why').classList.remove('hide');
   }
+  $('next').classList.remove('hide');
+  post({event:'mistake', key:q.key, chose:chose, correct:ok, page:SECTION.page});
 });
 
 $('next').addEventListener('click', () => { POS++; render(); });
@@ -389,23 +360,25 @@ $('quit').addEventListener('click', () => {
 function loadBook(){
   $('booklist').innerHTML = '<p class="muted">Loading…</p>';
   jsonp({mist:1, t:SESS}, r => {
-    if(!r || r.error){ $('booklist').innerHTML = '<p class="muted">Could not load.</p>'; return; }
+    if(r && r.error){ lockOut(); return; }
+    if(!r){ $('booklist').innerHTML = '<p class="muted">Could not load.</p>'; return; }
     if(!r.items || !r.items.length){
       $('booklist').innerHTML = '<p class="muted">冇錯題。繼續做落去。</p>'; return;
     }
+    const zh = {understood:'明白', partly:'半明', not:'未明'};
     $('booklist').innerHTML = r.items.map(m => {
       const st = m.status || '';
       return '<div class="mrow" data-key="'+esc(m.key)+'">'
         + '<div class="mhead"><span class="qid">'+esc(m.key)+'</span>'
         + (m.n > 1 ? '<span class="pill">錯咗 '+m.n+' 次</span>' : '')
-        + (st ? '<span class="pill '+esc(st)+'">'+({understood:'明白',partly:'半明',not:'未明'}[st]||st)+'</span>' : '')
+        + (st ? '<span class="pill '+esc(st)+'">'+(zh[st]||st)+'</span>' : '')
         + '</div>'
         + '<textarea placeholder="用自己嘅話寫低呢條考緊咩、你當初點解錯…">'+esc(m.note)+'</textarea>'
         + '<div class="statusrow">'
         +   '<button data-st="understood" aria-pressed="'+(st==='understood')+'">明白</button>'
         +   '<button data-st="partly"     aria-pressed="'+(st==='partly')+'">半明</button>'
         +   '<button data-st="not"        aria-pressed="'+(st==='not')+'">未明</button>'
-        +   '<span class="sp" style="flex:1"></span>'
+        +   '<span style="flex:1"></span>'
         +   '<button class="save">Save</button><span class="mono saved"></span>'
         + '</div></div>';
     }).join('');
@@ -430,30 +403,45 @@ $('booklist').addEventListener('click', e => {
   }
 });
 
-/* Session refused or revoked while the page was open. */
-function lockOut(){
-  SESS = null;
-  $('nav').classList.add('hide');
-  ['drill','book'].forEach(t => $('tab-'+t).classList.add('hide'));
-  $('gate').classList.remove('hide');
-  $('who').textContent = '';
-  $('gmsg').textContent = 'Your session has ended. Sign in again, or speak to your teacher.';
-}
-
 /* -------------------------------------------------------------- start-up */
+/* Sign-in can fail three quite different ways, and the fixes are different, so
+   the page reports which one happened rather than guessing "offline". */
 window.addEventListener('load', () => {
   if(location.protocol === 'file:'){
-    $('gmsg').textContent = 'Google Sign-In needs the hosted https link — this file cannot run from disk.';
+    msg('Google Sign-In cannot run from a file on disk. Open the https:// link instead.');
     return;
   }
-  const t = setInterval(() => {
-    if(typeof google === 'undefined' || !google.accounts) return;
-    clearInterval(t);
-    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID, callback:onCredential, auto_select:false});
-    google.accounts.id.renderButton($('gbtn'), {theme:'outline', size:'large'});
+
+  let scriptFailed = false;
+  const tag = document.querySelector('script[src*="gsi/client"]');
+  if(tag) tag.addEventListener('error', () => { scriptFailed = true; });
+
+  let waited = 0;
+  const timer = setInterval(() => {
+    waited += 200;
+    if(typeof google !== 'undefined' && google.accounts && google.accounts.id){
+      clearInterval(timer);
+      try{
+        google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID, callback:onCredential, auto_select:false});
+        google.accounts.id.renderButton($('gbtn'), {theme:'outline', size:'large'});
+        msg('');
+      }catch(err){
+        msg('Sign-in setup failed: ' + err.message + '  (origin: ' + location.origin + ')');
+      }
+      return;
+    }
+    if(waited >= 15000){
+      clearInterval(timer);
+      if(scriptFailed || typeof google === 'undefined'){
+        msg('Could not download Google Sign-In from accounts.google.com. An ad blocker or '
+          + 'privacy extension is the usual cause — try a private window with extensions off. '
+          + '(origin: ' + location.origin + ')');
+      }else{
+        msg('Google Sign-In loaded but would not start. Check that ' + location.origin
+          + ' is listed under Authorised JavaScript origins for this OAuth client.');
+      }
+    }
   }, 200);
-  setTimeout(() => { if(!SESS && !$('gmsg').textContent)
-    $('gmsg').textContent = 'Google Sign-In could not load (offline, or blocked).'; }, 6000);
 });
 </script>
 </body>
