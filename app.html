@@ -34,9 +34,7 @@ body{background:var(--bg); color:var(--ink); font-family:var(--f-serif);
 
 /* --- header: the sheet's letterhead --- */
 header{display:flex; gap:14px; align-items:center; padding:22px 0 10px}
-.mark{width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg,var(--ch-ch4),var(--ch-u11)); color:#fff;
-  font-family:var(--f-serif); font-size:24px; font-weight:700; border-radius:var(--r-md)}
+#mark{flex:0 0 44px}
 header h1{font-family:var(--f-serif); font-size:21px; margin:0; font-weight:700; letter-spacing:-.01em}
 #sub-line{margin:2px 0 0; font-family:var(--f-sans); font-size:12px; color:var(--muted)}
 .who{font-family:var(--f-sans); font-size:12px; color:var(--muted); margin-left:auto}
@@ -204,6 +202,40 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface); color:var(--muted)}
 .like.on{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
 
+/* --- TYN the mascot --- */
+.tyn{width:100%;max-width:78px;height:auto;flex:0 0 78px}
+.tynlogo{width:44px;height:44px;display:block}
+.say{display:flex;gap:12px;align-items:flex-start}
+.bubble{position:relative;flex:1;min-width:0;border-radius:var(--r-sm);padding:11px 13px;font-size:15px}
+.bubble::before{content:'';position:absolute;left:-8px;top:22px;border:8px solid transparent;border-left:none}
+.bubble.ok{background:var(--pos-bg);border:1px solid var(--pos-line)}
+.bubble.ok::before{border-right-color:var(--pos-line)}
+.bubble.no{background:var(--neg-bg);border:1px solid var(--neg-line)}
+.bubble.no::before{border-right-color:var(--neg-line)}
+.bubble.ai{background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--brand)}
+.bubble.ai::before{border-right-color:var(--line)}
+.bubble.nt{background:var(--surface-2);border:1px solid var(--line)}
+.bubble.nt::before{border-right-color:var(--line)}
+.bubble .who{font-family:var(--f-sans);font-size:10px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 3px}
+.saybox{display:none;margin-top:14px}
+.saybox.show{display:block}
+.bob{animation:tbob 2.6s ease-in-out infinite}
+@keyframes tbob{50%{transform:translateY(-3px)}}
+.lids{animation:tblink 4.5s infinite}
+@keyframes tblink{0%,94%,100%{opacity:0}96%,98%{opacity:1}}
+.ball{transform-origin:106px 26px;animation:tspin 5s linear infinite}
+@keyframes tspin{to{transform:rotate(360deg)}}
+.steam path{animation:trise 2.2s ease-in-out infinite}
+.steam path:nth-child(2){animation-delay:.4s}.steam path:nth-child(3){animation-delay:.8s}
+@keyframes trise{50%{transform:translateY(-3px);opacity:.4}}
+.bulb{transform-origin:97px 12px;animation:tglow 1.8s ease-in-out infinite}
+@keyframes tglow{50%{opacity:.55}}
+.scratch{animation:tscr 1s ease-in-out infinite}
+@keyframes tscr{50%{transform:translateX(3px)}}
+.drop{animation:tdrop 2.4s ease-in infinite}
+@keyframes tdrop{0%{transform:translateY(0);opacity:0}30%{opacity:.8}100%{transform:translateY(8px);opacity:0}}
+@media (max-width:520px){.tyn{max-width:60px;flex-basis:60px}}
 /* --- pencil layer over the question --- */
 #qwrap{position:relative}
 #ink{position:absolute; inset:0; z-index:5; pointer-events:none; touch-action:auto}
@@ -244,7 +276,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 
 <div class="wrap">
 <header>
-  <div class="mark" aria-hidden="true">$</div>
+  <div id="mark" aria-hidden="true"></div>
   <div>
     <h1>HKDSE Economics — Past-paper Drilling</h1>
     <p id="sub-line">one page, every chapter</p>
@@ -285,6 +317,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   </div>
 
   <div id="tab-overview" class="hide">
+    <div class="card" id="ovHello"></div>
     <div class="card ac ac-gold">
       <div class="lvl"><b id="ovLvlN">Lv.1</b><span id="ovLvlName" class="muted"></span>
         <span class="grow"></span><span class="mono" id="ovPct">0%</span></div>
@@ -355,6 +388,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <div id="tab-exam" class="hide">
     <div class="card" id="examSetup">
       <h2>Exam mode</h2>
+      <div id="exHello" style="margin:0 0 10px"></div>
       <p class="muted">Random questions against the clock. You see what was right or wrong only after you submit — exactly like the real paper, with no feedback in between.</p>
       <div class="row" style="margin-top:10px">
         <button class="btn" data-n="10">10 questions</button>
@@ -381,6 +415,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <div id="tab-miss" class="hide">
     <div class="card ac ac-pink">
       <h2>Correction Album</h2>
+      <div id="missHello" style="margin:0 0 10px"></div>
       <p class="muted">Every question you have ever answered wrongly stays in this album — nothing here can be deleted.
         Reread it, write what it is really testing in your own words, then retry it as many times as you need.</p>
       <div class="row" id="bookFilt" style="margin-top:8px">
@@ -483,6 +518,14 @@ const CACHE = {};
 let QUEUE=[], POS=0, SECTION=null;
 
 const $ = id => document.getElementById(id);
+const TYN={"teach": "<svg viewBox=\"0 0 120 150\" class=\"tyn bob\"><path d=\"M54 45 Q60 50 67 45\" fill=\"none\" stroke=\"#211d16\" stroke-width=\"1.6\" stroke-linecap=\"round\"/><ellipse cx=\"60\" cy=\"97\" rx=\"35\" ry=\"37\" fill=\"#fdfcf8\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M60 62 L53 70 L60 78 L67 70 Z\" fill=\"#efe9db\" stroke=\"#211d16\" stroke-width=\"1.2\"/><line x1=\"60\" y1=\"78\" x2=\"60\" y2=\"120\" stroke=\"#cdc3ad\" stroke-width=\"1.2\"/><circle cx=\"60\" cy=\"86\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"98\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"110\" r=\"1.6\" fill=\"#6f6455\"/><path d=\"M56 110 l-3 3 M64 110 l3 3\" stroke=\"#cdc3ad\" stroke-width=\"1\"/><rect x=\"42\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><rect x=\"64\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><ellipse cx=\"49\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><ellipse cx=\"71\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><path d=\"M32 80 Q26 96 44 102\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><circle cx=\"46\" cy=\"103\" r=\"5.5\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.4\"/><path d=\"M88 80 Q100 60 96 38\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><circle cx=\"96\" cy=\"34\" r=\"6\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.4\"/><line x1=\"96\" y1=\"30\" x2=\"96\" y2=\"24\" stroke=\"#f2c9a0\" stroke-width=\"4.6\" stroke-linecap=\"round\"/><g><path d=\"M40 30 Q40 12 60 12 Q80 12 80 30 L80 34 Q80 22 60 22 Q40 22 40 34 Z\" fill=\"#2a2420\"/><circle cx=\"60\" cy=\"34\" r=\"20\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M40 30 Q42 18 60 17 Q78 18 80 30 Q74 24 60 24 Q46 24 40 30\" fill=\"#2a2420\"/><circle cx=\"52\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><circle cx=\"69\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"59\" y1=\"35\" x2=\"62\" y2=\"35\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"45\" y1=\"34\" x2=\"41\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"76\" y1=\"34\" x2=\"80\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><g><circle cx=\"52\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/><circle cx=\"69\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/></g><rect class=\"lids\" x=\"44\" y=\"27\" width=\"34\" height=\"16\" rx=\"8\" fill=\"#f2c9a0\" opacity=\"0\"/></g></svg>", "cheer": "<svg viewBox=\"0 0 130 150\" class=\"tyn bob\"><ellipse cx='60' cy='46' rx='4.5' ry='3.4' fill='#211d16'/><ellipse cx=\"60\" cy=\"97\" rx=\"35\" ry=\"37\" fill=\"#fdfcf8\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M60 62 L53 70 L60 78 L67 70 Z\" fill=\"#efe9db\" stroke=\"#211d16\" stroke-width=\"1.2\"/><line x1=\"60\" y1=\"78\" x2=\"60\" y2=\"120\" stroke=\"#cdc3ad\" stroke-width=\"1.2\"/><circle cx=\"60\" cy=\"86\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"98\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"110\" r=\"1.6\" fill=\"#6f6455\"/><path d=\"M56 110 l-3 3 M64 110 l3 3\" stroke=\"#cdc3ad\" stroke-width=\"1\"/><rect x=\"42\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><rect x=\"64\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><ellipse cx=\"49\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><ellipse cx=\"71\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><path d=\"M30 82 Q16 66 20 44\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><circle cx=\"20\" cy=\"40\" r=\"6\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.4\"/><path d=\"M90 82 Q106 68 106 48\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><circle cx=\"106\" cy=\"44\" r=\"6\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.4\"/><g class=\"ball\"><circle cx=\"106\" cy=\"26\" r=\"11\" fill=\"#d97a1f\" stroke=\"#211d16\" stroke-width=\"1.5\"/><path d=\"M95 26 h22 M106 15 v22 M99 18 q7 8 0 16 M113 18 q-7 8 0 16\" fill=\"none\" stroke=\"#211d16\" stroke-width=\"1.2\"/></g><g><path d=\"M40 30 Q40 12 60 12 Q80 12 80 30 L80 34 Q80 22 60 22 Q40 22 40 34 Z\" fill=\"#2a2420\"/><circle cx=\"60\" cy=\"34\" r=\"20\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M40 30 Q42 18 60 17 Q78 18 80 30 Q74 24 60 24 Q46 24 40 30\" fill=\"#2a2420\"/><circle cx=\"52\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><circle cx=\"69\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"59\" y1=\"35\" x2=\"62\" y2=\"35\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"45\" y1=\"34\" x2=\"41\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"76\" y1=\"34\" x2=\"80\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><g><circle cx=\"52\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/><circle cx=\"69\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/></g><rect class=\"lids\" x=\"44\" y=\"27\" width=\"34\" height=\"16\" rx=\"8\" fill=\"#f2c9a0\" opacity=\"0\"/></g></svg>", "think": "<svg viewBox=\"0 0 120 150\" class=\"tyn\"><path d='M54 47 Q60 44 67 47' fill='none' stroke='#211d16' stroke-width='1.6' stroke-linecap='round'/><ellipse cx=\"60\" cy=\"97\" rx=\"35\" ry=\"37\" fill=\"#fdfcf8\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M60 62 L53 70 L60 78 L67 70 Z\" fill=\"#efe9db\" stroke=\"#211d16\" stroke-width=\"1.2\"/><line x1=\"60\" y1=\"78\" x2=\"60\" y2=\"120\" stroke=\"#cdc3ad\" stroke-width=\"1.2\"/><circle cx=\"60\" cy=\"86\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"98\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"110\" r=\"1.6\" fill=\"#6f6455\"/><path d=\"M56 110 l-3 3 M64 110 l3 3\" stroke=\"#cdc3ad\" stroke-width=\"1\"/><rect x=\"42\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><rect x=\"64\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><ellipse cx=\"49\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><ellipse cx=\"71\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><path d=\"M32 80 Q26 96 44 102\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><circle cx=\"46\" cy=\"103\" r=\"5.5\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.4\"/><path d=\"M88 80 Q104 62 84 20\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><g class=\"scratch\"><circle cx=\"82\" cy=\"17\" r=\"6\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.4\"/></g><g class=\"drop\"><path d=\"M92 44 q4 6 0 9 q-4 -3 0 -9\" fill=\"#2f7fd9\" opacity=\".8\"/></g><g><path d=\"M40 30 Q40 12 60 12 Q80 12 80 30 L80 34 Q80 22 60 22 Q40 22 40 34 Z\" fill=\"#2a2420\"/><circle cx=\"60\" cy=\"34\" r=\"20\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M40 30 Q42 18 60 17 Q78 18 80 30 Q74 24 60 24 Q46 24 40 30\" fill=\"#2a2420\"/><circle cx=\"52\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><circle cx=\"69\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"59\" y1=\"35\" x2=\"62\" y2=\"35\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"45\" y1=\"34\" x2=\"41\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"76\" y1=\"34\" x2=\"80\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><g><circle cx=\"52\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/><circle cx=\"69\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/></g><rect class=\"lids\" x=\"44\" y=\"27\" width=\"34\" height=\"16\" rx=\"8\" fill=\"#f2c9a0\" opacity=\"0\"/></g></svg>", "idea": "<svg viewBox=\"0 0 120 158\" class=\"tyn\"><g transform=\"translate(0,14)\"><path d=\"M54 45 Q60 50 67 45\" fill=\"none\" stroke=\"#211d16\" stroke-width=\"1.6\" stroke-linecap=\"round\"/><ellipse cx=\"60\" cy=\"97\" rx=\"35\" ry=\"37\" fill=\"#fdfcf8\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M60 62 L53 70 L60 78 L67 70 Z\" fill=\"#efe9db\" stroke=\"#211d16\" stroke-width=\"1.2\"/><line x1=\"60\" y1=\"78\" x2=\"60\" y2=\"120\" stroke=\"#cdc3ad\" stroke-width=\"1.2\"/><circle cx=\"60\" cy=\"86\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"98\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"110\" r=\"1.6\" fill=\"#6f6455\"/><path d=\"M56 110 l-3 3 M64 110 l3 3\" stroke=\"#cdc3ad\" stroke-width=\"1\"/><rect x=\"42\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><rect x=\"64\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><ellipse cx=\"49\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><ellipse cx=\"71\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><path d=\"M32 80 Q26 96 44 102\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><circle cx=\"46\" cy=\"103\" r=\"5.5\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.4\"/><path d=\"M88 80 Q100 60 96 38\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><circle cx=\"96\" cy=\"34\" r=\"6\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.4\"/><line x1=\"96\" y1=\"30\" x2=\"96\" y2=\"24\" stroke=\"#f2c9a0\" stroke-width=\"4.6\" stroke-linecap=\"round\"/><g><path d=\"M40 30 Q40 12 60 12 Q80 12 80 30 L80 34 Q80 22 60 22 Q40 22 40 34 Z\" fill=\"#2a2420\"/><circle cx=\"60\" cy=\"34\" r=\"20\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M40 30 Q42 18 60 17 Q78 18 80 30 Q74 24 60 24 Q46 24 40 30\" fill=\"#2a2420\"/><circle cx=\"52\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><circle cx=\"69\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"59\" y1=\"35\" x2=\"62\" y2=\"35\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"45\" y1=\"34\" x2=\"41\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"76\" y1=\"34\" x2=\"80\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><g><circle cx=\"52\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/><circle cx=\"69\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/></g><rect class=\"lids\" x=\"44\" y=\"27\" width=\"34\" height=\"16\" rx=\"8\" fill=\"#f2c9a0\" opacity=\"0\"/></g></g><g class=\"bulb\"><circle cx=\"97\" cy=\"12\" r=\"8\" fill=\"#f5d90a\" stroke=\"#c98a12\" stroke-width=\"1.5\"/><rect x=\"94\" y=\"19\" width=\"6\" height=\"4\" rx=\"1\" fill=\"#c98a12\"/><path d=\"M97 -1 v-4 M86 3 l-3 -3 M108 3 l3 -3 M83 12 h-5 M111 12 h5\" stroke=\"#c98a12\" stroke-width=\"1.6\" stroke-linecap=\"round\"/></g></svg>", "noodles": "<svg viewBox=\"0 0 130 150\" class=\"tyn bob\"><ellipse cx='60' cy='46' rx='4' ry='3' fill='#211d16'/><ellipse cx=\"60\" cy=\"97\" rx=\"35\" ry=\"37\" fill=\"#fdfcf8\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M60 62 L53 70 L60 78 L67 70 Z\" fill=\"#efe9db\" stroke=\"#211d16\" stroke-width=\"1.2\"/><line x1=\"60\" y1=\"78\" x2=\"60\" y2=\"120\" stroke=\"#cdc3ad\" stroke-width=\"1.2\"/><circle cx=\"60\" cy=\"86\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"98\" r=\"1.6\" fill=\"#6f6455\"/><circle cx=\"60\" cy=\"110\" r=\"1.6\" fill=\"#6f6455\"/><path d=\"M56 110 l-3 3 M64 110 l3 3\" stroke=\"#cdc3ad\" stroke-width=\"1\"/><rect x=\"42\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><rect x=\"64\" y=\"126\" width=\"14\" height=\"12\" rx=\"2\" fill=\"#3a3f4a\"/><ellipse cx=\"49\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><ellipse cx=\"71\" cy=\"139\" rx=\"9\" ry=\"4\" fill=\"#211d16\"/><path d=\"M32 80 Q22 92 40 100\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><path d=\"M88 80 Q100 90 82 99\" fill=\"none\" stroke=\"#fdfcf8\" stroke-width=\"11\" stroke-linecap=\"round\"/><g><path d=\"M38 100 h46 q-2 16 -23 16 q-21 0 -23 -16\" fill=\"#c9412e\" stroke=\"#211d16\" stroke-width=\"1.5\"/><ellipse cx=\"61\" cy=\"100\" rx=\"23\" ry=\"5\" fill=\"#f6eccd\" stroke=\"#211d16\" stroke-width=\"1.2\"/><path d=\"M48 99 q6 4 12 0 q6 4 12 0\" fill=\"none\" stroke=\"#d9a10f\" stroke-width=\"2\"/><circle cx=\"52\" cy=\"98\" r=\"1.6\" fill=\"#c9412e\"/><circle cx=\"66\" cy=\"99\" r=\"1.6\" fill=\"#c9412e\"/><circle cx=\"73\" cy=\"97\" r=\"1.6\" fill=\"#c9412e\"/><line x1=\"70\" y1=\"82\" x2=\"86\" y2=\"70\" stroke=\"#8a5b2a\" stroke-width=\"2\"/><line x1=\"74\" y1=\"84\" x2=\"90\" y2=\"74\" stroke=\"#8a5b2a\" stroke-width=\"2\"/></g><g class=\"steam\"><path d=\"M52 88 q3 -6 0 -11\" fill=\"none\" stroke=\"#6f6455\" stroke-width=\"1.6\" stroke-linecap=\"round\"/><path d=\"M61 88 q-3 -7 0 -13\" fill=\"none\" stroke=\"#6f6455\" stroke-width=\"1.6\" stroke-linecap=\"round\"/><path d=\"M70 88 q3 -6 0 -11\" fill=\"none\" stroke=\"#6f6455\" stroke-width=\"1.6\" stroke-linecap=\"round\"/></g><g><path d=\"M40 30 Q40 12 60 12 Q80 12 80 30 L80 34 Q80 22 60 22 Q40 22 40 34 Z\" fill=\"#2a2420\"/><circle cx=\"60\" cy=\"34\" r=\"20\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M40 30 Q42 18 60 17 Q78 18 80 30 Q74 24 60 24 Q46 24 40 30\" fill=\"#2a2420\"/><circle cx=\"52\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><circle cx=\"69\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"59\" y1=\"35\" x2=\"62\" y2=\"35\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"45\" y1=\"34\" x2=\"41\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"76\" y1=\"34\" x2=\"80\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><g><circle cx=\"52\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/><circle cx=\"69\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/></g><rect class=\"lids\" x=\"44\" y=\"27\" width=\"34\" height=\"16\" rx=\"8\" fill=\"#f2c9a0\" opacity=\"0\"/></g></svg>", "logo": "<svg viewBox=\"0 0 64 64\" class=\"tynlogo\"><circle cx=\"32\" cy=\"32\" r=\"30\" fill=\"#faf7ef\" stroke=\"#211d16\" stroke-width=\"2.4\"/><g transform=\"translate(2,8) scale(.5)\"><g><path d=\"M40 30 Q40 12 60 12 Q80 12 80 30 L80 34 Q80 22 60 22 Q40 22 40 34 Z\" fill=\"#2a2420\"/><circle cx=\"60\" cy=\"34\" r=\"20\" fill=\"#f2c9a0\" stroke=\"#211d16\" stroke-width=\"1.6\"/><path d=\"M40 30 Q42 18 60 17 Q78 18 80 30 Q74 24 60 24 Q46 24 40 30\" fill=\"#2a2420\"/><circle cx=\"52\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><circle cx=\"69\" cy=\"35\" r=\"7\" fill=\"#fff\" fill-opacity=\".55\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"59\" y1=\"35\" x2=\"62\" y2=\"35\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"45\" y1=\"34\" x2=\"41\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><line x1=\"76\" y1=\"34\" x2=\"80\" y2=\"32\" stroke=\"#211d16\" stroke-width=\"1.8\"/><g><circle cx=\"52\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/><circle cx=\"69\" cy=\"35\" r=\"1.9\" fill=\"#211d16\"/></g><rect class=\"lids\" x=\"44\" y=\"27\" width=\"34\" height=\"16\" rx=\"8\" fill=\"#f2c9a0\" opacity=\"0\"/></g></g><text x=\"32\" y=\"57\" text-anchor=\"middle\" font-family=\"IBM Plex Sans,sans-serif\" font-weight=\"700\" font-size=\"11\" fill=\"#c9412e\">TYN</text></svg>"};
+/* The mascot speaks; the page doesn't. Every explanation, cheer and AI reply
+   is delivered as TYN talking to the student, with an honest label on which
+   voice it is: TYN himself (the teacher's own why), or TYN's AI helper. */
+function tynSay(pose,who,inner,tone){
+  return '<div class="say">'+TYN[pose]+'<div class="bubble '+tone+'">'
+    +'<p class="who">'+who+'</p>'+inner+'</div></div>';
+}
 const CHEER_OK=['Well done! ✅','Nice work! 🎉','Spot on! 👏','Excellent! ⭐','Great job — keep it up! 🚀'];
 const CHEER_NO=['Good try — you’ll nail the next one! 💪','No worries, this one trips up many. Let’s learn it 👇','Nice effort — here’s the idea to remember 💡','Almost! Understanding why is how you improve 🌱','Keep going — every mistake is a mark saved in the exam 📚'];
 const pick_=a=>a[Math.floor(Math.random()*a.length)];
@@ -694,7 +737,7 @@ function show(tab){
     const b=document.querySelector('[data-tab="'+t+'"]');
     if(b) b.setAttribute('aria-selected',String(t===tab));
   });
-  if(tab==='overview'){ drawOverview(); loadBoard('ovLb'); loadTop20(); loadCheer(); }
+  if(tab==='overview'){ drawGreeting(); drawOverview(); loadBoard('ovLb'); loadTop20(); loadCheer(); }
   if(tab==='miss')     loadBook();
   if(tab==='acct')     loadBoard('lb');
 }
@@ -739,6 +782,18 @@ function drawOverview(){
       +'<div class="tbar"><span style="width:'+(a.ok/a.tot*100)+'%;background:var(--pos)"></span>'
       +'<span style="width:'+(a.bad/a.tot*100)+'%;background:var(--neg)"></span></div></div>';
   }).join('')||'<p class="muted">No sections.</p>';
+}
+
+function drawGreeting(){
+  const t=totals();
+  const left=t.all.total-t.all.cleared;
+  const lines=[
+    'Welcome back'+(ME&&ME.nick?', '+esc(ME.nick):'')+'! Target today: clear 10. I&#39;ll handle the noodles — you handle the questions.',
+    'Every mistake is a mark saved in the exam. '+left+' questions still waiting.',
+    'Read the why, say it in your own words, then move on. That&#39;s the whole method.'
+  ];
+  $('ovHello').innerHTML=tynSay('noodles','TYN says',
+    lines[Math.floor(Math.random()*lines.length)],'nt');
 }
 
 /* --- class top 20, ranking, cheer wall --------------------------------- */
@@ -893,13 +948,16 @@ $('qnav').addEventListener('click',e=>{
 function render(){
   const q=QUEUE[POS];
   if(!q){ $('stem').textContent='Section finished — every question here is done.';
-    $('opts').innerHTML=''; $('why').className='why'; $('next').classList.add('hide');
+    $('opts').innerHTML='';
+    $('stem').innerHTML=tynSay('cheer','TYN says',
+      'Section finished — every question here is done. Pick another section, or tap a red square to revisit one.','ok');
+    $('why').className='saybox'; $('next').classList.add('hide');
     drawNav(); return; }
   const ch=chapOf(SECTION.page,SECTION.topic);
   $('qid').innerHTML=(ch?'<span class="badge b-'+ch[0]+'">'+esc(ch[1])+'</span>':'')
     +'<span class="subtag">'+esc(lbl(SECTION.topic))+'</span>'
     +'<span class="qid">'+esc(q.id)+'</span>';
-  $('why').className='why'; $('next').classList.add('hide');
+  $('why').className='saybox'; $('next').classList.add('hide');
   $('prog').textContent=(POS+1)+' / '+QUEUE.length+' · '+(SECTION.label||'');
   $('stem').innerHTML=stemHtml(q);
   $('opts').innerHTML=optsHtml(q,-1);
@@ -925,10 +983,12 @@ $('opts').addEventListener('click',e=>{
     note='This question is now in your Correction Album. Write what it is testing in your own words there.';
     post({event:'mistake', key:q.key, chose:chose, correct:false, page:SECTION.page});
   }
-  $('why').className='why show '+(ok?'r':'w');
-  $('why').innerHTML='<b>'+esc(pick_(ok?CHEER_OK:CHEER_NO))+'</b><br>'
+  $('why').className='saybox show';
+  $('why').innerHTML=tynSay(ok?'cheer':'think','TYN says',
+    '<b>'+esc(pick_(ok?CHEER_OK:CHEER_NO))+'</b><br>'
     +'<b>'+(ok?'Correct — the answer is ':'The answer is ')+LAB[Number(q.ans)]+'.</b> '
-    +esc(q.why||'')+(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':'');
+    +esc(q.why||'')+(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':''),
+    ok?'ok':'no');
   if(!ok){
     const rec=BOOK.find(m=>m.key===q.key)||{};
     const rst=rec.status||'not';
@@ -969,8 +1029,8 @@ $('why').addEventListener('click',e=>{
   jsonp({explain:b.dataset.key, chose:b.dataset.ch, t:SESS}, r=>{
     $('aiMsg').textContent='';
     if(r&&r.text){
-      $('aiOut').innerHTML='<div style="background:var(--surface-2);border-left:3px solid var(--brand);'
-        +'padding:12px 14px;margin-top:12px">'+esc(r.text)+'</div>';
+      $('aiOut').innerHTML='<div style="margin-top:12px">'
+        +tynSay('idea','TYN&#39;s AI helper',esc(r.text),'ai')+'</div>';
     }else{
       $('aiOut').innerHTML='<p class="mono">'+esc((r&&r.error)
         ||'Not available right now. Ask your teacher about this one.')+'</p>';
@@ -1158,8 +1218,14 @@ $('exSubmit').addEventListener('click',()=>{
   const secs=Math.floor((Date.now()-EX.t0)/1000);
   $('examRun').classList.add('hide');
   $('examResult').classList.remove('hide');
-  $('examResult').innerHTML='<h2>Result</h2><p><b>'+right+' / '+EX.q.length+'</b> · '
-    +Math.floor(secs/60)+'m '+(secs%60)+'s</p>'
+  const pctEx=EX.q.length?right/EX.q.length:0;
+  $('examResult').innerHTML='<h2>Result</h2>'
+    +tynSay(pctEx>=0.6?'cheer':'teach','TYN says',
+      '<b>'+right+' / '+EX.q.length+'</b> in '+Math.floor(secs/60)+'m '+(secs%60)+'s. '
+      +(pctEx>=0.6?'Solid. Check the ones you missed below — that&#39;s where the marks are.'
+                  :'Rough set — good. Every miss below is now in your Correction Album, and that&#39;s exactly the list to work from.'),
+      pctEx>=0.6?'ok':'nt')
+    +'<div style="height:10px"></div>'
     +'<button class="btn" id="exAgain" style="margin:8px 0 12px">Another set</button>'+html;
   $('exAgain').addEventListener('click',()=>{
     $('examResult').classList.add('hide'); $('examSetup').classList.remove('hide');
@@ -1443,6 +1509,19 @@ function djb2(s){ let x=5381; s=String(s);
 
 /* -------------------------------------------------------------- start-up */
 window.addEventListener('load',()=>{
+  $('mark').innerHTML=TYN.logo;
+  document.querySelector('.foot').innerHTML=TYN.logo.replace('class="tynlogo"','class="tynlogo" style="width:28px;height:28px;margin:0 auto 4px"')
+    +'Study tool · built from HKDSE past-paper MCQs';
+  $('gate').insertAdjacentHTML('beforeend',
+    '<div style="margin-top:12px">'+tynSay('teach','TYN says',
+    'Sign in and let&#39;s drill. Every question in here has been on a real paper.','nt')+'</div>');
+  $('exHello').innerHTML=tynSay('teach','TYN says',
+    'No feedback until you submit — the real paper doesn&#39;t nod along either.','nt');
+  $('missHello').innerHTML=tynSay('teach','TYN says',
+    'This album is yours alone. Reread, write it in your own words, retry. Nothing in here can be deleted — and that&#39;s the point.','nt');
+  $('setup').insertAdjacentHTML('beforeend',
+    '<div style="margin-top:12px">'+tynSay('noodles','TYN says',
+    'Three boxes and you&#39;re in. Your classmates only ever see the nickname.','nt')+'</div>');
   if(location.protocol==='file:'){
     msg('Google Sign-In cannot run from a file on disk. Open the https:// link instead.'); return;
   }
