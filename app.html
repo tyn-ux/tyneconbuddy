@@ -19,11 +19,12 @@
   --f-serif:'Source Serif 4',Georgia,'Times New Roman',serif;
   --f-sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  /* chapter badge inks — printing-ink weight, from the original palette */
-  --ch-ch1:#3b4a7a; --ch-ch2:#2f6157; --ch-ch3:#8a5b2a; --ch-ch4:#34558c;
-  --ch-ch5:#2d5f7a; --ch-u11:#93392f; --ch-tf:#5f4a86;
-  --ch-micro:#3b4a7a; --ch-natl:#2f6157; --ch-money:#8a5b2a;
-  --ch-macro:#93392f; --ch-trade:#2d5f7a;
+  /* chapter inks, turned up to full colour */
+  --ch-ch1:#3f5bd9; --ch-ch2:#0f9d76; --ch-ch3:#d97a1f; --ch-ch4:#2f7fd9;
+  --ch-ch5:#12a4c4; --ch-u11:#e04a3a; --ch-tf:#8a56d6;
+  --ch-micro:#3f5bd9; --ch-natl:#0f9d76; --ch-money:#c98a12;
+  --ch-macro:#e04a3a; --ch-trade:#1497b8;
+  --gold:#d9a10f; --pink:#d64a7a; --teal:#12a4c4; --violet:#8a56d6;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -34,8 +35,8 @@ body{background:var(--bg); color:var(--ink); font-family:var(--f-serif);
 /* --- header: the sheet's letterhead --- */
 header{display:flex; gap:14px; align-items:center; padding:22px 0 10px}
 .mark{width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center;
-  background:var(--ink); color:var(--on-dark); font-family:var(--f-serif); font-size:24px; font-weight:700;
-  border-radius:var(--r-md)}
+  background:linear-gradient(135deg,var(--ch-ch4),var(--ch-u11)); color:#fff;
+  font-family:var(--f-serif); font-size:24px; font-weight:700; border-radius:var(--r-md)}
 header h1{font-family:var(--f-serif); font-size:21px; margin:0; font-weight:700; letter-spacing:-.01em}
 #sub-line{margin:2px 0 0; font-family:var(--f-sans); font-size:12px; color:var(--muted)}
 .who{font-family:var(--f-sans); font-size:12px; color:var(--muted); margin-left:auto}
@@ -47,7 +48,16 @@ nav button{font-family:var(--f-sans); font-size:13px; font-weight:600; padding:8
   border-radius:var(--r-sm) var(--r-sm) 0 0; white-space:nowrap}
 nav button:hover{color:var(--ink)}
 nav button[aria-selected="true"]{background:var(--surface); border-color:var(--ink); color:var(--ink);
-  position:relative; top:2px; padding-bottom:10px}
+  position:relative; top:2px; padding-bottom:10px; box-shadow:inset 0 3px 0 var(--tabc,var(--brand))}
+nav button[data-tab="overview"]{--tabc:var(--gold)}
+nav button[data-tab="drill"]{--tabc:var(--ch-ch4)}
+nav button[data-tab="exam"]{--tabc:var(--ch-u11)}
+nav button[data-tab="miss"]{--tabc:var(--pink)}
+nav button[data-tab="allq"]{--tabc:var(--ch-ch2)}
+nav button[data-tab="lq"]{--tabc:var(--violet)}
+nav button[data-tab="acct"]{--tabc:var(--teal)}
+.trial{font-family:var(--f-mono); font-size:11px; padding:2px 8px; border-radius:var(--r-pill);
+  background:var(--warn-bg); border:1px solid #dcc78a; color:var(--star)}
 .pip{display:inline-block; min-width:16px; padding:0 4px; margin-left:4px; font-family:var(--f-mono);
   font-size:10px; line-height:16px; text-align:center; background:var(--brand); color:var(--on-dark);
   border-radius:var(--r-pill)}
@@ -55,6 +65,10 @@ nav button[aria-selected="true"]{background:var(--surface); border-color:var(--i
 /* --- cards on the sheet --- */
 .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
       box-shadow:var(--shadow-1); padding:18px; margin:0 0 16px}
+.card.ac{border-top:4px solid var(--ac,var(--line))}
+.ac-gold{--ac:var(--gold)} .ac-blue{--ac:var(--ch-ch4)} .ac-green{--ac:var(--ch-ch2)}
+.ac-violet{--ac:var(--violet)} .ac-pink{--ac:var(--pink)} .ac-teal{--ac:var(--teal)}
+.ac-red{--ac:var(--ch-u11)}
 h2{font-family:var(--f-sans); font-size:13px; text-transform:uppercase; letter-spacing:.06em;
    color:var(--muted); margin:0 0 12px; font-weight:700}
 h3{font-family:var(--f-sans); font-size:15px; margin:0 0 6px; font-weight:600}
@@ -77,10 +91,10 @@ input[type=text],input[type=number],select{font-family:var(--f-sans); font-size:
 
 /* --- overview --- */
 .lvl{display:flex; align-items:baseline; gap:10px; margin-bottom:10px}
-.lvl b{font-family:var(--f-sans); font-size:22px}
+.lvl b{font-family:var(--f-sans); font-size:22px; color:var(--gold)}
 .bar{height:8px; background:var(--surface-2); border:1px solid var(--line);
      border-radius:var(--r-sm); overflow:hidden}
-.bar i{display:block; height:100%; background:var(--star)}
+.bar i{display:block; height:100%; background:linear-gradient(90deg,var(--gold),var(--ch-u11))}
 /* two-colour chapter bar, exactly the original: green right, red wrong */
 .tbar{display:flex; height:9px; background:var(--surface-2); border:1px solid var(--line);
       border-radius:var(--r-sm); overflow:hidden}
@@ -96,8 +110,10 @@ input[type=text],input[type=number],select{font-family:var(--f-sans); font-size:
 /* --- chapter-grouped section picker --- */
 .chap{margin:0 0 18px}
 .chap-hd{display:flex; justify-content:space-between; align-items:baseline; font-family:var(--f-sans);
-  font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink);
-  border-bottom:2px solid var(--ink); padding-bottom:4px; margin-bottom:8px}
+  font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--chc,var(--ink)); border-bottom:2px solid var(--chc,var(--ink));
+  padding-bottom:4px; margin-bottom:8px}
+.sec:hover{border-color:var(--chc,var(--brand))}
 .chap-secs{display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:6px}
 .sec{text-align:left; font-family:var(--f-sans); font-size:13px; padding:8px 10px; cursor:pointer;
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); color:var(--ink)}
@@ -129,7 +145,7 @@ input[type=text],input[type=number],select{font-family:var(--f-sans); font-size:
 /* --- progress strip + jump grid --- */
 .prog{height:9px; background:var(--surface-2); border:1px solid var(--line);
   border-radius:var(--r-sm); overflow:hidden; margin:6px 0 2px}
-.prog i{display:block; height:100%; width:0; background:var(--star)}
+.prog i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--ch-ch2),var(--teal))}
 .qnav{display:flex; flex-wrap:wrap; gap:4px; margin:8px 0 12px}
 .qnav button{width:30px; height:28px; padding:0; cursor:pointer;
   font-family:var(--f-mono); font-size:11px; border:1px solid var(--line);
@@ -210,46 +226,46 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   </div>
 
   <div id="setup" class="card hide">
-    <h2>入班資料</h2>
-    <p class="muted">first time only — 填咗先用得。班別同學號只有老師見到；<b>花名</b>先係同學見到嗰個。</p>
+    <h2>Class details</h2>
+    <p class="muted">First time only. Class and class number are visible to your teacher only; the <b>nickname</b> is what classmates see.</p>
     <div class="row" style="margin-top:12px">
-      <input type="text" id="pCls" maxlength="6" placeholder="班別 e.g. 4A" style="width:110px">
-      <input type="text" id="pNum" maxlength="2" placeholder="學號" style="width:90px">
-      <input type="text" id="pNick" maxlength="16" placeholder="花名 nickname" class="grow">
+      <input type="text" id="pCls" maxlength="6" placeholder="Class e.g. 4A" style="width:110px">
+      <input type="text" id="pNum" maxlength="2" placeholder="No." style="width:90px">
+      <input type="text" id="pNick" maxlength="16" placeholder="Nickname" class="grow">
     </div>
     <div class="row" style="margin-top:12px">
-      <button class="btn primary" id="pSave">開始</button>
+      <button class="btn primary" id="pSave">Start</button>
       <span class="mono" id="pMsg"></span>
     </div>
   </div>
 
   <div id="tab-overview" class="hide">
-    <div class="card">
+    <div class="card ac ac-gold">
       <div class="lvl"><b id="ovLvlN">Lv.1</b><span id="ovLvlName" class="muted"></span>
         <span class="grow"></span><span class="mono" id="ovPct">0%</span></div>
       <div class="bar"><i id="ovBar" style="width:0%"></i></div>
       <p class="mono" id="ovLine" style="margin:10px 0 0"></p>
     </div>
-    <div class="card">
+    <div class="card ac ac-blue">
       <h2>Progress by chapter</h2>
       <div id="ovChaps"></div>
     </div>
-    <div class="card">
-      <h2>全班最多人清嘅 20 條</h2>
-      <p class="muted">撳一條直接跳過去做。</p>
+    <div class="card ac ac-green">
+      <h2>Top 20 most-cleared in class</h2>
+      <p class="muted">Tap one to jump straight to it.</p>
       <ol class="top20" id="ovTop20"><li class="muted">Loading…</li></ol>
     </div>
-    <div class="card">
-      <h2>班際排行榜</h2>
+    <div class="card ac ac-violet">
+      <h2>Class leaderboard</h2>
       <div id="ovLb"><p class="muted">Loading…</p></div>
     </div>
-    <div class="card">
+    <div class="card ac ac-pink">
       <h2>Cheer up kashinger</h2>
-      <p class="muted">留番句嘢俾同學打打氣。全班見到。</p>
+      <p class="muted">Leave a line to cheer your classmates on. The whole class can see it.</p>
       <div id="cheerList"><p class="muted">Loading…</p></div>
-      <textarea id="cheerBox" maxlength="200" placeholder="一句就夠——俾啲鼓勵大家…"></textarea>
+      <textarea id="cheerBox" maxlength="200" placeholder="One line is enough — encourage each other…"></textarea>
       <div class="meta" style="margin-top:6px"><span class="mono" id="cheerMsg"></span>
-        <button class="btn sm" id="cheerSend">出 post</button></div>
+        <button class="btn sm" id="cheerSend">Post</button></div>
     </div>
   </div>
 
@@ -279,7 +295,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <div id="tab-exam" class="hide">
     <div class="card" id="examSetup">
       <h2>Exam mode</h2>
-      <p class="muted">隨機抽題，答完先一次過睇對錯同解釋——同真考試一樣，唔會逐題即時話你啱定錯。</p>
+      <p class="muted">Random questions against the clock. You see what was right or wrong only after you submit — exactly like the real paper, with no feedback in between.</p>
       <div class="row" style="margin-top:10px">
         <button class="btn" data-n="10">10 questions</button>
         <button class="btn" data-n="20">20 questions</button>
@@ -303,15 +319,15 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   </div>
 
   <div id="tab-miss" class="hide">
-    <div class="card">
+    <div class="card ac ac-pink">
       <h2>Correction Album</h2>
-      <p class="muted">答錯過嘅題全部永久留喺呢本簿，刪唔走。寫低你自己嘅理解，再標返明唔明。<br>
-        <span class="mono">Write the idea in your own words — not the answer.</span></p>
+      <p class="muted">Every question you have ever answered wrongly stays in this album — nothing here can be deleted.
+        Reread it, write what it is really testing in your own words, then retry it as many times as you need.</p>
       <div class="row" id="bookFilt" style="margin-top:8px">
-        <button class="btn sm" data-filt="all" aria-pressed="true">全部</button>
-        <button class="btn sm" data-filt="not">未明</button>
-        <button class="btn sm" data-filt="partly">半明</button>
-        <button class="btn sm" data-filt="understood">明白</button>
+        <button class="btn sm" data-filt="all" aria-pressed="true">All</button>
+        <button class="btn sm" data-filt="not">Not yet</button>
+        <button class="btn sm" data-filt="partly">Partly</button>
+        <button class="btn sm" data-filt="understood">Got it</button>
       </div>
     </div>
     <div class="card" id="booklist"><p class="muted">Loading…</p></div>
@@ -337,15 +353,15 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
       <p class="mono" id="acctWho"></p>
       <p class="mono" id="acctSeat"></p>
       <div class="row" style="margin-top:10px">
-        <input type="text" id="aCls" maxlength="6" placeholder="班別" style="width:110px">
-        <input type="text" id="aNum" maxlength="2" placeholder="學號" style="width:90px">
-        <input type="text" id="nick" maxlength="16" placeholder="花名" class="grow">
+        <input type="text" id="aCls" maxlength="6" placeholder="Class" style="width:110px">
+        <input type="text" id="aNum" maxlength="2" placeholder="No." style="width:90px">
+        <input type="text" id="nick" maxlength="16" placeholder="Nickname" class="grow">
         <button class="btn" id="saveNick">Save</button><span class="mono" id="nickMsg"></span>
       </div>
-      <p class="muted" style="margin-top:10px">排行榜同留言只顯示花名，唔會顯示 email、班別或學號。</p>
+      <p class="muted" style="margin-top:10px">The leaderboard and comments show your nickname only — never your email, class or number.</p>
     </div>
     <div class="card">
-      <h2>班際排行榜</h2>
+      <h2>Class leaderboard</h2>
       <div id="lb"><p class="muted">Loading…</p></div>
       <button class="btn sm" id="lbRefresh" style="margin-top:10px">↻ Refresh</button>
     </div>
@@ -364,8 +380,8 @@ const GOOGLE_CLIENT_ID = '533999025151-qf44e4dp2k7stspp5r6g8050ererf6st.apps.goo
 /* Keep identical to LEVELS in Code.gs, or the level a student sees will not
    match the level printed beside their name on the board. */
 const LEVELS = [0,3,8,15,25,40,60,80,95,100];
-const LEVEL_NAMES = ['起步 Starter','打底 Foundation','上手 Familiar','穩陣 Steady',
-  '熟手 Sharp','硬淨 Strong','進階 Advanced','高手 Expert','大師 Master','滿盤 Full Marks'];
+const LEVEL_NAMES = ['Starter','Foundation','Familiar','Steady',
+  'Sharp','Strong','Advanced','Expert','Master','Full Marks'];
 
 const LAB = ['A','B','C','D','E'];
 
@@ -447,9 +463,9 @@ function section(type,page,topic,cb){
  * it takes five other questions or ten minutes. That one rule is what stops
  * "tap until green" from being a scoring strategy.
  * -------------------------------------------------------------------------- */
-let P = {cleared:{}, wrong:{}, since:0};
+let P = {cleared:{}, wrong:{}, retry:{}, since:0};
 const pKey = () => 'tjx2:' + (EMAIL||'anon');
-function pLoad(){ try{ const v=JSON.parse(localStorage.getItem(pKey())); if(v) P=v; }catch(e){} }
+function pLoad(){ try{ const v=JSON.parse(localStorage.getItem(pKey())); if(v) P=v; }catch(e){} P.retry=P.retry||{}; }
 function pSave(){ try{ localStorage.setItem(pKey(), JSON.stringify(P)); }catch(e){} }
 
 /* The server holds the authoritative set of cleared questions, so a student who
@@ -571,7 +587,7 @@ function enterApp(){
   $('setup').classList.add('hide');
   $('nav').classList.remove('hide');
   $('who').textContent=ME.nick+'  ·  '+ME.cls+'-'+ME.num;
-  $('acctSeat').textContent='班別 '+ME.cls+'  ·  學號 '+ME.num;
+  $('acctSeat').textContent='Class '+ME.cls+'  ·  No. '+ME.num;
   $('aCls').value=ME.cls; $('aNum').value=ME.num; $('nick').value=ME.nick;
   jsonp({index:1,t:SESS}, idx=>{
     if(idx&&idx.error){ lockOut(); return; }
@@ -583,16 +599,16 @@ function enterApp(){
 }
 
 const PROF_ERR={
-  missing:'三格都要填。',
-  badnum:'學號要係數字，例如 12。',
-  taken:'呢個班別同學號已經有人用咗。打錯咗？打啱咗仲係唔得就搵老師。',
-  busy:'伺服器忙緊，再試多次。'
+  missing:'All three fields are needed.',
+  badnum:'Class number must be digits, e.g. 12.',
+  taken:'That class and number is already taken. Typo? If it is really yours, tell your teacher.',
+  busy:'Server is busy — try once more.'
 };
 function submitProfile(cls,num,nick,msgEl,after){
   msgEl.textContent=' saving…';
   jsonp({setprof:1, cls:cls, num:num, nick:nick, t:SESS}, r=>{
     if(r&&r.ok){ ME={cls:r.cls,num:r.num,nick:r.nick}; msgEl.textContent=' ✓'; after&&after(); }
-    else msgEl.textContent=' '+((r&&PROF_ERR[r.error])||'搞唔掂，再試。');
+    else msgEl.textContent=' '+((r&&PROF_ERR[r.error])||'Could not save — try again.');
   });
 }
 $('pSave').addEventListener('click',()=>{
@@ -666,11 +682,11 @@ function drawOverview(){
 function loadTop20(){
   jsonp({top20:1,t:SESS}, r=>{
     const items=(r&&r.items)||[];
-    if(!items.length){ $('ovTop20').innerHTML='<li class="muted">要全班開始做先有數。</li>'; return; }
+    if(!items.length){ $('ovTop20').innerHTML='<li class="muted">Numbers appear once the class starts drilling.</li>'; return; }
     $('ovTop20').innerHTML=items.map(x=>{
       const c=chapOf(x.page,x.topic);
       return '<li><a data-pg="'+esc(x.page)+'" data-tp="'+esc(x.topic)+'" data-key="'+esc(x.key)+'">'
-        +esc(x.key)+'</a> <span class="score">'+(c?esc(c[1]):'')+' · '+x.n+' 人清咗</span></li>';
+        +esc(x.key)+'</a> <span class="score">'+(c?esc(c[1]):'')+' · cleared by '+x.n+'</span></li>';
     }).join('');
   });
 }
@@ -686,17 +702,17 @@ function loadCheer(){
     $('cheerList').innerHTML=items.map(c=>
       '<div class="cmt'+(c.verified?' ver':'')+'">'
       +'<div class="hd2"><span class="nk">'+esc(c.nick)+'</span>'
-      +(c.verified?'<span class="vtag">老師</span>':'')
+      +(c.verified?'<span class="vtag">Teacher</span>':'')
       +'<button class="like'+(LIKED[c.cid]?' on':'')+'" data-cid="'+esc(c.cid)+'">▲ '+c.likes+'</button></div>'
       +'<p style="margin:4px 0 0">'+esc(c.text)+'</p></div>').join('')
-      ||'<p class="muted">未有人出過 post。做第一個。</p>';
+      ||'<p class="muted">No posts yet. Be the first.</p>';
   });
 }
 $('cheerSend').addEventListener('click',()=>{
   const txt=$('cheerBox').value.trim();
-  if(!txt){ $('cheerMsg').textContent='寫啲嘢先。'; return; }
+  if(!txt){ $('cheerMsg').textContent='Write something first.'; return; }
   post({event:'comment', key:'__cheer', text:txt});
-  $('cheerBox').value=''; $('cheerMsg').textContent='出咗，一陣就見到。';
+  $('cheerBox').value=''; $('cheerMsg').textContent='Posted — it will show in a moment.';
   setTimeout(()=>{ $('cheerMsg').textContent=''; loadCheer(); }, 2500);
 });
 $('cheerList').addEventListener('click',e=>{
@@ -810,7 +826,7 @@ $('qnav').addEventListener('click',e=>{
 
 function render(){
   const q=QUEUE[POS];
-  if(!q){ $('stem').textContent='Section finished. 做完呢個 section 喇。';
+  if(!q){ $('stem').textContent='Section finished — every question here is done.';
     $('opts').innerHTML=''; $('why').className='why'; $('next').classList.add('hide');
     drawNav(); return; }
   const ch=chapOf(SECTION.page,SECTION.topic);
@@ -836,30 +852,31 @@ $('opts').addEventListener('click',e=>{
   let note='';
   if(ok){
     const credited=markRight(q.key,q.topic||q.sub||'');
-    if(!credited&&P.wrong[q.key]) note='呢條啱啱答錯過，要隔 5 題或者 10 分鐘再答啱先計入進度。';
+    if(!credited&&P.wrong[q.key]) note='You just got this wrong, so a correct answer only counts after 5 other questions or 10 minutes.';
   }else{
     markWrong(q.key, q.topic||q.sub||'');
-    note='呢條題已經入咗你嘅 Correction Album。喺嗰度用自己嘅話寫低你嘅理解。';
+    note='This question is now in your Correction Album. Write what it is testing in your own words there.';
     post({event:'mistake', key:q.key, chose:chose, correct:false, page:SECTION.page});
   }
   $('why').className='why show '+(ok?'r':'w');
   $('why').innerHTML='<b>'+esc(pick_(ok?CHEER_OK:CHEER_NO))+'</b><br>'
     +'<b>'+(ok?'Correct — the answer is ':'The answer is ')+LAB[Number(q.ans)]+'.</b> '
     +esc(q.why||'')+(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':'');
-  if(!ok){
-    /* Deliberately a button, not automatic. Only a student who has read the
-       written explanation and is still stuck presses it — which is both the
-       cheap path and the honest one. */
+  if(!ok && q.q){
+    /* Deliberately a button, not automatic — and only for text questions: the
+       explainer cannot see a diagram, so offering it there would invite it to
+       guess. Only a student who has read the written explanation and is still
+       stuck presses it. */
     $('why').innerHTML+='<div class="row" style="margin-top:12px">'
       +'<button class="btn sm" id="askAI" data-key="'+esc(q.key)+'" data-ch="'+chose+'">'
-      +'我睇完仲係唔明</button><span class="mono" id="aiMsg"></span></div>'
+      +'I read it and still don&#39;t get it</button><span class="mono" id="aiMsg"></span></div>'
       +'<div id="aiOut"></div>';
   }
   /* The thread opens only now, after the answer is locked in. Showing it any
      earlier would turn the top comment into the answer key. */
   $('why').innerHTML+='<div id="thread" data-key="'+esc(q.key)+'" '
     +'style="margin-top:16px;border-top:1px solid rgba(0,0,0,.12);padding-top:12px">'
-    +'<p class="mono">同學討論 · 載入中…</p></div>';
+    +'<p class="mono">Class discussion · loading…</p></div>';
   loadThread(q.key);
   $('next').classList.remove('hide');
   drawNav();
@@ -968,16 +985,16 @@ function loadThread(key){
     const el=$('thread');
     if(!el || el.dataset.key!==key) return;      // student already moved on
     const items=(r&&r.items)||[];
-    el.innerHTML='<p class="mono" style="margin:0 0 8px">同學討論 ('+items.length+')</p>'
+    el.innerHTML='<p class="mono" style="margin:0 0 8px">Class discussion ('+items.length+')</p>'
       + items.map(c=>
           '<div class="cmt'+(c.verified?' ver':'')+'" data-cid="'+esc(c.cid)+'">'
           +'<div class="hd2"><span class="nk">'+esc(c.nick)+'</span>'
-          +(c.verified?'<span class="vtag">老師認證</span>':'')
+          +(c.verified?'<span class="vtag">Teacher verified</span>':'')
           +'<button class="like'+(LIKED[c.cid]?' on':'')+'" data-cid="'+esc(c.cid)+'">'
           +'▲ '+c.likes+'</button></div>'
           +'<p style="margin:4px 0 0">'+esc(c.text)+'</p></div>').join('')
-      + '<textarea id="cmtBox" maxlength="400" placeholder="用自己嘅話講吓你點理解呢條題…唔好只係抄答案"></textarea>'
-      + '<div class="row" style="margin-top:6px"><button class="btn sm" id="cmtSend">出 post</button>'
+      + '<textarea id="cmtBox" maxlength="400" placeholder="Explain the idea in your own words — do not just copy the answer"></textarea>'
+      + '<div class="row" style="margin-top:6px"><button class="btn sm" id="cmtSend">Post</button>'
       + '<span class="mono" id="cmtMsg"></span></div>';
   });
 }
@@ -997,9 +1014,9 @@ $('why').addEventListener('click',e=>{
   if(e.target.closest('#cmtSend')){
     const box=$('cmtBox'), el=$('thread');
     const txt=box.value.trim();
-    if(!txt){ $('cmtMsg').textContent=' 寫啲嘢先。'; return; }
+    if(!txt){ $('cmtMsg').textContent=' Write something first.'; return; }
     post({event:'comment', key:el.dataset.key, text:txt});
-    box.value=''; $('cmtMsg').textContent=' 出咗，一陣就見到。';
+    box.value=''; $('cmtMsg').textContent=' Posted — it will show in a moment.';
     setTimeout(()=>loadThread(el.dataset.key), 2500);
   }
 });
@@ -1020,27 +1037,89 @@ function loadBook(){
     BOOK=r.items||[]; renderBook();
   });
 }
+const ST_EN={understood:'Got it',partly:'Partly',not:'Not yet'};
 function renderBook(){
-  const zh={understood:'明白',partly:'半明',not:'未明'};
   const rows=BOOK.filter(m=>BOOKFILT==='all'||(m.status||'not')===BOOKFILT);
-  if(!rows.length){ $('booklist').innerHTML='<p class="muted">冇符合嘅錯題。</p>'; return; }
+  if(!rows.length){ $('booklist').innerHTML='<p class="muted">No mistakes match this filter.</p>'; return; }
   $('booklist').innerHTML=rows.map(m=>{
-    const st=m.status||'';
+    const st=m.status||'', tr=(P.retry[m.key]||{}).n||0;
     return '<div class="item" data-key="'+esc(m.key)+'">'
       +'<div class="row"><span class="qid">'+esc(m.key)+'</span>'
-      +(m.n>1?'<span class="pill">錯咗 '+m.n+' 次</span>':'')
-      +(st?'<span class="pill '+esc(st)+'">'+(zh[st]||st)+'</span>':'')+'</div>'
-      +'<textarea placeholder="用自己嘅話寫低呢條考緊咩、你當初點解錯…">'+esc(m.note)+'</textarea>'
+      +(m.n>1?'<span class="pill not">wrong ×'+m.n+'</span>':'')
+      +(tr?'<span class="trial">trials '+tr+'</span>':'')
+      +(st?'<span class="pill '+esc(st)+'">'+(ST_EN[st]||st)+'</span>':'')
+      +'<span class="grow"></span>'
+      +'<button class="btn sm rev">Review &amp; retry</button></div>'
+      +'<div class="revbox"></div>'
+      +'<textarea placeholder="In your own words: what is this question really testing, and why did you first get it wrong?">'+esc(m.note)+'</textarea>'
       +'<div class="statusrow">'
-      +'<button data-st="understood" aria-pressed="'+(st==='understood')+'">明白</button>'
-      +'<button data-st="partly" aria-pressed="'+(st==='partly')+'">半明</button>'
-      +'<button data-st="not" aria-pressed="'+(st==='not')+'">未明</button>'
+      +'<button data-st="understood" aria-pressed="'+(st==='understood')+'">Got it</button>'
+      +'<button data-st="partly" aria-pressed="'+(st==='partly')+'">Partly</button>'
+      +'<button data-st="not" aria-pressed="'+(st==='not')+'">Not yet</button>'
       +'<span style="flex:1"></span><button class="save btn sm">Save</button>'
       +'<span class="mono saved"></span></div></div>';
   }).join('');
 }
+
+/* Review & retry: pull the real question back, let the student answer it again
+   right here, and count the trials. A correct retry goes through the same
+   cooldown rule as the drill (five other questions or ten minutes after the
+   wrong answer), so the album is a genuine second chance, not a loophole. */
+function openRetry(row){
+  const key=row.dataset.key, box=row.querySelector('.revbox');
+  box.innerHTML='<p class="mono">Loading question…</p>';
+  jsonp({q:key, t:SESS}, r=>{
+    if(!r||!r.item){ box.innerHTML='<p class="mono">Could not load this question.</p>'; return; }
+    row._q=r.item; drawRetry(row);
+  });
+}
+function drawRetry(row){
+  const q=row._q, box=row.querySelector('.revbox');
+  const tr=(P.retry[q.key]||{}).n||0;
+  box.innerHTML='<div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;margin-top:10px;background:var(--surface-2)">'
+    +'<div class="meta"><span class="score">Trial '+(tr+1)+'</span>'
+    +'<span class="trial">answer to reveal the explanation</span></div>'
+    +'<div class="stem" style="font-size:15px">'+stemHtml(q)+'</div>'
+    +'<div class="ropts">'+optsHtml(q,-1)+'</div>'
+    +'<div class="why" style="margin-top:10px"></div></div>';
+}
 $('booklist').addEventListener('click',e=>{
   const row=e.target.closest('.item'); if(!row) return;
+  if(e.target.closest('.rev')){ openRetry(row); return; }
+  const ob=e.target.closest('.ropts .opt');
+  if(ob && row._q && !ob.disabled){
+    const q=row._q;
+    const opts=row.querySelectorAll('.ropts .opt');
+    const chose=[...opts].indexOf(ob), ok=chose===Number(q.ans);
+    P.retry[q.key]={n:((P.retry[q.key]||{}).n||0)+1}; pSave();
+    opts.forEach((o,i)=>{
+      o.disabled=true;
+      if(i===Number(q.ans)) o.classList.add('right');
+      else if(i===chose)    o.classList.add('wrong');
+      else                  o.classList.add('dim');
+    });
+    const fb=row.querySelector('.revbox .why');
+    if(ok){
+      const credited=markRight(q.key, q.topic||q.sub||'');
+      fb.className='why show r';
+      fb.innerHTML='<b>'+esc(pick_(CHEER_OK))+'</b><br><b>Correct — the answer is '+LAB[Number(q.ans)]+'.</b> '+esc(q.why||'')
+        +'<p class="mono" style="margin:10px 0 0">'
+        +(credited?'This now counts as cleared. If you can also say WHY in your note, mark it "Got it".'
+                  :'Right — but you answered this wrongly just now, so it counts after 5 other questions or 10 minutes.')
+        +'</p><button class="btn sm" style="margin-top:8px" data-again="1">Try again later</button>';
+    }else{
+      markWrong(q.key, q.topic||q.sub||'');
+      post({event:'mistake', key:q.key, chose:chose, correct:false, page:'album'});
+      fb.className='why show w';
+      fb.innerHTML='<b>'+esc(pick_(CHEER_NO))+'</b><br><b>The answer is '+LAB[Number(q.ans)]+'.</b> '+esc(q.why||'')
+        +'<p class="mono" style="margin:10px 0 0">Still tricky. Read the explanation, write your note below, come back and retry.</p>'
+        +'<button class="btn sm" style="margin-top:8px" data-again="1">Retry now</button>';
+    }
+    const trEl=row.querySelector('.trial');
+    if(trEl && trEl.textContent.indexOf('trials')===0) trEl.textContent='trials '+P.retry[q.key].n;
+    return;
+  }
+  if(e.target.closest('[data-again]')){ drawRetry(row); return; }
   const st=e.target.closest('[data-st]');
   if(st){
     const all=row.querySelectorAll('[data-st]');
@@ -1054,9 +1133,10 @@ $('booklist').addEventListener('click',e=>{
     post({event:'note', key:row.dataset.key, status:status, note:note});
     for(let i=0;i<BOOK.length;i++) if(BOOK[i].key===row.dataset.key){ BOOK[i].status=status; BOOK[i].note=note; }
     row.querySelector('.saved').textContent=' saved';
-    setTimeout(()=>{ const s=row.querySelector('.saved'); if(s) s.textContent=''; },2500);
+    setTimeout(()=>{ const sv=row.querySelector('.saved'); if(sv) sv.textContent=''; },2500);
   }
 });
+
 
 /* ----------------------------------------------------------- all questions */
 function renderAllq(){
@@ -1106,7 +1186,7 @@ $('lqSec').addEventListener('change',renderLq);
 $('saveNick').addEventListener('click',()=>{
   submitProfile($('aCls').value,$('aNum').value,$('nick').value,$('nickMsg'),()=>{
     $('who').textContent=ME.nick+'  ·  '+ME.cls+'-'+ME.num;
-    $('acctSeat').textContent='班別 '+ME.cls+'  ·  學號 '+ME.num;
+    $('acctSeat').textContent='Class '+ME.cls+'  ·  No. '+ME.num;
     pushScore();
   });
 });
@@ -1115,14 +1195,14 @@ function loadBoard(target){
   const el=$(target); if(!el) return;
   el.innerHTML='<p class="muted">Loading…</p>';
   jsonp({lb:1, uid:djb2('tyn:'+(EMAIL||''))}, r=>{
-    if(!r||!r.top){ el.innerHTML='<p class="muted">排行榜暫時讀唔到。</p>'; return; }
-    if(!r.top.length){ el.innerHTML='<p class="muted">仲未有人上榜。</p>'; return; }
-    let h='<table><tr><th>#</th><th>花名</th><th>Lv</th><th>%</th></tr>';
+    if(!r||!r.top){ el.innerHTML='<p class="muted">Leaderboard is unavailable right now.</p>'; return; }
+    if(!r.top.length){ el.innerHTML='<p class="muted">No one on the board yet.</p>'; return; }
+    let h='<table><tr><th>#</th><th>Nickname</th><th>Lv</th><th>%</th></tr>';
     r.top.forEach((x,i)=>{ h+='<tr><td>'+(i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+x.pct+'%</td></tr>'; });
     h+='</table>';
-    if(r.you) h+='<p class="mono" style="margin-top:10px">你排第 '+r.you.rank+' / '+r.n
+    if(r.you) h+='<p class="mono" style="margin-top:10px">You are #'+r.you.rank+' of '+r.n
       +'  ·  '+r.you.pct+'%  ·  Lv.'+r.you.lvl
-      +(r.you.gap?'  ·  追前一位仲差 '+r.you.gapQ+' 題':'')+'</p>';
+      +(r.you.gap?'  ·  '+r.you.gapQ+' questions behind the next rank':'')+'</p>';
     el.innerHTML=h;
   });
 }
