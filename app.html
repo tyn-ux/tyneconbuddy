@@ -204,6 +204,19 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface); color:var(--muted)}
 .like.on{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
 
+/* --- pencil layer over the question --- */
+#qwrap{position:relative}
+#ink{position:absolute; inset:0; z-index:5; pointer-events:none; touch-action:auto}
+#qwrap.drawing #ink{pointer-events:auto; touch-action:none; cursor:crosshair}
+.inkbar{display:none; gap:6px; align-items:center; flex-wrap:wrap; margin:8px 0 2px;
+  font-family:var(--f-sans)}
+#qwrap.drawing ~ .inkbar, .inkbar.show{display:flex}
+.inkbar button{font-family:var(--f-sans); font-size:12px; font-weight:600; padding:6px 11px;
+  min-height:38px; border:1px solid var(--line); border-radius:var(--r-sm);
+  background:var(--surface); color:var(--ink); cursor:pointer}
+.inkbar button[aria-pressed="true"]{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
+.inkbar .swatch{width:14px; height:14px; border-radius:50%; display:inline-block; vertical-align:-2px; margin-right:5px}
+#inkToggle[aria-pressed="true"]{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
 .alb-ch{border-left:4px solid var(--acc,var(--line)); padding-left:12px; margin:0 0 20px}
 .alb-ch h3{font-family:var(--f-sans); font-size:14px; margin:0; color:var(--acc,var(--ink))}
 .alb-ch .chsum{font-family:var(--f-sans); font-size:12px; color:var(--muted); margin:0 0 4px}
@@ -305,9 +318,20 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
       <div class="bar" style="margin:6px 0 2px"><i id="secBar" style="width:0%"></i></div>
       <div class="qnav" id="qnav"></div>
       <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
-      <div class="qid" id="qid"></div>
-      <div class="stem" id="stem"></div>
-      <div id="opts"></div>
+      <div class="meta"><div class="qid" id="qid"></div>
+        <button class="btn sm" id="inkToggle" aria-pressed="false">✏️ Draw</button></div>
+      <div class="inkbar" id="inkbar">
+        <button data-tool="pen" aria-pressed="true"><span class="swatch" style="background:#211d16"></span>Pen</button>
+        <button data-tool="red"><span class="swatch" style="background:#c9412e"></span>Red</button>
+        <button data-tool="erase">Eraser</button>
+        <button id="inkClear">Clear</button>
+        <span class="mono">Pencil draws · palm won&#39;t</span>
+      </div>
+      <div id="qwrap">
+        <div class="stem" id="stem"></div>
+        <div id="opts"></div>
+        <canvas id="ink"></canvas>
+      </div>
       <div class="why hide" id="why"></div>
       <div class="row" style="margin-top:16px">
         <button class="btn primary hide" id="next">Next</button>
@@ -869,6 +893,7 @@ function render(){
   $('stem').innerHTML=stemHtml(q);
   $('opts').innerHTML=optsHtml(q,-1);
   drawNav();
+  requestAnimationFrame(inkResize);        // canvas refits after layout settles
 }
 $('opts').addEventListener('click',e=>{
   const b=e.target.closest('.opt'); if(!b||b.disabled) return;
@@ -951,8 +976,105 @@ $('next').addEventListener('click',()=>{
   render();
 });
 $('quit').addEventListener('click',()=>{
+  if(INK.on) $('inkToggle').click();
   $('qcard').classList.add('hide'); $('picker').classList.remove('hide'); drawOverview();
 });
+
+/* ------------------------------------------------------------------- ink
+ * A drawing layer over the question, made for Apple Pencil but working with
+ * mouse and finger too. Strokes are stored PER QUESTION in normalised
+ * coordinates, so jumping between questions brings each one's workings back,
+ * and rotating the iPad redraws them at the right size instead of stretching
+ * a bitmap. Palm rejection: once a real pen has been seen, touch input no
+ * longer draws — a resting palm stays a resting palm. Nothing here is saved
+ * to the server; workings are scratch, not records. */
+const INK={on:false, tool:'pen', strokes:new Map(), cur:null, penSeen:false};
+const inkColors={pen:'#211d16', red:'#c9412e'};
+function inkKey(){ return QUEUE[POS] ? QUEUE[POS].key : null; }
+function inkResize(){
+  const c=$('ink'), w=$('qwrap');
+  if(!c||!w) return;
+  const r=w.getBoundingClientRect(), d=window.devicePixelRatio||1;
+  c.width=Math.max(1,Math.round(r.width*d)); c.height=Math.max(1,Math.round(r.height*d));
+  c.style.width=r.width+'px'; c.style.height=r.height+'px';
+  inkRedraw();
+}
+function inkRedraw(){
+  const c=$('ink'), k=inkKey(); if(!c) return;
+  const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width;
+  (INK.strokes.get(k)||[]).forEach(st=>{
+    ctx.globalCompositeOperation=st.e?'destination-out':'source-over';
+    ctx.strokeStyle=st.c; ctx.lineWidth=st.w*W; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath();
+    st.p.forEach((pt,i)=>{ const x=pt[0]*W, y=pt[1]*W; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+  });
+  ctx.globalCompositeOperation='source-over';
+}
+function inkPoint(e){
+  const r=$('ink').getBoundingClientRect(), d=window.devicePixelRatio||1;
+  const W=$('ink').width;
+  return [ (e.clientX-r.left)*d/W, (e.clientY-r.top)*d/W ];
+}
+function inkDown(e){
+  if(!INK.on) return;
+  if(e.pointerType==='pen') INK.penSeen=true;
+  if(e.pointerType==='touch' && INK.penSeen) return;      // palm rejection
+  e.preventDefault();
+  const erase=INK.tool==='erase';
+  const base=erase?0.02:(e.pointerType==='pen'?0.0028:0.004);
+  INK.cur={c:inkColors[INK.tool]||inkColors.pen, w:base*(erase?1:(0.6+(e.pressure||0.5))), e:erase?1:0, p:[inkPoint(e)]};
+  $('ink').setPointerCapture(e.pointerId);
+}
+function inkMove(e){
+  if(!INK.cur) return;
+  e.preventDefault();
+  const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+  evs.forEach(ev=>INK.cur.p.push(inkPoint(ev)));
+  inkRedraw(); drawCur();
+}
+function drawCur(){
+  const c=$('ink'), ctx=c.getContext('2d'), st=INK.cur, W=c.width;
+  ctx.globalCompositeOperation=st.e?'destination-out':'source-over';
+  ctx.strokeStyle=st.c; ctx.lineWidth=st.w*W; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  st.p.forEach((pt,i)=>{ const x=pt[0]*W, y=pt[1]*W; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.stroke(); ctx.globalCompositeOperation='source-over';
+}
+function inkUp(e){
+  if(!INK.cur) return;
+  const k=inkKey();
+  if(k && INK.cur.p.length>1){
+    if(!INK.strokes.has(k)) INK.strokes.set(k,[]);
+    INK.strokes.get(k).push(INK.cur);
+  }
+  INK.cur=null; inkRedraw();
+}
+$('ink').addEventListener('pointerdown',inkDown);
+$('ink').addEventListener('pointermove',inkMove);
+$('ink').addEventListener('pointerup',inkUp);
+$('ink').addEventListener('pointercancel',inkUp);
+$('inkToggle').addEventListener('click',()=>{
+  INK.on=!INK.on;
+  $('inkToggle').setAttribute('aria-pressed',String(INK.on));
+  $('qwrap').classList.toggle('drawing',INK.on);
+  $('inkbar').classList.toggle('show',INK.on);
+  if(INK.on) inkResize();
+});
+$('inkbar').addEventListener('click',e=>{
+  const t=e.target.closest('[data-tool]');
+  if(t){
+    INK.tool=t.dataset.tool;
+    $('inkbar').querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b===t)));
+    return;
+  }
+  if(e.target.closest('#inkClear')){
+    const k=inkKey(); if(k) INK.strokes.delete(k);
+    inkRedraw();
+  }
+});
+window.addEventListener('resize',()=>{ if($('qcard')&&!$('qcard').classList.contains('hide')) inkResize(); });
 
 /* -------------------------------------------------------------------- exam
  * No feedback until submit: marking each answer as you go trains a different
