@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HKDSE Economics — Drill</title>
+<title>HKDSE Economics — tyneconbuddy</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
@@ -26,37 +26,53 @@ html,body{margin:0}
 body{background:var(--bg); color:var(--ink); font-family:var(--f-serif);
      line-height:1.6; -webkit-font-smoothing:antialiased}
 
-.wrap{max-width:820px; margin:0 auto; padding:0 16px 80px}
+.wrap{max-width:860px; margin:0 auto; padding:0 16px 90px}
 header{background:var(--surface); border-bottom:1px solid var(--line);
        border-left:3px solid var(--brand); position:sticky; top:0; z-index:20}
-.hd{max-width:820px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px}
+.hd{max-width:860px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px}
 .hd h1{font-size:15px; margin:0; font-family:var(--f-sans); font-weight:600}
-.hd .sp{flex:1}
 .who{font-family:var(--f-sans); font-size:12px; color:var(--muted)}
-
-nav{display:flex; gap:2px; max-width:820px; margin:0 auto; padding:0 16px 8px; flex-wrap:wrap}
-nav button{font-family:var(--f-sans); font-size:13px; padding:6px 12px; cursor:pointer;
-           background:transparent; border:1px solid transparent; border-radius:var(--r-sm); color:var(--muted)}
+nav{display:flex; gap:2px; max-width:860px; margin:0 auto; padding:0 16px 8px;
+    flex-wrap:wrap; overflow-x:auto}
+nav button{font-family:var(--f-sans); font-size:13px; padding:6px 11px; cursor:pointer;
+  background:transparent; border:1px solid transparent; border-radius:var(--r-sm);
+  color:var(--muted); white-space:nowrap}
 nav button[aria-selected="true"]{background:var(--surface-2); border-color:var(--line);
-                                 color:var(--ink); font-weight:600}
+  color:var(--ink); font-weight:600}
 
 .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
       box-shadow:var(--shadow-1); padding:18px; margin:16px 0}
 h2{font-family:var(--f-sans); font-size:14px; text-transform:uppercase; letter-spacing:.06em;
    color:var(--muted); margin:0 0 12px; font-weight:600}
+h3{font-family:var(--f-sans); font-size:15px; margin:0 0 6px; font-weight:600}
 .muted{color:var(--muted); font-size:14px}
 .mono{font-family:var(--f-mono); font-size:12px; color:var(--muted); word-break:break-word}
+.row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.grow{flex:1}
 
 button.btn{font-family:var(--f-sans); font-size:14px; font-weight:500; cursor:pointer;
   padding:9px 16px; border:1px solid var(--line); border-radius:var(--r-sm);
   background:var(--surface-2); color:var(--ink)}
 button.btn:hover{border-color:var(--ink)}
 button.btn.primary{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
+button.btn.sm{padding:5px 11px; font-size:12px}
+input[type=text],select{font-family:var(--f-sans); font-size:14px; padding:8px 10px;
+  border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--ink)}
+
+.lvl{display:flex; align-items:baseline; gap:10px; margin-bottom:10px}
+.lvl b{font-family:var(--f-sans); font-size:22px}
+.bar{height:8px; background:var(--surface-2); border:1px solid var(--line);
+     border-radius:var(--r-sm); overflow:hidden}
+.bar i{display:block; height:100%; background:var(--star)}
+.tree{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-top:12px}
+.node{border:1px solid var(--line); background:var(--surface-2); padding:9px 11px; border-radius:var(--r-sm)}
+.node .nm{font-family:var(--f-sans); font-size:12px; display:flex; justify-content:space-between; gap:8px}
+.node .bar{margin-top:6px}
 
 .secgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px}
 .sec{text-align:left; padding:10px 12px; background:var(--surface-2);
-     border:1px solid var(--line); border-radius:var(--r-sm); cursor:pointer;
-     font-family:var(--f-sans); font-size:13px; color:var(--ink)}
+  border:1px solid var(--line); border-radius:var(--r-sm); cursor:pointer;
+  font-family:var(--f-sans); font-size:13px; color:var(--ink)}
 .sec:hover{border-color:var(--brand)}
 .sec small{display:block; color:var(--muted); font-size:11px; margin-top:2px}
 
@@ -71,15 +87,15 @@ button.btn.primary{background:var(--ink); color:var(--on-dark); border-color:var
 .opt .lab{font-family:var(--f-mono); font-weight:600; color:var(--muted)}
 .opt.right{background:var(--pos-bg); border-color:var(--pos-line)}
 .opt.wrong{background:var(--neg-bg); border-color:var(--neg-line)}
+.opt.pick{background:var(--surface-2); border-color:var(--ink)}
 .opt:disabled{cursor:default}
 .why{background:var(--surface-2); border-left:3px solid var(--star);
      padding:12px 14px; margin-top:14px; font-size:15px}
 
-.mrow{border-top:1px solid var(--line); padding:14px 0}
-.mrow:first-child{border-top:0}
-.mhead{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.item{border-top:1px solid var(--line); padding:13px 0}
+.item:first-child{border-top:0}
 .pill{font-family:var(--f-sans); font-size:11px; padding:2px 8px; border-radius:var(--r-sm);
-      border:1px solid var(--line); background:var(--surface-2); color:var(--muted)}
+  border:1px solid var(--line); background:var(--surface-2); color:var(--muted)}
 .pill.understood{background:var(--pos-bg); border-color:var(--pos-line); color:var(--pos)}
 .pill.partly{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
 .pill.not{background:var(--neg-bg); border-color:var(--neg-line); color:var(--neg)}
@@ -90,14 +106,29 @@ textarea{width:100%; min-height:72px; margin-top:8px; padding:10px;
 .statusrow button{font-family:var(--f-sans); font-size:12px; padding:5px 11px; cursor:pointer;
   border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--muted)}
 .statusrow button[aria-pressed="true"]{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
-
+table{width:100%; border-collapse:collapse; font-family:var(--f-sans); font-size:13px}
+th,td{text-align:left; padding:7px 6px; border-bottom:1px solid var(--line)}
+th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.05em}
+.cmt{border-top:1px solid var(--line); padding:10px 0}
+.cmt:first-child{border-top:0}
+.cmt .hd2{display:flex; gap:8px; align-items:baseline; font-family:var(--f-sans); font-size:12px}
+.cmt .nk{font-weight:600}
+.cmt.ver{background:var(--pos-bg); border-left:3px solid var(--pos); padding-left:10px}
+.like{font-family:var(--f-sans); font-size:12px; padding:3px 9px; cursor:pointer;
+  border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--muted)}
+.like.on{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
+.qnav{display:flex; flex-wrap:wrap; gap:4px; margin-top:10px}
+.qnav button{width:30px; height:28px; padding:0; cursor:pointer;
+  font-family:var(--f-mono); font-size:11px; border:1px solid var(--line);
+  border-radius:var(--r-sm); background:var(--surface-2); color:var(--muted)}
+.qnav button.done{background:var(--pos-bg); border-color:var(--pos-line); color:var(--pos)}
+.qnav button.miss{background:var(--neg-bg); border-color:var(--neg-line); color:var(--neg)}
+.qnav button.now{outline:2px solid var(--ink); outline-offset:1px; color:var(--ink); font-weight:600}
 .hide{display:none}
 
-/* Printing is off. Only one question is ever in the DOM at a time, so even a
-   reader that ignores this rule cannot lift a set from the page. */
 @media print{
   body *{display:none !important}
-  body::after{content:"Printing is disabled. Use the mistake book to revise.";
+  body::after{content:"Printing is disabled. Use the 錯題本 to revise.";
               display:block !important; font-family:sans-serif; padding:40px}
 }
 </style>
@@ -106,13 +137,18 @@ textarea{width:100%; min-height:72px; margin-top:8px; padding:10px;
 
 <header>
   <div class="hd">
-    <h1>HKDSE Economics — Drill</h1>
-    <span class="sp"></span>
-    <span class="who" id="who"></span>
+    <h1>HKDSE Economics</h1><span class="grow"></span><span class="who" id="who"></span>
   </div>
   <nav id="nav" class="hide">
-    <button data-tab="drill" aria-selected="true">Drill</button>
-    <button data-tab="book" aria-selected="false">錯題本 Mistake book</button>
+    <button data-tab="overview" aria-selected="true">Overview</button>
+    <button data-tab="drill">Drill</button>
+    <button data-tab="exam">Exam</button>
+    <button data-tab="miss">錯題本</button>
+    <button data-tab="allq">All Questions</button>
+    <button data-tab="lq">Long Qs</button>
+    <button data-tab="con">Concepts</button>
+    <button data-tab="trap">Traps</button>
+    <button data-tab="acct">Account</button>
   </nav>
 </header>
 
@@ -120,9 +156,37 @@ textarea{width:100%; min-height:72px; margin-top:8px; padding:10px;
 
   <div id="gate" class="card">
     <h2>Sign in</h2>
-    <p class="muted">Questions load only after you sign in with your Google account.</p>
+    <p class="muted">Everything here loads only after you sign in with your Google account.</p>
     <div id="gbtn"></div>
     <p class="mono" id="gmsg">Loading Google Sign-In…</p>
+  </div>
+
+  <div id="setup" class="card hide">
+    <h2>入班資料</h2>
+    <p class="muted">first time only — 填咗先用得。班別同學號只有老師見到；<b>花名</b>先係同學見到嗰個。</p>
+    <div class="row" style="margin-top:12px">
+      <input type="text" id="pCls" maxlength="6" placeholder="班別 e.g. 4A" style="width:110px">
+      <input type="text" id="pNum" maxlength="2" placeholder="學號" style="width:90px">
+      <input type="text" id="pNick" maxlength="16" placeholder="花名 nickname" class="grow">
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="pSave">開始</button>
+      <span class="mono" id="pMsg"></span>
+    </div>
+  </div>
+
+  <div id="tab-overview" class="hide">
+    <div class="card">
+      <div class="lvl"><b id="ovLvlN">Lv.1</b><span id="ovLvlName" class="muted"></span>
+        <span class="grow"></span><span class="mono" id="ovPct">0%</span></div>
+      <div class="bar"><i id="ovBar" style="width:0%"></i></div>
+      <p class="mono" id="ovLine" style="margin:10px 0 0"></p>
+    </div>
+    <div class="card">
+      <h2>Skill tree</h2>
+      <p class="muted">每格 = 一個 topic。答啱先計，答錯唔會扣分。</p>
+      <div class="tree" id="ovTree"></div>
+    </div>
   </div>
 
   <div id="tab-drill" class="hide">
@@ -131,317 +195,836 @@ textarea{width:100%; min-height:72px; margin-top:8px; padding:10px;
       <div class="secgrid" id="secgrid"></div>
     </div>
     <div id="qcard" class="card hide">
+      <div class="row"><span class="mono" id="secName"></span><span class="grow"></span>
+        <span class="mono" id="secCount"></span></div>
+      <div class="bar" style="margin:6px 0 2px"><i id="secBar" style="width:0%"></i></div>
+      <div class="qnav" id="qnav"></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
       <div class="qid" id="qid"></div>
       <div class="stem" id="stem"></div>
       <div id="opts"></div>
       <div class="why hide" id="why"></div>
-      <div style="margin-top:16px; display:flex; gap:8px">
-        <button class="btn primary hide" id="next">Next question</button>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary hide" id="next">Next</button>
         <button class="btn" id="quit">Back to sections</button>
       </div>
       <p class="mono" id="prog" style="margin-top:12px"></p>
     </div>
   </div>
 
-  <div id="tab-book" class="hide">
+  <div id="tab-exam" class="hide">
+    <div class="card" id="examSetup">
+      <h2>Exam mode</h2>
+      <p class="muted">隨機抽題，答完先一次過睇對錯同解釋——同真考試一樣，唔會逐題即時話你啱定錯。</p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" data-n="10">10 questions</button>
+        <button class="btn" data-n="20">20 questions</button>
+        <button class="btn" data-n="30">30 questions</button>
+      </div>
+    </div>
+    <div class="card hide" id="examRun">
+      <div class="row"><span class="qid" id="exQid"></span><span class="grow"></span>
+        <span class="mono" id="exTimer"></span></div>
+      <div class="stem" id="exStem"></div>
+      <div id="exOpts"></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn" id="exPrev">Prev</button>
+        <button class="btn" id="exNext">Next</button>
+        <span class="grow"></span>
+        <button class="btn primary" id="exSubmit">Submit</button>
+      </div>
+      <p class="mono" id="exProg" style="margin-top:10px"></p>
+    </div>
+    <div class="card hide" id="examResult"></div>
+  </div>
+
+  <div id="tab-miss" class="hide">
     <div class="card">
       <h2>錯題本</h2>
-      <p class="muted">
-        每一條答錯過嘅題目都會永久留喺呢度，刪唔走。你可以寫低自己嘅理解，同埋標返而家明唔明。<br>
-        <span class="mono">Write the idea in your own words — not the answer.</span>
-      </p>
+      <p class="muted">每一條答錯過嘅題都會永久留喺呢度，刪唔走。寫低你自己嘅理解，再標返明唔明。<br>
+        <span class="mono">Write the idea in your own words — not the answer.</span></p>
+      <div class="row" id="bookFilt" style="margin-top:8px">
+        <button class="btn sm" data-filt="all" aria-pressed="true">全部</button>
+        <button class="btn sm" data-filt="not">未明</button>
+        <button class="btn sm" data-filt="partly">半明</button>
+        <button class="btn sm" data-filt="understood">明白</button>
+      </div>
     </div>
     <div class="card" id="booklist"><p class="muted">Loading…</p></div>
+  </div>
+
+  <div id="tab-allq" class="hide">
+    <div class="card">
+      <h2>All questions</h2>
+      <div class="row"><select id="allqSec"></select>
+        <input type="text" id="allqFind" placeholder="search…" class="grow"></div>
+    </div>
+    <div class="card" id="allqList"><p class="muted">Pick a section.</p></div>
+  </div>
+
+  <div id="tab-lq" class="hide">
+    <div class="card"><h2>Long questions</h2><div class="row"><select id="lqSec"></select></div></div>
+    <div class="card" id="lqList"><p class="muted">Pick a section.</p></div>
+  </div>
+
+  <div id="tab-con" class="hide">
+    <div class="card"><h2>Concepts</h2>
+      <input type="text" id="conFind" placeholder="search concepts…" style="width:100%"></div>
+    <div class="card" id="conList"><p class="muted">Loading…</p></div>
+  </div>
+
+  <div id="tab-trap" class="hide">
+    <div class="card"><h2>Traps</h2><p class="muted">歷屆最多人踩嘅位。</p></div>
+    <div class="card" id="trapList"><p class="muted">Loading…</p></div>
+  </div>
+
+  <div id="tab-acct" class="hide">
+    <div class="card">
+      <h2>Account</h2>
+      <p class="mono" id="acctWho"></p>
+      <p class="mono" id="acctSeat"></p>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="aCls" maxlength="6" placeholder="班別" style="width:110px">
+        <input type="text" id="aNum" maxlength="2" placeholder="學號" style="width:90px">
+        <input type="text" id="nick" maxlength="16" placeholder="花名" class="grow">
+        <button class="btn" id="saveNick">Save</button><span class="mono" id="nickMsg"></span>
+      </div>
+      <p class="muted" style="margin-top:10px">排行榜同留言只顯示花名，唔會顯示 email、班別或學號。</p>
+    </div>
+    <div class="card">
+      <h2>班際排行榜</h2>
+      <div id="lb"><p class="muted">Loading…</p></div>
+      <button class="btn sm" id="lbRefresh" style="margin-top:10px">↻ Refresh</button>
+    </div>
   </div>
 
 </div>
 
 <script>
 /* ============================================================================
-   CONFIG — must be the /exec URL of the SAME Apps Script deployment Code.gs
-   is deployed in, and the OAuth client the pages sign in with.
+   CONFIG — must match the Apps Script deployment Code.gs is deployed in.
    ========================================================================== */
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec';
 const GOOGLE_CLIENT_ID = '533999025151-qf44e4dp2k7stspp5r6g8050ererf6st.apps.googleusercontent.com';
 
-const LAB = ['A','B','C','D','E'];
-const LABELS = {"scarcity": "Scarcity", "oppcost": "Opp. Cost", "goods": "Econ/Free", "types": "Types of Goods", "posnorm": "Pos/Normative", "property": "Property Rights", "economy": "Types of Economy", "interest": "Interest", "basic": "3 Basic Problems", "factors": "Factors", "dol": "Div. of Labour", "labprod": "Lab. Productivity", "labmob": "Lab. Mobility", "labsup": "Lab. Supply", "wage": "Wage Payment", "cprod": "Consumer/Producer", "typeprod": "Types of Prod.", "dimret": "Dim. Returns", "shortlong": "Short/Long Run", "scale": "Econ. of Scale", "expansion": "Expansion", "profitmax": "Profit Max.", "ownership": "Ownership", "sharesbonds": "Shares & Bonds", "pubpriv": "Public/Private", "supdem": "Supply & Demand", "relprice": "Relative Price", "elasticity": "Elasticity", "shortsurp": "Shortage/Surplus", "funcprice": "Function of Price", "market": "Market Structures", "efficiency": "Efficiency", "extern": "Externalities", "equity": "Equity", "tax": "Tax", "sub": "Subsidy", "quo": "Quota", "flr": "Floor", "cel": "Ceiling", "prp": "P-R-P", "fm": "F-M", "Efficiency": "Efficiency", "Externalities": "Externalities", "Equity": "Equity", "Principles of Taxation": "Principles of Taxation", "Circular Flow": "Circular Flow", "GNP / GNI": "GNP / GNI", "Real / Nominal GDP": "Real / Nominal GDP", "AD-AS": "AD-AS", "Problems of Barter": "Problems of Barter", "Functions of Money": "Functions of Money", "Properties of Good Money": "Properties of Good Money", "Banking System": "Banking System", "Liquidity": "Liquidity", "M1 / M2 / M3": "M1 / M2 / M3", "Function of HKMA": "Function of HKMA", "Deposit Creation / Contraction": "Deposit Creation / Contraction", "Monetary Base": "Monetary Base", "Money Demand": "Money Demand", "Money Market Equilibrium": "Money Market Equilibrium", "Quantity Theory of Money": "Quantity Theory of Money", "Business Cycle": "Business Cycle", "Inflation / Deflation": "Inflation / Deflation", "Nominal / Real Interest Rate": "Nominal / Real Interest Rate", "Unemployment": "Unemployment", "Int'l Trade (Calculation)": "Int'l Trade (Calculation)", "Int'l Trade (Concept)": "Int'l Trade (Concept)", "Trade Barriers": "Trade Barriers", "Balance of Payments": "Balance of Payments", "Exchange Rate": "Exchange Rate", "Linked Exchange Rate": "Linked Exchange Rate"};
+/* Keep identical to LEVELS in Code.gs, or the level a student sees will not
+   match the level printed beside their name on the board. */
+const LEVELS = [0,3,8,15,25,40,60,80,95,100];
+const LEVEL_NAMES = ['起步 Starter','打底 Foundation','上手 Familiar','穩陣 Steady',
+  '熟手 Sharp','硬淨 Strong','進階 Advanced','高手 Expert','大師 Master','滿盤 Full Marks'];
 
-let SESS = null, PROFILE = null;
-let QUEUE = [], POS = 0, SECTION = null;
+const LAB = ['A','B','C','D','E'];
+const LABELS = {"scarcity": "Scarcity", "oppcost": "Opp. Cost", "goods": "Econ/Free", "types": "Types of Goods", "posnorm": "Pos/Normative", "property": "Property Rights", "economy": "Types of Economy", "interest": "Interest", "basic": "3 Basic Problems", "factors": "Factors", "dol": "Div. of Labour", "labprod": "Lab. Productivity", "labmob": "Lab. Mobility", "labsup": "Lab. Supply", "wage": "Wage Payment", "cprod": "Consumer/Producer", "typeprod": "Types of Prod.", "dimret": "Dim. Returns", "shortlong": "Short/Long Run", "scale": "Econ. of Scale", "expansion": "Expansion", "profitmax": "Profit Max.", "ownership": "Ownership", "sharesbonds": "Shares & Bonds", "pubpriv": "Public/Private", "supdem": "Supply & Demand", "relprice": "Relative Price", "elasticity": "Elasticity", "shortsurp": "Shortage/Surplus", "funcprice": "Function of Price", "market": "Market Structures", "efficiency": "Efficiency", "extern": "Externalities", "equity": "Equity", "tax": "Tax", "sub": "Subsidy", "quo": "Quota", "flr": "Floor", "cel": "Ceiling", "prp": "P-R-P", "fm": "F-M", "Efficiency": "Efficiency", "micro": "micro", "Externalities": "Externalities", "Equity": "Equity", "Principles of Taxation": "Principles of Taxation", "Circular Flow": "Circular Flow", "natl": "natl", "GNP / GNI": "GNP / GNI", "Real / Nominal GDP": "Real / Nominal GDP", "AD-AS": "AD-AS", "Problems of Barter": "Problems of Barter", "money": "money", "Functions of Money": "Functions of Money", "Properties of Good Money": "Properties of Good Money", "Banking System": "Banking System", "Liquidity": "Liquidity", "M1 / M2 / M3": "M1 / M2 / M3", "Function of HKMA": "Function of HKMA", "Deposit Creation / Contraction": "Deposit Creation / Contraction", "Monetary Base": "Monetary Base", "Money Demand": "Money Demand", "Money Market Equilibrium": "Money Market Equilibrium", "Quantity Theory of Money": "Quantity Theory of Money", "Business Cycle": "Business Cycle", "macro": "macro", "Inflation / Deflation": "Inflation / Deflation", "Nominal / Real Interest Rate": "Nominal / Real Interest Rate", "Unemployment": "Unemployment", "Int'l Trade (Calculation)": "Int'l Trade (Calculation)", "trade": "trade", "Int'l Trade (Concept)": "Int'l Trade (Concept)", "Trade Barriers": "Trade Barriers", "Balance of Payments": "Balance of Payments", "Exchange Rate": "Exchange Rate", "Linked Exchange Rate": "Linked Exchange Rate", "adas": "adas", "balsheet": "balsheet", "bop": "bop", "bizcycle": "bizcycle", "fx": "fx", "policy": "policy", "gni": "gni", "inflation": "inflation", "realint": "realint", "qtm": "qtm", "realgdp": "realgdp", "mtax": "mtax", "barrier": "barrier", "unemp": "unemp", "elect": "elect"};
+
+let SESS=null, PROFILE=null, EMAIL=null, IDX=null;
+let ME=null, LIKED={};          // ME = {cls,num,nick} once the seat is claimed
+const CACHE = {};
+let QUEUE=[], POS=0, SECTION=null;
 
 const $ = id => document.getElementById(id);
-const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const msg = t => { $('gmsg').textContent = t; };
+const lbl = t => LABELS[t] || t;
 
 /* --------------------------------------------------------------- transport */
-/* Reads go out as JSONP: Apps Script does not answer CORS preflight, so an
-   ordinary fetch could never read the reply. */
 function jsonp(params, cb, ms){
-  const fn = '__cb' + Math.random().toString(36).slice(2);
-  let done = false;
-  const finish = v => { if(done) return; done = true; cb(v); clean(); };
-  window[fn] = v => finish(v);
-  const s = document.createElement('script');
-  const q = Object.keys(params).map(k => k+'='+encodeURIComponent(params[k])).join('&');
-  s.src = SYNC_URL + '?' + q + '&callback=' + fn;
-  s.onerror = () => finish(null);
+  const fn='__cb'+Math.random().toString(36).slice(2);
+  let done=false;
+  const finish=v=>{ if(done)return; done=true; cb(v); clean(); };
+  window[fn]=v=>finish(v);
+  const s=document.createElement('script');
+  s.src=SYNC_URL+'?'+Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&')+'&callback='+fn;
+  s.onerror=()=>finish(null);
   document.head.appendChild(s);
   function clean(){ try{ delete window[fn]; s.remove(); }catch(e){} }
-  setTimeout(() => finish(null), ms || 12000);
+  setTimeout(()=>finish(null), ms||15000);
+}
+function post(body){
+  if(SESS) body.t=SESS;
+  try{ fetch(SYNC_URL,{method:'POST',mode:'no-cors',
+    headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}); }catch(e){}
+}
+/* A section never changes while the page is open, so fetch each at most once. */
+function section(type,page,topic,cb){
+  const k=type+'|'+page+'|'+topic;
+  if(CACHE[k]) return cb(CACHE[k]);
+  jsonp({bank:1,type:type,page:page,topic:topic,t:SESS}, r=>{
+    if(r&&r.error){ lockOut(); return cb([]); }
+    CACHE[k]=(r&&r.items)||[]; cb(CACHE[k]);
+  });
 }
 
-/* Writes are fire-and-forget: nothing the student sees depends on the reply. */
-function post(body){
-  if(SESS) body.t = SESS;
-  try{
-    fetch(SYNC_URL, {method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'text/plain'}, body:JSON.stringify(body)});
-  }catch(e){}
+/* ------------------------------------------------------------ local progress
+ * Progress lives on the student's own machine and is mirrored to the Sheet for
+ * the board. A question counts as cleared only when answered correctly — and a
+ * question just got wrong cannot be re-credited by tapping again straight away:
+ * it takes five other questions or ten minutes. That one rule is what stops
+ * "tap until green" from being a scoring strategy.
+ * -------------------------------------------------------------------------- */
+let P = {cleared:{}, wrong:{}, since:0};
+const pKey = () => 'tjx2:' + (EMAIL||'anon');
+function pLoad(){ try{ const v=JSON.parse(localStorage.getItem(pKey())); if(v) P=v; }catch(e){} }
+function pSave(){ try{ localStorage.setItem(pKey(), JSON.stringify(P)); }catch(e){} }
+
+/* The server holds the authoritative set of cleared questions, so a student who
+   changes machine or clears their cache does not start again from zero. The
+   local copy stays as a cache: it keeps the page usable while the fetch is in
+   flight, and if the network is down. The two are merged, never replaced —
+   cleared is cleared, whichever side saw it first. */
+let CLEARED_SYNCED=false, clearedQueue={};
+function pullProgress(cb){
+  jsonp({prog:1,t:SESS}, r=>{
+    if(r&&r.cleared){
+      Object.keys(r.cleared).forEach(k=>{ if(!P.cleared[k]) P.cleared[k]=r.cleared[k]; });
+      pSave();
+    }
+    CLEARED_SYNCED=true;
+    if(cb) cb();
+  });
+}
+let clearTimer=null;
+function queueCleared(key,topic){
+  clearedQueue[key]=topic||1;
+  clearTimeout(clearTimer);
+  clearTimer=setTimeout(()=>{
+    const batch=clearedQueue; clearedQueue={};
+    if(Object.keys(batch).length) post({event:'cleared', items:batch});
+  }, 3000);
+}
+
+function canCredit(key){
+  const w=P.wrong[key];
+  if(!w) return true;
+  return (P.since-w.at)>=5 || (Date.now()-w.ts)>=600000;
+}
+function markRight(key,topic){
+  P.since++;
+  if(canCredit(key) && !P.cleared[key]){
+    P.cleared[key]=topic||1; pSave(); queueCleared(key,topic); pushScore(); return true;
+  }
+  pSave(); return false;
+}
+function markWrong(key){ P.since++; P.wrong[key]={at:P.since, ts:Date.now()}; pSave(); }
+
+function totals(){
+  const per={}, all={cleared:0,total:0};
+  if(!IDX||!IDX.mcq) return {per,all};
+  Object.keys(IDX.mcq).forEach(pg=>Object.keys(IDX.mcq[pg]).forEach(tp=>{
+    per[tp]=per[tp]||{cleared:0,total:0};
+    per[tp].total+=IDX.mcq[pg][tp]; all.total+=IDX.mcq[pg][tp];
+  }));
+  Object.keys(P.cleared).forEach(k=>{
+    const tp=P.cleared[k];
+    if(per[tp]) per[tp].cleared++;
+    all.cleared++;
+  });
+  return {per,all};
+}
+function levelOf(p){ let lv=1; for(let i=0;i<LEVELS.length;i++) if(p>=LEVELS[i]) lv=i+1; return lv; }
+
+let pushTimer=null;
+function pushScore(){
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(()=>{                       // debounce: one write per burst
+    const t=totals(), sec={};
+    Object.keys(t.per).forEach(k=>sec[k]=t.per[k].cleared);
+    post({event:'score', pageId:'all', pageLabel:'tyneconbuddy',
+          nick:localStorage.getItem('tjx2:nick')||'',
+          cleared:t.all.cleared, total:t.all.total, sections:sec});
+  }, 4000);
 }
 
 /* ------------------------------------------------------------------- auth */
-/* The ID token is long and must never reach a URL (browser history, server
-   logs). So: POST the token with a random nonce, then collect a short session
-   token by nonce over JSONP. Every later read carries only the short token. */
 function onCredential(resp){
-  const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const nonce=Math.random().toString(36).slice(2)+Date.now().toString(36);
   msg('Checking with Google…');
   try{
-    const p = JSON.parse(decodeURIComponent(atob(resp.credential.split('.')[1]
-      .replace(/-/g,'+').replace(/_/g,'/')).split('').map(c =>
+    const p=JSON.parse(decodeURIComponent(atob(resp.credential.split('.')[1]
+      .replace(/-/g,'+').replace(/_/g,'/')).split('').map(c=>
       '%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')));
-    PROFILE = p.name || p.email;
-  }catch(e){ PROFILE = 'student'; }
+    PROFILE=p.name||p.email; EMAIL=p.email;
+  }catch(e){ PROFILE='student'; EMAIL='anon'; }
 
-  fetch(SYNC_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
+  fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
     body:JSON.stringify({event:'auth', idToken:resp.credential, nonce:nonce})});
 
-  let tries = 0;
+  let tries=0;
   (function claim(){
     tries++;
-    jsonp({claim:nonce}, r => {
-      if(r && r.t){ SESS = r.t; afterAuth(); return; }
-      if(r && r.error && r.error !== 'not ready'){
-        msg(({
-          blocked: 'This account cannot use the drill. Speak to your teacher.',
-          domain : 'Please sign in with your school account.',
-          roster : 'Your account is not on the class list. Ask your teacher to add you.',
-          expired: 'That sign-in timed out. Please try again.'
-        })[r.error] || ('Sign-in refused: ' + r.error));
+    jsonp({claim:nonce}, r=>{
+      if(r&&r.t){ SESS=r.t; afterAuth(); return; }
+      if(r&&r.error&&r.error!=='not ready'){
+        msg(({blocked:'This account cannot use the drill. Speak to your teacher.',
+              domain:'Please sign in with your school account.',
+              roster:'Your account is not on the class list. Ask your teacher to add you.',
+              expired:'That sign-in timed out. Please try again.'})[r.error]
+            || ('Sign-in refused: '+r.error));
         return;
       }
-      if(tries < 6) return setTimeout(claim, 1200);
+      if(tries<6) return setTimeout(claim,1200);
       msg('Signed in with Google, but the server never confirmed. Check that Code.gs is '
-        + 'deployed at the SYNC_URL in this page.');
-    }, 8000);
+        +'deployed at the SYNC_URL in this page.');
+    }, 9000);
   })();
 }
 
 function afterAuth(){
+  pLoad();
   $('gate').classList.add('hide');
-  $('nav').classList.remove('hide');
-  $('who').textContent = PROFILE;
-  show('drill');
-  loadIndex();
+  $('acctWho').textContent=PROFILE+'  ·  '+EMAIL;
+  /* Nothing else opens until the seat is claimed: class and number are what
+     make every later record actionable, so they are collected first, once. */
+  jsonp({prof:1,t:SESS}, p=>{
+    if(p&&p.error==='none'||!p||!p.cls){ $('setup').classList.remove('hide'); return; }
+    ME={cls:p.cls,num:p.num,nick:p.nick};
+    enterApp();
+  });
 }
 
-/* Session refused or revoked while the page was open. */
+function enterApp(){
+  $('setup').classList.add('hide');
+  $('nav').classList.remove('hide');
+  $('who').textContent=ME.nick+'  ·  '+ME.cls+'-'+ME.num;
+  $('acctSeat').textContent='班別 '+ME.cls+'  ·  學號 '+ME.num;
+  $('aCls').value=ME.cls; $('aNum').value=ME.num; $('nick').value=ME.nick;
+  jsonp({index:1,t:SESS}, idx=>{
+    if(idx&&idx.error){ lockOut(); return; }
+    IDX=idx||{};
+    buildSections(); buildSelects(); show('overview');
+    pullProgress(drawOverview);
+  });
+  jsonp({likes:1,t:SESS}, r=>{ if(r&&r.liked) LIKED=r.liked; });
+}
+
+const PROF_ERR={
+  missing:'三格都要填。',
+  badnum:'學號要係數字，例如 12。',
+  taken:'呢個班別同學號已經有人用咗。打錯咗？打啱咗仲係唔得就搵老師。',
+  busy:'伺服器忙緊，再試多次。'
+};
+function submitProfile(cls,num,nick,msgEl,after){
+  msgEl.textContent=' saving…';
+  jsonp({setprof:1, cls:cls, num:num, nick:nick, t:SESS}, r=>{
+    if(r&&r.ok){ ME={cls:r.cls,num:r.num,nick:r.nick}; msgEl.textContent=' ✓'; after&&after(); }
+    else msgEl.textContent=' '+((r&&PROF_ERR[r.error])||'搞唔掂，再試。');
+  });
+}
+$('pSave').addEventListener('click',()=>{
+  submitProfile($('pCls').value,$('pNum').value,$('pNick').value,$('pMsg'),enterApp);
+});
+
 function lockOut(){
-  SESS = null;
+  SESS=null;
   $('nav').classList.add('hide');
-  ['drill','book'].forEach(t => $('tab-'+t).classList.add('hide'));
-  $('gate').classList.remove('hide');
-  $('who').textContent = '';
+  document.querySelectorAll('[id^=tab-]').forEach(e=>e.classList.add('hide'));
+  $('gate').classList.remove('hide'); $('who').textContent='';
   msg('Your session has ended. Sign in again, or speak to your teacher.');
 }
 
 /* -------------------------------------------------------------------- nav */
+const TABS=['overview','drill','exam','miss','allq','lq','con','trap','acct'];
 function show(tab){
-  ['drill','book'].forEach(t => {
-    $('tab-'+t).classList.toggle('hide', t !== tab);
-    document.querySelector('[data-tab="'+t+'"]').setAttribute('aria-selected', String(t===tab));
+  TABS.forEach(t=>{
+    $('tab-'+t).classList.toggle('hide',t!==tab);
+    const b=document.querySelector('[data-tab="'+t+'"]');
+    if(b) b.setAttribute('aria-selected',String(t===tab));
   });
-  if(tab === 'book') loadBook();
+  if(tab==='overview') drawOverview();
+  if(tab==='miss')     loadBook();
+  if(tab==='con')      loadConcepts();
+  if(tab==='trap')     loadTraps();
+  if(tab==='acct')     loadBoard();
 }
-$('nav').addEventListener('click', e => {
-  const b = e.target.closest('[data-tab]');
-  if(b) show(b.dataset.tab);
+$('nav').addEventListener('click',e=>{
+  const b=e.target.closest('[data-tab]'); if(b) show(b.dataset.tab);
 });
+
+/* --------------------------------------------------------------- overview */
+function drawOverview(){
+  const t=totals();
+  const pct=t.all.total?Math.round(t.all.cleared/t.all.total*1000)/10:0;
+  const lv=levelOf(pct);
+  $('ovLvlN').textContent='Lv.'+lv;
+  $('ovLvlName').textContent=LEVEL_NAMES[lv-1]||'';
+  $('ovPct').textContent=pct+'%';
+  $('ovBar').style.width=Math.min(pct,100)+'%';
+  $('ovLine').textContent=t.all.cleared+' / '+t.all.total+' cleared'
+    +(lv<10?'  ·  next level at '+LEVELS[lv]+'%':'  ·  top level');
+  const keys=Object.keys(t.per).sort((a,b)=>t.per[b].total-t.per[a].total);
+  $('ovTree').innerHTML=keys.map(k=>{
+    const c=t.per[k], p=c.total?Math.round(c.cleared/c.total*100):0;
+    return '<div class="node"><div class="nm"><span>'+esc(lbl(k))+'</span>'
+      +'<span class="mono">'+c.cleared+'/'+c.total+'</span></div>'
+      +'<div class="bar"><i style="width:'+p+'%"></i></div></div>';
+  }).join('')||'<p class="muted">No sections.</p>';
+}
 
 /* ------------------------------------------------------------ section list */
-function loadIndex(){
-  $('secgrid').innerHTML = '<p class="muted">Loading sections…</p>';
-  jsonp({index:1, t:SESS}, idx => {
-    if(idx && idx.error){ lockOut(); return; }
-    if(!idx){ $('secgrid').innerHTML = '<p class="muted">Could not load sections.</p>'; return; }
-    const mcq = idx.mcq || {};
-    let html = '';
-    Object.keys(mcq).forEach(page => {
-      Object.keys(mcq[page]).forEach(topic => {
-        const n = mcq[page][topic];
-        if(!n) return;
-        html += '<button class="sec" data-page="'+esc(page)+'" data-topic="'+esc(topic)+'">'
-             +  esc(LABELS[topic] || topic) + '<small>' + n + ' questions · ' + esc(page) + '</small></button>';
-      });
-    });
-    $('secgrid').innerHTML = html || '<p class="muted">The bank is empty. Run install() in Apps Script.</p>';
-  });
+function eachSection(type,fn){
+  const m=(IDX&&IDX[type])||{};
+  Object.keys(m).forEach(pg=>Object.keys(m[pg]).forEach(tp=>{ if(m[pg][tp]) fn(pg,tp,m[pg][tp]); }));
 }
-
-$('secgrid').addEventListener('click', e => {
-  const b = e.target.closest('.sec');
-  if(b) startSection(b.dataset.page, b.dataset.topic, b.textContent);
+function buildSections(){
+  let html='';
+  eachSection('mcq',(pg,tp,n)=>{
+    html+='<button class="sec" data-page="'+esc(pg)+'" data-topic="'+esc(tp)+'">'
+      +esc(lbl(tp))+'<small>'+n+' questions · '+esc(pg)+'</small></button>';
+  });
+  $('secgrid').innerHTML=html||'<p class="muted">The bank is empty. Run install() in Apps Script.</p>';
+}
+function buildSelects(){
+  const opt=type=>{
+    let o='<option value="">— pick a section —</option>';
+    eachSection(type,(pg,tp,n)=>{ o+='<option value="'+esc(type+'|'+pg+'|'+tp)+'">'+esc(lbl(tp))+' ('+n+')</option>'; });
+    return o;
+  };
+  $('allqSec').innerHTML=opt('mcq');
+  $('lqSec').innerHTML=opt('lq');
+}
+$('secgrid').addEventListener('click',e=>{
+  const b=e.target.closest('.sec');
+  if(b) startSection(b.dataset.page,b.dataset.topic,lbl(b.dataset.topic));
 });
-
-function startSection(page, topic, label){
-  SECTION = {page, topic, label};
-  $('picker').classList.add('hide');
-  $('qcard').classList.remove('hide');
-  $('stem').textContent = 'Loading…';
-  $('opts').innerHTML = '';
-  jsonp({bank:1, type:'mcq', page:page, topic:topic, t:SESS}, r => {
-    if(r && r.error){ lockOut(); return; }
-    if(!r || !r.items || !r.items.length){ $('stem').textContent = 'No questions came back.'; return; }
-    QUEUE = r.items.filter(q => q.opts && q.opts.length);
-    for(let i = QUEUE.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i+1)); [QUEUE[i],QUEUE[j]] = [QUEUE[j],QUEUE[i]];
-    }
-    POS = 0; render();
+function startSection(page,topic,label){
+  SECTION={page,topic,label};
+  $('picker').classList.add('hide'); $('qcard').classList.remove('hide');
+  $('stem').textContent='Loading…'; $('opts').innerHTML='';
+  section('mcq',page,topic,items=>{
+    QUEUE=items.filter(q=>(q.opts&&q.opts.length)||q.img);
+    for(let i=QUEUE.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const x=QUEUE[i]; QUEUE[i]=QUEUE[j]; QUEUE[j]=x; }
+    POS=0; render();
   });
 }
 
 /* ---------------------------------------------------------------- question */
-function render(){
-  const q = QUEUE[POS];
-  if(!q){
-    $('stem').textContent = 'Section finished. 做完呢個 section 喇。';
-    $('opts').innerHTML = ''; $('why').classList.add('hide'); $('next').classList.add('hide');
-    return;
+function stemHtml(q){ return q.img?'<img src="'+esc(q.img)+'" alt="Question">':esc(q.q||''); }
+/* Some past-paper questions were captured as a single image that already
+   contains the options. There is nothing to print beside the letters, so the
+   buttons are bare A B C D and the student reads the choices off the image. */
+function optCount(q){ return (q.opts&&q.opts.length) ? q.opts.length : 4; }
+function optsHtml(q,picked){
+  if(q.opts&&q.opts.length){
+    return q.opts.map(function(o,i){
+      return '<button class="opt'+(picked===i?' pick':'')+'" data-i="'+i+'">'
+        +'<span class="lab">'+LAB[i]+'</span><span>'+esc(o)+'</span></button>'; }).join('');
   }
-  $('qid').textContent = q.id;
-  $('why').classList.add('hide');
-  $('next').classList.add('hide');
-  $('prog').textContent = (POS+1) + ' / ' + QUEUE.length + ' · ' + (SECTION.label || '');
-  if(q.img) $('stem').innerHTML = '<img src="'+esc(q.img)+'" alt="Question diagram">';
-  else $('stem').textContent = q.q || '';
-  $('opts').innerHTML = q.opts.map((o,i) =>
-    '<button class="opt" data-i="'+i+'"><span class="lab">'+LAB[i]+'</span><span>'+esc(o)+'</span></button>'
-  ).join('');
+  var h='';
+  for(var i=0;i<4;i++){
+    h+='<button class="opt'+(picked===i?' pick':'')+'" data-i="'+i+'" '
+      +'style="justify-content:center"><span class="lab">'+LAB[i]+'</span></button>';
+  }
+  return h;
 }
-
-$('opts').addEventListener('click', e => {
-  const b = e.target.closest('.opt');
-  if(!b || b.disabled) return;
-  const q = QUEUE[POS], chose = Number(b.dataset.i), ok = chose === Number(q.ans);
-
-  [...$('opts').children].forEach((el,i) => {
-    el.disabled = true;
-    if(i === Number(q.ans)) el.classList.add('right');
-    if(i === chose && !ok)  el.classList.add('wrong');
-  });
-
-  if(q.why){ $('why').innerHTML = esc(q.why); $('why').classList.remove('hide'); }
-  if(!ok){
-    $('why').innerHTML += '<p class="mono" style="margin:10px 0 0">'
-      + '呢條題已經入咗你嘅錯題本。喺嗰度用自己嘅話寫低你嘅理解。</p>';
-    $('why').classList.remove('hide');
-  }
-  $('next').classList.remove('hide');
-  post({event:'mistake', key:q.key, chose:chose, correct:ok, page:SECTION.page});
+/* The grid is the section at a glance: green cleared, red still wrong, blank
+   not yet attempted. Tapping a square jumps straight there, so a student can
+   go back to the ones they missed instead of grinding forward in order. */
+function drawNav(){
+  let done=0;
+  const cells=QUEUE.map((q,i)=>{
+    let cls='';
+    if(P.cleared[q.key]){ cls='done'; done++; }
+    else if(P.wrong[q.key]) cls='miss';
+    if(i===POS) cls+=' now';
+    return '<button class="'+cls.trim()+'" data-j="'+i+'" title="'+esc(q.id)+'">'+(i+1)+'</button>';
+  }).join('');
+  $('qnav').innerHTML=cells;
+  const pct=QUEUE.length?Math.round(done/QUEUE.length*100):0;
+  $('secBar').style.width=pct+'%';
+  $('secName').textContent=(SECTION&&SECTION.label)||'';
+  $('secCount').textContent=done+' / '+QUEUE.length+' cleared · '+pct+'%';
+}
+$('qnav').addEventListener('click',e=>{
+  const b=e.target.closest('[data-j]'); if(!b) return;
+  POS=Number(b.dataset.j); render();
 });
 
-$('next').addEventListener('click', () => { POS++; render(); });
-$('quit').addEventListener('click', () => {
-  $('qcard').classList.add('hide'); $('picker').classList.remove('hide');
+function render(){
+  const q=QUEUE[POS];
+  if(!q){ $('stem').textContent='Section finished. 做完呢個 section 喇。';
+    $('opts').innerHTML=''; $('why').classList.add('hide'); $('next').classList.add('hide');
+    drawNav(); return; }
+  $('qid').textContent=q.id;
+  $('why').classList.add('hide'); $('next').classList.add('hide');
+  $('prog').textContent=(POS+1)+' / '+QUEUE.length+' · '+(SECTION.label||'');
+  $('stem').innerHTML=stemHtml(q);
+  $('opts').innerHTML=optsHtml(q,-1);
+  drawNav();
+}
+$('opts').addEventListener('click',e=>{
+  const b=e.target.closest('.opt'); if(!b||b.disabled) return;
+  const q=QUEUE[POS], chose=Number(b.dataset.i), ok=chose===Number(q.ans);
+  const kids=$('opts').children;
+  for(let i=0;i<kids.length;i++){
+    kids[i].disabled=true;
+    if(i===Number(q.ans)) kids[i].classList.add('right');
+    if(i===chose&&!ok)    kids[i].classList.add('wrong');
+  }
+  let note='';
+  if(ok){
+    const credited=markRight(q.key,q.topic||q.sub||'');
+    if(!credited&&P.wrong[q.key]) note='呢條啱啱答錯過，要隔 5 題或者 10 分鐘再答啱先計入進度。';
+  }else{
+    markWrong(q.key);
+    note='呢條題已經入咗你嘅錯題本。喺嗰度用自己嘅話寫低你嘅理解。';
+    post({event:'mistake', key:q.key, chose:chose, correct:false, page:SECTION.page});
+  }
+  $('why').innerHTML=esc(q.why||'')+(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':'');
+  if(!ok){
+    /* Deliberately a button, not automatic. Only a student who has read the
+       written explanation and is still stuck presses it — which is both the
+       cheap path and the honest one. */
+    $('why').innerHTML+='<div class="row" style="margin-top:12px">'
+      +'<button class="btn sm" id="askAI" data-key="'+esc(q.key)+'" data-ch="'+chose+'">'
+      +'我睇完仲係唔明</button><span class="mono" id="aiMsg"></span></div>'
+      +'<div id="aiOut"></div>';
+  }
+  /* The thread opens only now, after the answer is locked in. Showing it any
+     earlier would turn the top comment into the answer key. */
+  $('why').innerHTML+='<div id="thread" data-key="'+esc(q.key)+'" '
+    +'style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">'
+    +'<p class="mono">同學討論 · 載入中…</p></div>';
+  loadThread(q.key);
+  $('why').classList.remove('hide');
+  $('next').classList.remove('hide');
+  drawNav();
+});
+
+$('why').addEventListener('click',e=>{
+  const b=e.target.closest('#askAI'); if(!b) return;
+  b.disabled=true; $('aiMsg').textContent=' thinking…';
+  jsonp({explain:b.dataset.key, chose:b.dataset.ch, t:SESS}, r=>{
+    $('aiMsg').textContent='';
+    if(r&&r.text){
+      $('aiOut').innerHTML='<div class="why" style="border-left-color:var(--brand)">'
+        +esc(r.text)+'</div>';
+    }else{
+      $('aiOut').innerHTML='<p class="mono">'+esc((r&&r.error)
+        ||'Not available right now. Ask your teacher about this one.')+'</p>';
+      b.disabled=false;
+    }
+  }, 30000);
+});
+$('next').addEventListener('click',()=>{
+  /* Skip forward to the next question not yet cleared, so "Next" keeps meaning
+     "something still to do" on a second pass through the section. */
+  let n=POS+1;
+  while(n<QUEUE.length && P.cleared[QUEUE[n].key]) n++;
+  POS=(n<QUEUE.length)?n:POS+1;
+  render();
+});
+$('quit').addEventListener('click',()=>{
+  $('qcard').classList.add('hide'); $('picker').classList.remove('hide'); drawOverview();
+});
+
+/* -------------------------------------------------------------------- exam
+ * No feedback until submit: marking each answer as you go trains a different
+ * skill from the one Paper 1 actually tests. */
+let EX={q:[],a:[],i:0,t0:0,timer:null};
+$('examSetup').addEventListener('click',e=>{
+  const b=e.target.closest('[data-n]'); if(b) buildExam(Number(b.dataset.n));
+});
+function buildExam(n){
+  const picks=[]; eachSection('mcq',(pg,tp)=>picks.push([pg,tp]));
+  if(!picks.length) return;
+  $('examSetup').classList.add('hide'); $('examResult').classList.add('hide');
+  $('examRun').classList.remove('hide'); $('exStem').textContent='Loading…'; $('exOpts').innerHTML='';
+  for(let i=picks.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const x=picks[i]; picks[i]=picks[j]; picks[j]=x; }
+  const use=picks.slice(0,Math.min(6,picks.length));
+  let pending=use.length; const pool=[];
+  use.forEach(pr=>section('mcq',pr[0],pr[1],items=>{
+    items.forEach(q=>{ if((q.opts&&q.opts.length)||q.img) pool.push(q); });
+    if(--pending===0){
+      for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const x=pool[i]; pool[i]=pool[j]; pool[j]=x; }
+      const set=pool.slice(0,n);
+      EX={q:set, a:new Array(set.length).fill(-1), i:0, t0:Date.now(), timer:null};
+      EX.timer=setInterval(()=>{
+        const s=Math.floor((Date.now()-EX.t0)/1000);
+        $('exTimer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+      },1000);
+      exRender();
+    }
+  }));
+}
+function exRender(){
+  const q=EX.q[EX.i]; if(!q) return;
+  $('exQid').textContent=q.id;
+  $('exStem').innerHTML=stemHtml(q);
+  $('exOpts').innerHTML=optsHtml(q,EX.a[EX.i]);
+  let answered=0; EX.a.forEach(x=>{ if(x>=0) answered++; });
+  $('exProg').textContent=(EX.i+1)+' / '+EX.q.length+' · answered '+answered;
+}
+$('exOpts').addEventListener('click',e=>{
+  const b=e.target.closest('.opt'); if(!b) return;
+  EX.a[EX.i]=Number(b.dataset.i); exRender();
+});
+$('exPrev').addEventListener('click',()=>{ if(EX.i>0){ EX.i--; exRender(); } });
+$('exNext').addEventListener('click',()=>{ if(EX.i<EX.q.length-1){ EX.i++; exRender(); } });
+$('exSubmit').addEventListener('click',()=>{
+  clearInterval(EX.timer);
+  let right=0, html='';
+  EX.q.forEach((q,i)=>{
+    const ok=EX.a[i]===Number(q.ans);
+    if(ok){ right++; markRight(q.key,q.topic||q.sub||''); }
+    else{
+      markWrong(q.key);
+      post({event:'mistake', key:q.key, chose:EX.a[i], correct:false, page:'exam'});
+    }
+    html+='<div class="item"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
+      +'<span class="pill '+(ok?'understood':'not')+'">'+(ok?'✓':'✗')+'</span></div>'
+      +'<div class="stem" style="font-size:15px">'+stemHtml(q)+'</div>'
+      +'<p class="mono">Your answer: '+(EX.a[i]>=0?LAB[EX.a[i]]:'—')+'  ·  Correct: '+LAB[Number(q.ans)]+'</p>'
+      +(q.why?'<div class="why">'+esc(q.why)+'</div>':'')+'</div>';
+  });
+  const secs=Math.floor((Date.now()-EX.t0)/1000);
+  $('examRun').classList.add('hide');
+  $('examResult').classList.remove('hide');
+  $('examResult').innerHTML='<h2>Result</h2><p><b>'+right+' / '+EX.q.length+'</b> · '
+    +Math.floor(secs/60)+'m '+(secs%60)+'s</p>'
+    +'<button class="btn" id="exAgain" style="margin:8px 0 12px">Another set</button>'+html;
+  $('exAgain').addEventListener('click',()=>{
+    $('examResult').classList.add('hide'); $('examSetup').classList.remove('hide');
+  });
+});
+
+/* ------------------------------------------------------------------ thread */
+function loadThread(key){
+  jsonp({cmt:key, t:SESS}, r=>{
+    const el=$('thread');
+    if(!el || el.dataset.key!==key) return;      // student already moved on
+    const items=(r&&r.items)||[];
+    el.innerHTML='<p class="mono" style="margin:0 0 8px">同學討論 ('+items.length+')</p>'
+      + items.map(c=>
+          '<div class="cmt'+(c.verified?' ver':'')+'" data-cid="'+esc(c.cid)+'">'
+          +'<div class="hd2"><span class="nk">'+esc(c.nick)+'</span>'
+          +(c.verified?'<span class="pill understood">老師認證</span>':'')
+          +'<span class="grow"></span>'
+          +'<button class="like'+(LIKED[c.cid]?' on':'')+'" data-cid="'+esc(c.cid)+'">'
+          +'▲ '+c.likes+'</button></div>'
+          +'<p style="margin:4px 0 0">'+esc(c.text)+'</p></div>').join('')
+      + '<textarea id="cmtBox" maxlength="400" placeholder="用自己嘅話講吓你點理解呢條題…唔好只係抄答案"></textarea>'
+      + '<div class="row" style="margin-top:6px"><button class="btn sm" id="cmtSend">出 post</button>'
+      + '<span class="mono" id="cmtMsg"></span></div>';
+  });
+}
+$('why').addEventListener('click',e=>{
+  const lk=e.target.closest('.like');
+  if(lk){
+    const cid=lk.dataset.cid;
+    /* Toggle locally straight away — a like that waits on the network feels
+       broken, and the server is the one keeping the real count anyway. */
+    const on=!LIKED[cid];
+    if(on) LIKED[cid]=1; else delete LIKED[cid];
+    lk.classList.toggle('on',on);
+    lk.textContent='▲ '+Math.max(0, Number(lk.textContent.replace(/\D/g,''))+(on?1:-1));
+    post({event:'like', cid:cid});
+    return;
+  }
+  if(e.target.closest('#cmtSend')){
+    const box=$('cmtBox'), el=$('thread');
+    const txt=box.value.trim();
+    if(!txt){ $('cmtMsg').textContent=' 寫啲嘢先。'; return; }
+    post({event:'comment', key:el.dataset.key, text:txt});
+    box.value=''; $('cmtMsg').textContent=' 出咗，一陣就見到。';
+    setTimeout(()=>loadThread(el.dataset.key), 2500);
+  }
 });
 
 /* ------------------------------------------------------------ mistake book */
+let BOOK=[], BOOKFILT='all';
+$('bookFilt').addEventListener('click',e=>{
+  const b=e.target.closest('[data-filt]'); if(!b) return;
+  const all=$('bookFilt').querySelectorAll('[data-filt]');
+  for(let i=0;i<all.length;i++) all[i].setAttribute('aria-pressed',String(all[i]===b));
+  BOOKFILT=b.dataset.filt; renderBook();
+});
 function loadBook(){
-  $('booklist').innerHTML = '<p class="muted">Loading…</p>';
-  jsonp({mist:1, t:SESS}, r => {
-    if(r && r.error){ lockOut(); return; }
-    if(!r){ $('booklist').innerHTML = '<p class="muted">Could not load.</p>'; return; }
-    if(!r.items || !r.items.length){
-      $('booklist').innerHTML = '<p class="muted">冇錯題。繼續做落去。</p>'; return;
-    }
-    const zh = {understood:'明白', partly:'半明', not:'未明'};
-    $('booklist').innerHTML = r.items.map(m => {
-      const st = m.status || '';
-      return '<div class="mrow" data-key="'+esc(m.key)+'">'
-        + '<div class="mhead"><span class="qid">'+esc(m.key)+'</span>'
-        + (m.n > 1 ? '<span class="pill">錯咗 '+m.n+' 次</span>' : '')
-        + (st ? '<span class="pill '+esc(st)+'">'+(zh[st]||st)+'</span>' : '')
-        + '</div>'
-        + '<textarea placeholder="用自己嘅話寫低呢條考緊咩、你當初點解錯…">'+esc(m.note)+'</textarea>'
-        + '<div class="statusrow">'
-        +   '<button data-st="understood" aria-pressed="'+(st==='understood')+'">明白</button>'
-        +   '<button data-st="partly"     aria-pressed="'+(st==='partly')+'">半明</button>'
-        +   '<button data-st="not"        aria-pressed="'+(st==='not')+'">未明</button>'
-        +   '<span style="flex:1"></span>'
-        +   '<button class="save">Save</button><span class="mono saved"></span>'
-        + '</div></div>';
-    }).join('');
+  $('booklist').innerHTML='<p class="muted">Loading…</p>';
+  jsonp({mist:1,t:SESS}, r=>{
+    if(r&&r.error){ lockOut(); return; }
+    if(!r){ $('booklist').innerHTML='<p class="muted">Could not load.</p>'; return; }
+    BOOK=r.items||[]; renderBook();
   });
 }
-
-$('booklist').addEventListener('click', e => {
-  const row = e.target.closest('.mrow');
-  if(!row) return;
-  const st = e.target.closest('[data-st]');
+function renderBook(){
+  const zh={understood:'明白',partly:'半明',not:'未明'};
+  const rows=BOOK.filter(m=>BOOKFILT==='all'||(m.status||'not')===BOOKFILT);
+  if(!rows.length){ $('booklist').innerHTML='<p class="muted">冇符合嘅錯題。</p>'; return; }
+  $('booklist').innerHTML=rows.map(m=>{
+    const st=m.status||'';
+    return '<div class="item" data-key="'+esc(m.key)+'">'
+      +'<div class="row"><span class="qid">'+esc(m.key)+'</span>'
+      +(m.n>1?'<span class="pill">錯咗 '+m.n+' 次</span>':'')
+      +(st?'<span class="pill '+esc(st)+'">'+(zh[st]||st)+'</span>':'')+'</div>'
+      +'<textarea placeholder="用自己嘅話寫低呢條考緊咩、你當初點解錯…">'+esc(m.note)+'</textarea>'
+      +'<div class="statusrow">'
+      +'<button data-st="understood" aria-pressed="'+(st==='understood')+'">明白</button>'
+      +'<button data-st="partly" aria-pressed="'+(st==='partly')+'">半明</button>'
+      +'<button data-st="not" aria-pressed="'+(st==='not')+'">未明</button>'
+      +'<span style="flex:1"></span><button class="save btn sm">Save</button>'
+      +'<span class="mono saved"></span></div></div>';
+  }).join('');
+}
+$('booklist').addEventListener('click',e=>{
+  const row=e.target.closest('.item'); if(!row) return;
+  const st=e.target.closest('[data-st]');
   if(st){
-    row.querySelectorAll('[data-st]').forEach(b => b.setAttribute('aria-pressed', String(b === st)));
+    const all=row.querySelectorAll('[data-st]');
+    for(let i=0;i<all.length;i++) all[i].setAttribute('aria-pressed',String(all[i]===st));
     return;
   }
   if(e.target.closest('.save')){
-    const picked = row.querySelector('[data-st][aria-pressed="true"]');
-    post({event:'note', key:row.dataset.key,
-          status: picked ? picked.dataset.st : 'not',
-          note: row.querySelector('textarea').value});
-    row.querySelector('.saved').textContent = ' saved';
-    setTimeout(() => { const s = row.querySelector('.saved'); if(s) s.textContent = ''; }, 2500);
+    const picked=row.querySelector('[data-st][aria-pressed="true"]');
+    const status=picked?picked.dataset.st:'not';
+    const note=row.querySelector('textarea').value;
+    post({event:'note', key:row.dataset.key, status:status, note:note});
+    for(let i=0;i<BOOK.length;i++) if(BOOK[i].key===row.dataset.key){ BOOK[i].status=status; BOOK[i].note=note; }
+    row.querySelector('.saved').textContent=' saved';
+    setTimeout(()=>{ const s=row.querySelector('.saved'); if(s) s.textContent=''; },2500);
   }
 });
 
+/* ----------------------------------------------------------- all questions */
+function renderAllq(){
+  const v=$('allqSec').value;
+  if(!v){ $('allqList').innerHTML='<p class="muted">Pick a section.</p>'; return; }
+  const parts=v.split('|'), find=$('allqFind').value.trim().toLowerCase();
+  $('allqList').innerHTML='<p class="muted">Loading…</p>';
+  section(parts[0],parts[1],parts[2],items=>{
+    const rows=items.filter(q=>!find
+      || String(q.q||'').toLowerCase().indexOf(find)>=0
+      || String(q.id||'').toLowerCase().indexOf(find)>=0);
+    $('allqList').innerHTML=rows.map(q=>
+      '<div class="item"><span class="qid">'+esc(q.id)+'</span>'
+      +'<div class="stem" style="font-size:15px">'+stemHtml(q)+'</div>'
+      +(q.opts&&q.opts.length?q.opts.map((o,i)=>'<div class="'+(i===Number(q.ans)?'pill understood':'mono')
+        +'" style="margin:3px 0">'+LAB[i]+'. '+esc(o)+'</div>').join('')
+        :'<p class="mono">Correct answer: '+LAB[Number(q.ans)]+'</p>')
+      +(q.why?'<div class="why">'+esc(q.why)+'</div>':'')+'</div>'
+    ).join('')||'<p class="muted">Nothing matched.</p>';
+  });
+}
+$('allqSec').addEventListener('change',renderAllq);
+$('allqFind').addEventListener('input',()=>{ clearTimeout(window._af); window._af=setTimeout(renderAllq,300); });
+
+/* ---------------------------------------------------------- long questions */
+function renderLq(){
+  const v=$('lqSec').value;
+  if(!v){ $('lqList').innerHTML='<p class="muted">Pick a section.</p>'; return; }
+  const parts=v.split('|');
+  $('lqList').innerHTML='<p class="muted">Loading…</p>';
+  section(parts[0],parts[1],parts[2],items=>{
+    $('lqList').innerHTML=items.map(q=>
+      '<div class="item"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
+      +(q.cmd?'<span class="pill">'+esc(q.cmd)+'</span>':'')
+      +(q.marks?'<span class="pill">'+esc(q.marks)+' marks</span>':'')+'</div>'
+      +'<div class="stem" style="font-size:15px">'+esc(q.q||'')+'</div>'
+      +(q.fig?'<img src="'+esc(q.fig)+'" style="max-width:100%">':'')
+      +(q.structure?'<div class="why"><b>Structure</b><br>'+esc(q.structure)+'</div>':'')
+      +(q.scheme?'<div class="why" style="border-left-color:var(--brand)"><b>Marking points</b><br>'+esc(q.scheme)+'</div>':'')
+      +(q.concept?'<p class="mono">Concept: '+esc(q.concept)+'</p>':'')+'</div>'
+    ).join('')||'<p class="muted">No long questions here.</p>';
+  });
+}
+$('lqSec').addEventListener('change',renderLq);
+
+/* ---------------------------------------------------------------- concepts */
+let CONS=null;
+function loadConcepts(){
+  if(CONS) return renderCon();
+  $('conList').innerHTML='<p class="muted">Loading…</p>';
+  let pend=0; const acc=[];
+  eachSection('concept',(pg,tp)=>{ pend++; section('concept',pg,tp,items=>{
+    items.forEach(x=>acc.push(x)); if(--pend===0){ CONS=acc; renderCon(); } }); });
+  if(!pend){ CONS=[]; renderCon(); }
+}
+function renderCon(){
+  const find=$('conFind').value.trim().toLowerCase();
+  const rows=(CONS||[]).filter(c=>!find||JSON.stringify(c).toLowerCase().indexOf(find)>=0);
+  $('conList').innerHTML=rows.map(c=>
+    '<div class="item"><h3>'+esc(c.title||'')+'</h3>'
+    +(c.defn?'<p><b>Definition.</b> '+esc(c.defn)+'</p>':'')
+    +(c.mech?'<p><b>Mechanism.</b> '+esc(c.mech)+'</p>':'')
+    +(c.example?'<p><b>Example.</b> '+esc(c.example)+'</p>':'')
+    +(c.edge?'<div class="why"><b>Edge case</b><br>'+esc(c.edge)+'</div>':'')+'</div>'
+  ).join('')||'<p class="muted">Nothing matched.</p>';
+}
+$('conFind').addEventListener('input',()=>{ clearTimeout(window._cf); window._cf=setTimeout(renderCon,250); });
+
+/* ------------------------------------------------------------------- traps */
+let TRAPS=null;
+function loadTraps(){
+  if(TRAPS) return renderTraps();
+  $('trapList').innerHTML='<p class="muted">Loading…</p>';
+  let pend=0; const acc=[];
+  eachSection('trap',(pg,tp)=>{ pend++; section('trap',pg,tp,items=>{
+    items.forEach(x=>acc.push(x)); if(--pend===0){ TRAPS=acc; renderTraps(); } }); });
+  if(!pend){ TRAPS=[]; renderTraps(); }
+}
+function renderTraps(){
+  $('trapList').innerHTML=(TRAPS||[]).map(t=>
+    '<div class="item"><div class="row">'
+    +((t.topic||t.g)?'<span class="pill">'+esc(lbl(t.topic||t.g))+'</span>':'')
+    +'</div><p>'+esc(t.text||'')+'</p></div>').join('')||'<p class="muted">No traps.</p>';
+}
+
+/* ----------------------------------------------------------------- account */
+$('saveNick').addEventListener('click',()=>{
+  submitProfile($('aCls').value,$('aNum').value,$('nick').value,$('nickMsg'),()=>{
+    $('who').textContent=ME.nick+'  ·  '+ME.cls+'-'+ME.num;
+    $('acctSeat').textContent='班別 '+ME.cls+'  ·  學號 '+ME.num;
+    pushScore();
+  });
+});
+$('lbRefresh').addEventListener('click',loadBoard);
+function loadBoard(){
+  $('lb').innerHTML='<p class="muted">Loading…</p>';
+  jsonp({lb:1, uid:djb2('tyn:'+(EMAIL||''))}, r=>{
+    if(!r||!r.top){ $('lb').innerHTML='<p class="muted">排行榜暫時讀唔到。</p>'; return; }
+    if(!r.top.length){ $('lb').innerHTML='<p class="muted">仲未有人上榜。</p>'; return; }
+    let h='<table><tr><th>#</th><th>花名</th><th>Lv</th><th>%</th></tr>';
+    r.top.forEach((x,i)=>{ h+='<tr><td>'+(i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+x.pct+'%</td></tr>'; });
+    h+='</table>';
+    if(r.you) h+='<p class="mono" style="margin-top:10px">你排第 '+r.you.rank+' / '+r.n
+      +'  ·  '+r.you.pct+'%  ·  Lv.'+r.you.lvl
+      +(r.you.gap?'  ·  追前一位仲差 '+r.you.gapQ+' 題':'')+'</p>';
+    $('lb').innerHTML=h;
+  });
+}
+/* Must match hashUid_() in Code.gs exactly, or a student never finds their own
+   row on the board. */
+function djb2(s){ let x=5381; s=String(s);
+  for(let i=0;i<s.length;i++) x=((x*33)^s.charCodeAt(i))>>>0;
+  return x.toString(36); }
+
 /* -------------------------------------------------------------- start-up */
-/* Sign-in can fail three quite different ways, and the fixes are different, so
-   the page reports which one happened rather than guessing "offline". */
-window.addEventListener('load', () => {
-  if(location.protocol === 'file:'){
-    msg('Google Sign-In cannot run from a file on disk. Open the https:// link instead.');
-    return;
+window.addEventListener('load',()=>{
+  if(location.protocol==='file:'){
+    msg('Google Sign-In cannot run from a file on disk. Open the https:// link instead.'); return;
   }
-
-  let scriptFailed = false;
-  const tag = document.querySelector('script[src*="gsi/client"]');
-  if(tag) tag.addEventListener('error', () => { scriptFailed = true; });
-
-  let waited = 0;
-  const timer = setInterval(() => {
-    waited += 200;
-    if(typeof google !== 'undefined' && google.accounts && google.accounts.id){
+  let scriptFailed=false;
+  const tag=document.querySelector('script[src*="gsi/client"]');
+  if(tag) tag.addEventListener('error',()=>{ scriptFailed=true; });
+  let waited=0;
+  const timer=setInterval(()=>{
+    waited+=200;
+    if(typeof google!=='undefined'&&google.accounts&&google.accounts.id){
       clearInterval(timer);
       try{
-        google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID, callback:onCredential, auto_select:false});
-        google.accounts.id.renderButton($('gbtn'), {theme:'outline', size:'large'});
+        google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onCredential,auto_select:false});
+        google.accounts.id.renderButton($('gbtn'),{theme:'outline',size:'large'});
         msg('');
-      }catch(err){
-        msg('Sign-in setup failed: ' + err.message + '  (origin: ' + location.origin + ')');
-      }
+      }catch(err){ msg('Sign-in setup failed: '+err.message+'  (origin: '+location.origin+')'); }
       return;
     }
-    if(waited >= 15000){
+    if(waited>=15000){
       clearInterval(timer);
-      if(scriptFailed || typeof google === 'undefined'){
-        msg('Could not download Google Sign-In from accounts.google.com. An ad blocker or '
-          + 'privacy extension is the usual cause — try a private window with extensions off. '
-          + '(origin: ' + location.origin + ')');
-      }else{
-        msg('Google Sign-In loaded but would not start. Check that ' + location.origin
-          + ' is listed under Authorised JavaScript origins for this OAuth client.');
-      }
+      msg(scriptFailed||typeof google==='undefined'
+        ? 'Could not download Google Sign-In from accounts.google.com. An ad blocker or privacy '
+          +'extension is the usual cause — try a private window with extensions off. (origin: '+location.origin+')'
+        : 'Google Sign-In loaded but would not start. Check that '+location.origin
+          +' is listed under Authorised JavaScript origins for this OAuth client.');
     }
-  }, 200);
+  },200);
 });
 </script>
 </body>
