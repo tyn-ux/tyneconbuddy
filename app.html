@@ -208,6 +208,14 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 #qwrap{position:relative}
 #ink{position:absolute; inset:0; z-index:5; pointer-events:none; touch-action:auto}
 #qwrap.drawing #ink{pointer-events:auto; touch-action:none; cursor:crosshair}
+/* blank working space under the options, only while drawing — ruled faintly
+   like the margin of an exam script, and it disappears when the pen is away */
+#scratch{display:none; height:220px; margin-top:10px; border:1px dashed var(--line);
+  border-radius:var(--r-sm);
+  background:repeating-linear-gradient(to bottom, transparent, transparent 27px, rgba(33,29,22,.07) 27px, rgba(33,29,22,.07) 28px)}
+#qwrap.drawing #scratch{display:block}
+#scratch::before{content:'working space'; font-family:var(--f-mono); font-size:10px;
+  color:var(--muted); padding:4px 8px; display:block}
 .inkbar{display:none; gap:6px; align-items:center; flex-wrap:wrap; margin:8px 0 2px;
   font-family:var(--f-sans)}
 #qwrap.drawing ~ .inkbar, .inkbar.show{display:flex}
@@ -323,13 +331,16 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
       <div class="inkbar" id="inkbar">
         <button data-tool="pen" aria-pressed="true"><span class="swatch" style="background:#211d16"></span>Pen</button>
         <button data-tool="red"><span class="swatch" style="background:#c9412e"></span>Red</button>
+        <button data-tool="hl"><span class="swatch" style="background:#f5d90a"></span>Highlight</button>
         <button data-tool="erase">Eraser</button>
+        <button id="inkUndo">↩︎ Undo</button>
         <button id="inkClear">Clear</button>
         <span class="mono">Pencil draws · palm won&#39;t</span>
       </div>
       <div id="qwrap">
         <div class="stem" id="stem"></div>
         <div id="opts"></div>
+        <div id="scratch"></div>
         <canvas id="ink"></canvas>
       </div>
       <div class="why hide" id="why"></div>
@@ -989,7 +1000,7 @@ $('quit').addEventListener('click',()=>{
  * longer draws — a resting palm stays a resting palm. Nothing here is saved
  * to the server; workings are scratch, not records. */
 const INK={on:false, tool:'pen', strokes:new Map(), cur:null, penSeen:false};
-const inkColors={pen:'#211d16', red:'#c9412e'};
+const inkColors={pen:'#211d16', red:'#c9412e', hl:'#f5d90a'};
 function inkKey(){ return QUEUE[POS] ? QUEUE[POS].key : null; }
 function inkResize(){
   const c=$('ink'), w=$('qwrap');
@@ -1004,13 +1015,14 @@ function inkRedraw(){
   const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
   const W=c.width;
   (INK.strokes.get(k)||[]).forEach(st=>{
-    ctx.globalCompositeOperation=st.e?'destination-out':'source-over';
-    ctx.strokeStyle=st.c; ctx.lineWidth=st.w*W; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.globalCompositeOperation=st.e?'destination-out':(st.h?'multiply':'source-over');
+    ctx.globalAlpha=st.h?0.45:1;
+    ctx.strokeStyle=st.c; ctx.lineWidth=st.w*W; ctx.lineCap=st.h?'butt':'round'; ctx.lineJoin='round';
     ctx.beginPath();
     st.p.forEach((pt,i)=>{ const x=pt[0]*W, y=pt[1]*W; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
     ctx.stroke();
   });
-  ctx.globalCompositeOperation='source-over';
+  ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
 }
 function inkPoint(e){
   const r=$('ink').getBoundingClientRect(), d=window.devicePixelRatio||1;
@@ -1022,9 +1034,11 @@ function inkDown(e){
   if(e.pointerType==='pen') INK.penSeen=true;
   if(e.pointerType==='touch' && INK.penSeen) return;      // palm rejection
   e.preventDefault();
-  const erase=INK.tool==='erase';
-  const base=erase?0.02:(e.pointerType==='pen'?0.0028:0.004);
-  INK.cur={c:inkColors[INK.tool]||inkColors.pen, w:base*(erase?1:(0.6+(e.pressure||0.5))), e:erase?1:0, p:[inkPoint(e)]};
+  const erase=INK.tool==='erase', hl=INK.tool==='hl';
+  const base=erase?0.02:hl?0.014:(e.pointerType==='pen'?0.0028:0.004);
+  INK.cur={c:inkColors[INK.tool]||inkColors.pen,
+           w:base*((erase||hl)?1:(0.6+(e.pressure||0.5))),
+           e:erase?1:0, h:hl?1:0, p:[inkPoint(e)]};
   $('ink').setPointerCapture(e.pointerId);
 }
 function inkMove(e){
@@ -1036,11 +1050,12 @@ function inkMove(e){
 }
 function drawCur(){
   const c=$('ink'), ctx=c.getContext('2d'), st=INK.cur, W=c.width;
-  ctx.globalCompositeOperation=st.e?'destination-out':'source-over';
-  ctx.strokeStyle=st.c; ctx.lineWidth=st.w*W; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.globalCompositeOperation=st.e?'destination-out':(st.h?'multiply':'source-over');
+  ctx.globalAlpha=st.h?0.45:1;
+  ctx.strokeStyle=st.c; ctx.lineWidth=st.w*W; ctx.lineCap=st.h?'butt':'round'; ctx.lineJoin='round';
   ctx.beginPath();
   st.p.forEach((pt,i)=>{ const x=pt[0]*W, y=pt[1]*W; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
-  ctx.stroke(); ctx.globalCompositeOperation='source-over';
+  ctx.stroke(); ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
 }
 function inkUp(e){
   if(!INK.cur) return;
@@ -1060,13 +1075,18 @@ $('inkToggle').addEventListener('click',()=>{
   $('inkToggle').setAttribute('aria-pressed',String(INK.on));
   $('qwrap').classList.toggle('drawing',INK.on);
   $('inkbar').classList.toggle('show',INK.on);
-  if(INK.on) inkResize();
+  requestAnimationFrame(inkResize);      // scratch space changes qwrap height either way
 });
 $('inkbar').addEventListener('click',e=>{
   const t=e.target.closest('[data-tool]');
   if(t){
     INK.tool=t.dataset.tool;
     $('inkbar').querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b===t)));
+    return;
+  }
+  if(e.target.closest('#inkUndo')){
+    const k=inkKey(), arr=k&&INK.strokes.get(k);
+    if(arr&&arr.length){ arr.pop(); inkRedraw(); }
     return;
   }
   if(e.target.closest('#inkClear')){
