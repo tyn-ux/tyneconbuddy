@@ -41,14 +41,33 @@ header h1{font-family:var(--f-serif); font-size:21px; margin:0; font-weight:700;
 #sub-line{margin:2px 0 0; font-family:var(--f-sans); font-size:12px; color:var(--muted)}
 .who{font-family:var(--f-sans); font-size:12px; color:var(--muted); margin-left:auto}
 
-/* --- tabs --- */
-nav{display:flex; gap:4px; flex-wrap:wrap; margin:6px 0 16px; border-bottom:2px solid var(--ink); padding-bottom:0}
-nav button{font-family:var(--f-sans); font-size:13px; font-weight:600; padding:8px 13px; cursor:pointer;
-  background:transparent; border:1px solid transparent; border-bottom:none; color:var(--muted);
-  border-radius:var(--r-sm) var(--r-sm) 0 0; white-space:nowrap}
+/* --- Option A: sidebar navigation with a colour dot per section.
+       Wide screens (laptop, iPad landscape) get a sticky left rail;
+       phones and iPad portrait fall back to a scrollable top bar.
+       Same element, same buttons — only the CSS changes shape. --- */
+.shell{display:flex; gap:18px; align-items:flex-start}
+nav{flex:0 0 190px; position:sticky; top:14px; display:flex; flex-direction:column; gap:2px;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
+  box-shadow:var(--shadow-1); padding:8px}
+.content{flex:1; min-width:0}
+nav button{display:flex; align-items:center; gap:9px; font-family:var(--f-sans); font-size:13px;
+  font-weight:600; padding:10px 10px; cursor:pointer; background:transparent;
+  border:none; border-left:3px solid transparent; border-radius:var(--r-sm);
+  color:var(--muted); text-align:left; white-space:nowrap; min-height:40px}
+nav button::before{content:''; width:8px; height:8px; flex:0 0 8px; border-radius:50%;
+  background:var(--tabc,var(--muted))}
 nav button:hover{color:var(--ink)}
-nav button[aria-selected="true"]{background:var(--surface); border-color:var(--ink); color:var(--ink);
-  position:relative; top:2px; padding-bottom:10px; box-shadow:inset 0 3px 0 var(--tabc,var(--brand))}
+nav button[aria-selected="true"]{background:var(--surface-2); color:var(--ink);
+  border-left-color:var(--tabc,var(--brand))}
+@media (max-width:899px){
+  .shell{display:block}
+  nav{position:sticky; top:0; z-index:30; flex-direction:row; overflow-x:auto;
+    -webkit-overflow-scrolling:touch; gap:2px; padding:6px 8px; margin:0 -16px 14px;
+    border-radius:0; border-left:none; border-right:none; box-shadow:none}
+  nav button{flex:0 0 auto; border-left:none; border-bottom:3px solid transparent;
+    padding:9px 11px}
+  nav button[aria-selected="true"]{border-left:none; border-bottom-color:var(--tabc,var(--brand))}
+}
 nav button[data-tab="overview"]{--tabc:var(--gold)}
 nav button[data-tab="drill"]{--tabc:var(--ch-ch4)}
 nav button[data-tab="exam"]{--tabc:var(--ch-u11)}
@@ -185,6 +204,9 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface); color:var(--muted)}
 .like.on{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
 
+.alb-ch{border-left:4px solid var(--acc,var(--line)); padding-left:12px; margin:0 0 20px}
+.alb-ch h3{font-family:var(--f-sans); font-size:14px; margin:0; color:var(--acc,var(--ink))}
+.alb-ch .chsum{font-family:var(--f-sans); font-size:12px; color:var(--muted); margin:0 0 4px}
 .top20 li{margin:0 0 6px; font-size:14px}
 .top20 a{color:var(--ink); cursor:pointer; text-decoration:underline; text-decoration-color:var(--line)}
 .top20 a:hover{text-decoration-color:var(--brand)}
@@ -208,6 +230,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   </div>
   <span class="who" id="who"></span>
 </header>
+<div class="shell">
 <nav id="nav" class="hide">
   <button data-tab="overview" aria-selected="true">Overview</button>
   <button data-tab="drill">Drill</button>
@@ -217,6 +240,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <button data-tab="lq">Long Qs</button>
   <button data-tab="acct">Account</button>
 </nav>
+<div class="content">
 
   <div id="gate" class="card">
     <h2>Sign in</h2>
@@ -275,6 +299,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
       <div id="secgrid"></div>
     </div>
     <div id="qcard" class="card hide">
+      <p class="crumb" id="crumb" style="font-family:var(--f-sans);font-size:12px;color:var(--muted);margin:0 0 8px"></p>
       <div class="row"><span class="mono" id="secName"></span><span class="grow"></span>
         <span class="mono" id="secCount"></span></div>
       <div class="bar" style="margin:6px 0 2px"><i id="secBar" style="width:0%"></i></div>
@@ -368,6 +393,8 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   </div>
 
 <div class="foot">Study tool &middot; built from HKDSE past-paper MCQs</div>
+</div><!-- /.content -->
+</div><!-- /.shell -->
 </div>
 
 <script>
@@ -819,6 +846,9 @@ function drawNav(){
   $('secBar').style.width=pct+'%';
   $('secName').textContent=(SECTION&&SECTION.label)||'';
   $('secCount').textContent=done+' / '+QUEUE.length+' cleared · '+pct+'%';
+  const ch=chapOf(SECTION.page,SECTION.topic);
+  $('crumb').innerHTML=(ch?'<b style="color:var(--ch-'+ch[0]+')">'+esc(ch[1])+'</b> › ':'')
+    +esc(SECTION.label||'')+' › Q '+(POS+1)+' / '+QUEUE.length;
 }
 $('qnav').addEventListener('click',e=>{
   const b=e.target.closest('[data-j]'); if(!b) return;
@@ -1077,7 +1107,29 @@ const ST_EN={understood:'Got it',partly:'Partly',not:'Not yet'};
 function renderBook(){
   const rows=BOOK.filter(m=>BOOKFILT==='all'||(m.status||'not')===BOOKFILT);
   if(!rows.length){ $('booklist').innerHTML='<p class="muted">No mistakes match this filter.</p>'; return; }
-  $('booklist').innerHTML=rows.map(m=>{
+  /* Shelve by chapter, chapters in book order. Anything the server could not
+     place (old rows without page/topic) goes on a final shelf rather than
+     disappearing. */
+  const shelves={};
+  rows.forEach(m=>{
+    const c=(m.pg&&m.tp)?chapOf(m.pg,m.tp):null;
+    const k=c?c[0]:'__other';
+    (shelves[k]=shelves[k]||{c:c,items:[]}).items.push(m);
+  });
+  const order=CHAPTERS.map(c=>c[0]); order.push('__other');
+  $('booklist').innerHTML=order.filter(k=>shelves[k]).map(k=>{
+    const sh=shelves[k];
+    const notyet=sh.items.filter(m=>(m.status||'not')==='not').length;
+    const got=sh.items.filter(m=>m.status==='understood').length;
+    return '<div class="alb-ch" style="--acc:var(--ch-'+(sh.c?sh.c[0]:'')+',var(--muted))">'
+      +'<h3>'+(sh.c?esc(sh.c[1]):'Other')+'</h3>'
+      +'<p class="chsum">'+sh.items.length+' mistake'+(sh.items.length>1?'s':'')
+      +' · '+notyet+' not yet · '+got+' got it</p>'
+      + sh.items.map(bookItemHtml).join('')
+      +'</div>';
+  }).join('');
+}
+function bookItemHtml(m){
     const st=m.status||'', tr=(P.retry[m.key]||{}).n||0;
     return '<div class="item" data-key="'+esc(m.key)+'">'
       +'<div class="row"><span class="qid">'+esc(m.key)+'</span>'
@@ -1094,7 +1146,6 @@ function renderBook(){
       +'<button data-st="not" aria-pressed="'+(st==='not')+'">Not yet</button>'
       +'<span style="flex:1"></span><button class="save btn sm">Save</button>'
       +'<span class="mono saved"></span></div></div>';
-  }).join('');
 }
 
 /* Review & retry: pull the real question back, let the student answer it again
