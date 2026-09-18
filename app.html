@@ -7,7 +7,6 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
-
 :root{
   --bg:#ebe4d5; --surface:#faf7ef; --surface-2:#efe9db;
   --ink:#211d16; --muted:#6f6455; --line:#cdc3ad;
@@ -15,69 +14,99 @@
   --pos:#3f7a4b; --pos-bg:#eef6ee; --pos-line:#b6d4ba;
   --neg:#c9412e; --neg-bg:#faeee9; --neg-line:#e6bfb4;
   --warn-bg:#f6eccd; --star:#8a5b2a;
-  --r-sm:2px; --r-md:3px;
+  --r-sm:2px; --r-md:3px; --r-pill:2px;
   --shadow-1:3px 3px 0 #dbd2bf;
   --f-serif:'Source Serif 4',Georgia,'Times New Roman',serif;
   --f-sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* chapter badge inks — printing-ink weight, from the original palette */
+  --ch-ch1:#3b4a7a; --ch-ch2:#2f6157; --ch-ch3:#8a5b2a; --ch-ch4:#34558c;
+  --ch-ch5:#2d5f7a; --ch-u11:#93392f; --ch-tf:#5f4a86;
+  --ch-micro:#3b4a7a; --ch-natl:#2f6157; --ch-money:#8a5b2a;
+  --ch-macro:#93392f; --ch-trade:#2d5f7a;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg); color:var(--ink); font-family:var(--f-serif);
      line-height:1.6; -webkit-font-smoothing:antialiased}
+.wrap{max-width:880px; margin:0 auto; padding:0 16px 90px}
 
-.wrap{max-width:860px; margin:0 auto; padding:0 16px 90px}
-header{background:var(--surface); border-bottom:1px solid var(--line);
-       border-left:3px solid var(--brand); position:sticky; top:0; z-index:20}
-.hd{max-width:860px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px}
-.hd h1{font-size:15px; margin:0; font-family:var(--f-sans); font-weight:600}
-.who{font-family:var(--f-sans); font-size:12px; color:var(--muted)}
-nav{display:flex; gap:2px; max-width:860px; margin:0 auto; padding:0 16px 8px;
-    flex-wrap:wrap; overflow-x:auto}
-nav button{font-family:var(--f-sans); font-size:13px; padding:6px 11px; cursor:pointer;
-  background:transparent; border:1px solid transparent; border-radius:var(--r-sm);
-  color:var(--muted); white-space:nowrap}
-nav button[aria-selected="true"]{background:var(--surface-2); border-color:var(--line);
-  color:var(--ink); font-weight:600}
+/* --- header: the sheet's letterhead --- */
+header{display:flex; gap:14px; align-items:center; padding:22px 0 10px}
+.mark{width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center;
+  background:var(--ink); color:var(--on-dark); font-family:var(--f-serif); font-size:24px; font-weight:700;
+  border-radius:var(--r-md)}
+header h1{font-family:var(--f-serif); font-size:21px; margin:0; font-weight:700; letter-spacing:-.01em}
+#sub-line{margin:2px 0 0; font-family:var(--f-sans); font-size:12px; color:var(--muted)}
+.who{font-family:var(--f-sans); font-size:12px; color:var(--muted); margin-left:auto}
 
+/* --- tabs --- */
+nav{display:flex; gap:4px; flex-wrap:wrap; margin:6px 0 16px; border-bottom:2px solid var(--ink); padding-bottom:0}
+nav button{font-family:var(--f-sans); font-size:13px; font-weight:600; padding:8px 13px; cursor:pointer;
+  background:transparent; border:1px solid transparent; border-bottom:none; color:var(--muted);
+  border-radius:var(--r-sm) var(--r-sm) 0 0; white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{background:var(--surface); border-color:var(--ink); color:var(--ink);
+  position:relative; top:2px; padding-bottom:10px}
+.pip{display:inline-block; min-width:16px; padding:0 4px; margin-left:4px; font-family:var(--f-mono);
+  font-size:10px; line-height:16px; text-align:center; background:var(--brand); color:var(--on-dark);
+  border-radius:var(--r-pill)}
+
+/* --- cards on the sheet --- */
 .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
-      box-shadow:var(--shadow-1); padding:18px; margin:16px 0}
-h2{font-family:var(--f-sans); font-size:14px; text-transform:uppercase; letter-spacing:.06em;
-   color:var(--muted); margin:0 0 12px; font-weight:600}
+      box-shadow:var(--shadow-1); padding:18px; margin:0 0 16px}
+h2{font-family:var(--f-sans); font-size:13px; text-transform:uppercase; letter-spacing:.06em;
+   color:var(--muted); margin:0 0 12px; font-weight:700}
 h3{font-family:var(--f-sans); font-size:15px; margin:0 0 6px; font-weight:600}
 .muted{color:var(--muted); font-size:14px}
 .mono{font-family:var(--f-mono); font-size:12px; color:var(--muted); word-break:break-word}
+.score{font-family:var(--f-sans); font-size:12px; color:var(--muted)}
+.score b{color:var(--ink)}
 .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
 .grow{flex:1}
+.meta{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
 
-button.btn{font-family:var(--f-sans); font-size:14px; font-weight:500; cursor:pointer;
-  padding:9px 16px; border:1px solid var(--line); border-radius:var(--r-sm);
-  background:var(--surface-2); color:var(--ink)}
+button.btn{font-family:var(--f-sans); font-size:13px; font-weight:600; cursor:pointer;
+  padding:8px 14px; border:1px solid var(--line); border-radius:var(--r-sm);
+  background:var(--surface); color:var(--ink)}
 button.btn:hover{border-color:var(--ink)}
 button.btn.primary{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
 button.btn.sm{padding:5px 11px; font-size:12px}
-input[type=text],select{font-family:var(--f-sans); font-size:14px; padding:8px 10px;
+input[type=text],input[type=number],select{font-family:var(--f-sans); font-size:14px; padding:8px 10px;
   border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--ink)}
 
+/* --- overview --- */
 .lvl{display:flex; align-items:baseline; gap:10px; margin-bottom:10px}
 .lvl b{font-family:var(--f-sans); font-size:22px}
 .bar{height:8px; background:var(--surface-2); border:1px solid var(--line);
      border-radius:var(--r-sm); overflow:hidden}
 .bar i{display:block; height:100%; background:var(--star)}
-.tree{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-top:12px}
-.node{border:1px solid var(--line); background:var(--surface-2); padding:9px 11px; border-radius:var(--r-sm)}
-.node .nm{font-family:var(--f-sans); font-size:12px; display:flex; justify-content:space-between; gap:8px}
-.node .bar{margin-top:6px}
+/* two-colour chapter bar, exactly the original: green right, red wrong */
+.tbar{display:flex; height:9px; background:var(--surface-2); border:1px solid var(--line);
+      border-radius:var(--r-sm); overflow:hidden}
+.tbar span{display:block; height:100%}
+.badge{font-family:var(--f-sans); font-size:11px; font-weight:600; padding:2px 8px; margin-right:6px;
+  border-radius:var(--r-pill); color:var(--on-dark); background:var(--muted)}
+.b-ch1{background:var(--ch-ch1)} .b-ch2{background:var(--ch-ch2)} .b-ch3{background:var(--ch-ch3)}
+.b-ch4{background:var(--ch-ch4)} .b-ch5{background:var(--ch-ch5)} .b-u11{background:var(--ch-u11)}
+.b-tf{background:var(--ch-tf)}   .b-micro{background:var(--ch-micro)} .b-natl{background:var(--ch-natl)}
+.b-money{background:var(--ch-money)} .b-macro{background:var(--ch-macro)} .b-trade{background:var(--ch-trade)}
+.subtag{font-family:var(--f-sans); font-size:11px; color:var(--muted); margin-right:6px}
 
-.secgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px}
-.sec{text-align:left; padding:10px 12px; background:var(--surface-2);
-  border:1px solid var(--line); border-radius:var(--r-sm); cursor:pointer;
-  font-family:var(--f-sans); font-size:13px; color:var(--ink)}
+/* --- chapter-grouped section picker --- */
+.chap{margin:0 0 18px}
+.chap-hd{display:flex; justify-content:space-between; align-items:baseline; font-family:var(--f-sans);
+  font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink);
+  border-bottom:2px solid var(--ink); padding-bottom:4px; margin-bottom:8px}
+.chap-secs{display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:6px}
+.sec{text-align:left; font-family:var(--f-sans); font-size:13px; padding:8px 10px; cursor:pointer;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); color:var(--ink)}
 .sec:hover{border-color:var(--brand)}
-.sec small{display:block; color:var(--muted); font-size:11px; margin-top:2px}
+.sec small{display:block; color:var(--muted); font-size:11px}
 
+/* --- question card --- */
 .qid{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
-.stem{font-size:17px; margin:10px 0 16px; white-space:pre-wrap}
+.stem{font-size:17px; margin:10px 0 16px; white-space:pre-wrap; font-family:var(--f-serif)}
 .stem img{max-width:100%; height:auto; border:1px solid var(--line); background:#fff}
 .opt{display:flex; gap:10px; width:100%; text-align:left; align-items:flex-start;
   padding:11px 13px; margin:6px 0; cursor:pointer; font-size:15px;
@@ -87,14 +116,32 @@ input[type=text],select{font-family:var(--f-sans); font-size:14px; padding:8px 1
 .opt .lab{font-family:var(--f-mono); font-weight:600; color:var(--muted)}
 .opt.right{background:var(--pos-bg); border-color:var(--pos-line)}
 .opt.wrong{background:var(--neg-bg); border-color:var(--neg-line)}
+.opt.dim{opacity:.45}
 .opt.pick{background:var(--surface-2); border-color:var(--ink)}
 .opt:disabled{cursor:default}
-.why{background:var(--surface-2); border-left:3px solid var(--star);
-     padding:12px 14px; margin-top:14px; font-size:15px}
 
+/* feedback banner — green when right, red when wrong, like the original fb */
+.why{display:none; padding:12px 14px; margin-top:14px; font-size:15px; border-radius:var(--r-sm)}
+.why.show{display:block}
+.why.r{background:var(--pos-bg); border:1px solid var(--pos-line)}
+.why.w{background:var(--neg-bg); border:1px solid var(--neg-line)}
+
+/* --- progress strip + jump grid --- */
+.prog{height:9px; background:var(--surface-2); border:1px solid var(--line);
+  border-radius:var(--r-sm); overflow:hidden; margin:6px 0 2px}
+.prog i{display:block; height:100%; width:0; background:var(--star)}
+.qnav{display:flex; flex-wrap:wrap; gap:4px; margin:8px 0 12px}
+.qnav button{width:30px; height:28px; padding:0; cursor:pointer;
+  font-family:var(--f-mono); font-size:11px; border:1px solid var(--line);
+  border-radius:var(--r-sm); background:var(--surface-2); color:var(--muted)}
+.qnav button.done{background:var(--pos-bg); border-color:var(--pos-line); color:var(--pos)}
+.qnav button.miss{background:var(--neg-bg); border-color:var(--neg-line); color:var(--neg)}
+.qnav button.now{outline:2px solid var(--ink); outline-offset:1px; color:var(--ink); font-weight:600}
+
+/* --- lists, correction album --- */
 .item{border-top:1px solid var(--line); padding:13px 0}
 .item:first-child{border-top:0}
-.pill{font-family:var(--f-sans); font-size:11px; padding:2px 8px; border-radius:var(--r-sm);
+.pill{font-family:var(--f-sans); font-size:11px; padding:2px 8px; border-radius:var(--r-pill);
   border:1px solid var(--line); background:var(--surface-2); color:var(--muted)}
 .pill.understood{background:var(--pos-bg); border-color:var(--pos-line); color:var(--pos)}
 .pill.partly{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
@@ -109,50 +156,51 @@ textarea{width:100%; min-height:72px; margin-top:8px; padding:10px;
 table{width:100%; border-collapse:collapse; font-family:var(--f-sans); font-size:13px}
 th,td{text-align:left; padding:7px 6px; border-bottom:1px solid var(--line)}
 th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.05em}
-.cmt{border-top:1px solid var(--line); padding:10px 0}
+
+/* --- forum thread + cheer wall --- */
+.cmt{border-top:1px solid var(--line); padding:9px 0}
 .cmt:first-child{border-top:0}
 .cmt .hd2{display:flex; gap:8px; align-items:baseline; font-family:var(--f-sans); font-size:12px}
-.cmt .nk{font-weight:600}
+.cmt .nk{font-weight:700}
 .cmt.ver{background:var(--pos-bg); border-left:3px solid var(--pos); padding-left:10px}
-.like{font-family:var(--f-sans); font-size:12px; padding:3px 9px; cursor:pointer;
-  border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--muted)}
+.vtag{font-family:var(--f-sans); font-size:11px; padding:1px 7px; border:1px solid var(--pos-line);
+  background:var(--surface); color:var(--pos); border-radius:var(--r-pill)}
+.like{font-family:var(--f-sans); font-size:12px; padding:2px 9px; cursor:pointer; margin-left:auto;
+  border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface); color:var(--muted)}
 .like.on{background:var(--warn-bg); border-color:#dcc78a; color:var(--star)}
-.qnav{display:flex; flex-wrap:wrap; gap:4px; margin-top:10px}
-.qnav button{width:30px; height:28px; padding:0; cursor:pointer;
-  font-family:var(--f-mono); font-size:11px; border:1px solid var(--line);
-  border-radius:var(--r-sm); background:var(--surface-2); color:var(--muted)}
-.qnav button.done{background:var(--pos-bg); border-color:var(--pos-line); color:var(--pos)}
-.qnav button.miss{background:var(--neg-bg); border-color:var(--neg-line); color:var(--neg)}
-.qnav button.now{outline:2px solid var(--ink); outline-offset:1px; color:var(--ink); font-weight:600}
-.hide{display:none}
 
+.top20 li{margin:0 0 6px; font-size:14px}
+.top20 a{color:var(--ink); cursor:pointer; text-decoration:underline; text-decoration-color:var(--line)}
+.top20 a:hover{text-decoration-color:var(--brand)}
+.foot{font-family:var(--f-sans); font-size:11px; color:var(--muted); text-align:center; margin-top:30px}
+.hide{display:none}
 @media print{
   body *{display:none !important}
-  body::after{content:"Printing is disabled. Use the 錯題本 to revise.";
+  body::after{content:"Printing is disabled. Use the Correction Album to revise.";
               display:block !important; font-family:sans-serif; padding:40px}
 }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="hd">
-    <h1>HKDSE Economics</h1><span class="grow"></span><span class="who" id="who"></span>
-  </div>
-  <nav id="nav" class="hide">
-    <button data-tab="overview" aria-selected="true">Overview</button>
-    <button data-tab="drill">Drill</button>
-    <button data-tab="exam">Exam</button>
-    <button data-tab="miss">錯題本</button>
-    <button data-tab="allq">All Questions</button>
-    <button data-tab="lq">Long Qs</button>
-    <button data-tab="con">Concepts</button>
-    <button data-tab="trap">Traps</button>
-    <button data-tab="acct">Account</button>
-  </nav>
-</header>
-
 <div class="wrap">
+<header>
+  <div class="mark" aria-hidden="true">$</div>
+  <div>
+    <h1>HKDSE Economics — Past-paper Drilling</h1>
+    <p id="sub-line">one page, every chapter</p>
+  </div>
+  <span class="who" id="who"></span>
+</header>
+<nav id="nav" class="hide">
+  <button data-tab="overview" aria-selected="true">Overview</button>
+  <button data-tab="drill">Drill</button>
+  <button data-tab="exam">Exam</button>
+  <button data-tab="miss">Correction Album</button>
+  <button data-tab="allq">All Questions</button>
+  <button data-tab="lq">Long Qs</button>
+  <button data-tab="acct">Account</button>
+</nav>
 
   <div id="gate" class="card">
     <h2>Sign in</h2>
@@ -183,16 +231,32 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
       <p class="mono" id="ovLine" style="margin:10px 0 0"></p>
     </div>
     <div class="card">
-      <h2>Skill tree</h2>
-      <p class="muted">每格 = 一個 topic。答啱先計，答錯唔會扣分。</p>
-      <div class="tree" id="ovTree"></div>
+      <h2>Progress by chapter</h2>
+      <div id="ovChaps"></div>
+    </div>
+    <div class="card">
+      <h2>全班最多人清嘅 20 條</h2>
+      <p class="muted">撳一條直接跳過去做。</p>
+      <ol class="top20" id="ovTop20"><li class="muted">Loading…</li></ol>
+    </div>
+    <div class="card">
+      <h2>班際排行榜</h2>
+      <div id="ovLb"><p class="muted">Loading…</p></div>
+    </div>
+    <div class="card">
+      <h2>Cheer up kashinger</h2>
+      <p class="muted">留番句嘢俾同學打打氣。全班見到。</p>
+      <div id="cheerList"><p class="muted">Loading…</p></div>
+      <textarea id="cheerBox" maxlength="200" placeholder="一句就夠——俾啲鼓勵大家…"></textarea>
+      <div class="meta" style="margin-top:6px"><span class="mono" id="cheerMsg"></span>
+        <button class="btn sm" id="cheerSend">出 post</button></div>
     </div>
   </div>
 
   <div id="tab-drill" class="hide">
     <div id="picker" class="card">
       <h2>Choose a section</h2>
-      <div class="secgrid" id="secgrid"></div>
+      <div id="secgrid"></div>
     </div>
     <div id="qcard" class="card hide">
       <div class="row"><span class="mono" id="secName"></span><span class="grow"></span>
@@ -240,8 +304,8 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 
   <div id="tab-miss" class="hide">
     <div class="card">
-      <h2>錯題本</h2>
-      <p class="muted">每一條答錯過嘅題都會永久留喺呢度，刪唔走。寫低你自己嘅理解，再標返明唔明。<br>
+      <h2>Correction Album</h2>
+      <p class="muted">答錯過嘅題全部永久留喺呢本簿，刪唔走。寫低你自己嘅理解，再標返明唔明。<br>
         <span class="mono">Write the idea in your own words — not the answer.</span></p>
       <div class="row" id="bookFilt" style="margin-top:8px">
         <button class="btn sm" data-filt="all" aria-pressed="true">全部</button>
@@ -267,17 +331,6 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
     <div class="card" id="lqList"><p class="muted">Pick a section.</p></div>
   </div>
 
-  <div id="tab-con" class="hide">
-    <div class="card"><h2>Concepts</h2>
-      <input type="text" id="conFind" placeholder="search concepts…" style="width:100%"></div>
-    <div class="card" id="conList"><p class="muted">Loading…</p></div>
-  </div>
-
-  <div id="tab-trap" class="hide">
-    <div class="card"><h2>Traps</h2><p class="muted">歷屆最多人踩嘅位。</p></div>
-    <div class="card" id="trapList"><p class="muted">Loading…</p></div>
-  </div>
-
   <div id="tab-acct" class="hide">
     <div class="card">
       <h2>Account</h2>
@@ -298,6 +351,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
     </div>
   </div>
 
+<div class="foot">Study tool &middot; built from HKDSE past-paper MCQs</div>
 </div>
 
 <script>
@@ -314,6 +368,35 @@ const LEVEL_NAMES = ['起步 Starter','打底 Foundation','上手 Familiar','穩
   '熟手 Sharp','硬淨 Strong','進階 Advanced','高手 Expert','大師 Master','滿盤 Full Marks'];
 
 const LAB = ['A','B','C','D','E'];
+
+/* Chapter structure and names, exactly as the four original pages had them.
+   A question's chapter is decided by (page, topic). */
+const CHAPTERS=[
+ ['ch1','Ch 1 · Basic Economic Concepts','core',['scarcity','oppcost','goods','types','posnorm','property','economy','interest','basic']],
+ ['ch2','Ch 2 · Factors of Production & Labour','core',['factors','dol','labprod','labmob','labsup','wage']],
+ ['ch3','Ch 3 · Firms & Production','core',['cprod','typeprod','dimret','shortlong','scale','expansion','profitmax','ownership','sharesbonds','pubpriv']],
+ ['ch4','Ch 4 · Price Theory','core',['supdem','relprice','elasticity','shortsurp','funcprice']],
+ ['ch5','Ch 5 · Market Structures & Welfare','core',['market','efficiency','extern','equity']],
+ ['u11','Unit 11 · Market Intervention','ch11',['tax','sub','quo','flr','cel']],
+ ['tf','Tax & Fiscal / Monetary','ch22',['fm','prp','tax']],
+ ['micro','Efficiency & Equity','macro',['Efficiency','Externalities','Equity','Principles of Taxation','micro']],
+ ['natl','National Income','macro',['Circular Flow','GNP / GNI','Real / Nominal GDP','AD-AS','natl']],
+ ['money','Money & Banking','macro',['Problems of Barter','Functions of Money','Properties of Good Money','Banking System','Liquidity','M1 / M2 / M3','Monetary Base','Deposit Creation / Contraction','Function of HKMA','Money Demand','Money Market Equilibrium','Quantity Theory of Money','money']],
+ ['macro','Macro Problems','macro',['Business Cycle','Inflation / Deflation','Nominal / Real Interest Rate','Unemployment','macro']],
+ ['trade','Trade & Forex','macro',["Int'l Trade (Concept)","Int'l Trade (Calculation)",'Trade Barriers','Balance of Payments','Exchange Rate','Linked Exchange Rate','trade']],
+];
+function chapOf(page,topic){
+  for(const c of CHAPTERS) if(c[2]===page && c[3].indexOf(topic)>=0) return c;
+  for(const c of CHAPTERS) if(c[2]===page) return c;     // page matched, topic new
+  return null;
+}
+/* Past papers first by year, newest at the top: DSE2025 before DSE2013 before
+   CE1993. Within a year, paper order. */
+function yearOf(id){ const m=String(id).match(/(19|20)\d{2}/); return m?Number(m[0]):0; }
+function byYearDesc(a,b){
+  const d=yearOf(b.id)-yearOf(a.id);
+  return d!==0?d:String(a.id).localeCompare(String(b.id));
+}
 const LABELS = {"scarcity": "Scarcity", "oppcost": "Opp. Cost", "goods": "Econ/Free", "types": "Types of Goods", "posnorm": "Pos/Normative", "property": "Property Rights", "economy": "Types of Economy", "interest": "Interest", "basic": "3 Basic Problems", "factors": "Factors", "dol": "Div. of Labour", "labprod": "Lab. Productivity", "labmob": "Lab. Mobility", "labsup": "Lab. Supply", "wage": "Wage Payment", "cprod": "Consumer/Producer", "typeprod": "Types of Prod.", "dimret": "Dim. Returns", "shortlong": "Short/Long Run", "scale": "Econ. of Scale", "expansion": "Expansion", "profitmax": "Profit Max.", "ownership": "Ownership", "sharesbonds": "Shares & Bonds", "pubpriv": "Public/Private", "supdem": "Supply & Demand", "relprice": "Relative Price", "elasticity": "Elasticity", "shortsurp": "Shortage/Surplus", "funcprice": "Function of Price", "market": "Market Structures", "efficiency": "Efficiency", "extern": "Externalities", "equity": "Equity", "tax": "Tax", "sub": "Subsidy", "quo": "Quota", "flr": "Floor", "cel": "Ceiling", "prp": "P-R-P", "fm": "F-M", "Efficiency": "Efficiency", "micro": "micro", "Externalities": "Externalities", "Equity": "Equity", "Principles of Taxation": "Principles of Taxation", "Circular Flow": "Circular Flow", "natl": "natl", "GNP / GNI": "GNP / GNI", "Real / Nominal GDP": "Real / Nominal GDP", "AD-AS": "AD-AS", "Problems of Barter": "Problems of Barter", "money": "money", "Functions of Money": "Functions of Money", "Properties of Good Money": "Properties of Good Money", "Banking System": "Banking System", "Liquidity": "Liquidity", "M1 / M2 / M3": "M1 / M2 / M3", "Function of HKMA": "Function of HKMA", "Deposit Creation / Contraction": "Deposit Creation / Contraction", "Monetary Base": "Monetary Base", "Money Demand": "Money Demand", "Money Market Equilibrium": "Money Market Equilibrium", "Quantity Theory of Money": "Quantity Theory of Money", "Business Cycle": "Business Cycle", "macro": "macro", "Inflation / Deflation": "Inflation / Deflation", "Nominal / Real Interest Rate": "Nominal / Real Interest Rate", "Unemployment": "Unemployment", "Int'l Trade (Calculation)": "Int'l Trade (Calculation)", "trade": "trade", "Int'l Trade (Concept)": "Int'l Trade (Concept)", "Trade Barriers": "Trade Barriers", "Balance of Payments": "Balance of Payments", "Exchange Rate": "Exchange Rate", "Linked Exchange Rate": "Linked Exchange Rate", "adas": "adas", "balsheet": "balsheet", "bop": "bop", "bizcycle": "bizcycle", "fx": "fx", "policy": "policy", "gni": "gni", "inflation": "inflation", "realint": "realint", "qtm": "qtm", "realgdp": "realgdp", "mtax": "mtax", "barrier": "barrier", "unemp": "unemp", "elect": "elect"};
 
 let SESS=null, PROFILE=null, EMAIL=null, IDX=null;
@@ -322,6 +405,9 @@ const CACHE = {};
 let QUEUE=[], POS=0, SECTION=null;
 
 const $ = id => document.getElementById(id);
+const CHEER_OK=['Well done! ✅','Nice work! 🎉','Spot on! 👏','Excellent! ⭐','Great job — keep it up! 🚀'];
+const CHEER_NO=['Good try — you’ll nail the next one! 💪','No worries, this one trips up many. Let’s learn it 👇','Nice effort — here’s the idea to remember 💡','Almost! Understanding why is how you improve 🌱','Keep going — every mistake is a mark saved in the exam 📚'];
+const pick_=a=>a[Math.floor(Math.random()*a.length)];
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const msg = t => { $('gmsg').textContent = t; };
 const lbl = t => LABELS[t] || t;
@@ -404,7 +490,7 @@ function markRight(key,topic){
   }
   pSave(); return false;
 }
-function markWrong(key){ P.since++; P.wrong[key]={at:P.since, ts:Date.now()}; pSave(); }
+function markWrong(key,topic){ P.since++; P.wrong[key]={at:P.since, ts:Date.now(), tp:topic||''}; pSave(); }
 
 function totals(){
   const per={}, all={cleared:0,total:0};
@@ -522,18 +608,16 @@ function lockOut(){
 }
 
 /* -------------------------------------------------------------------- nav */
-const TABS=['overview','drill','exam','miss','allq','lq','con','trap','acct'];
+const TABS=['overview','drill','exam','miss','allq','lq','acct'];
 function show(tab){
   TABS.forEach(t=>{
     $('tab-'+t).classList.toggle('hide',t!==tab);
     const b=document.querySelector('[data-tab="'+t+'"]');
     if(b) b.setAttribute('aria-selected',String(t===tab));
   });
-  if(tab==='overview') drawOverview();
+  if(tab==='overview'){ drawOverview(); loadBoard('ovLb'); loadTop20(); loadCheer(); }
   if(tab==='miss')     loadBook();
-  if(tab==='con')      loadConcepts();
-  if(tab==='trap')     loadTraps();
-  if(tab==='acct')     loadBoard();
+  if(tab==='acct')     loadBoard('lb');
 }
 $('nav').addEventListener('click',e=>{
   const b=e.target.closest('[data-tab]'); if(b) show(b.dataset.tab);
@@ -550,14 +634,79 @@ function drawOverview(){
   $('ovBar').style.width=Math.min(pct,100)+'%';
   $('ovLine').textContent=t.all.cleared+' / '+t.all.total+' cleared'
     +(lv<10?'  ·  next level at '+LEVELS[lv]+'%':'  ·  top level');
-  const keys=Object.keys(t.per).sort((a,b)=>t.per[b].total-t.per[a].total);
-  $('ovTree').innerHTML=keys.map(k=>{
-    const c=t.per[k], p=c.total?Math.round(c.cleared/c.total*100):0;
-    return '<div class="node"><div class="nm"><span>'+esc(lbl(k))+'</span>'
-      +'<span class="mono">'+c.cleared+'/'+c.total+'</span></div>'
-      +'<div class="bar"><i style="width:'+p+'%"></i></div></div>';
+
+  /* Chapter bars in the original two-colour style: green for cleared, red for
+     answered-wrong-and-not-yet-cleared, blank for untouched. */
+  const wrongPer={};
+  Object.keys(P.wrong).forEach(k=>{
+    if(P.cleared[k]) return;
+    const tp=P.wrong[k].tp||''; wrongPer[tp]=(wrongPer[tp]||0)+1;
+  });
+  const agg={};
+  eachSection('mcq',(pg,tp,n)=>{
+    const c=chapOf(pg,tp); if(!c) return;
+    const a=agg[c[0]]=agg[c[0]]||{lab:c[1],cls:c[0],tot:0,ok:0,bad:0};
+    a.tot+=n;
+    a.ok+=(t.per[tp]?t.per[tp].cleared:0);
+    a.bad+=(wrongPer[tp]||0);
+  });
+  $('ovChaps').innerHTML=CHAPTERS.map(c=>{
+    const a=agg[c[0]]; if(!a||!a.tot) return '';
+    const left=a.tot-a.ok-a.bad;
+    return '<div style="margin-bottom:12px"><div class="meta" style="margin-bottom:4px">'
+      +'<span><span class="badge b-'+a.cls+'">'+esc(a.lab)+'</span>'
+      +'<span class="score">'+a.tot+' Q</span></span>'
+      +'<span class="score">'+a.ok+' right &middot; '+a.bad+' wrong &middot; '+left+' left</span></div>'
+      +'<div class="tbar"><span style="width:'+(a.ok/a.tot*100)+'%;background:var(--pos)"></span>'
+      +'<span style="width:'+(a.bad/a.tot*100)+'%;background:var(--neg)"></span></div></div>';
   }).join('')||'<p class="muted">No sections.</p>';
 }
+
+/* --- class top 20, ranking, cheer wall --------------------------------- */
+function loadTop20(){
+  jsonp({top20:1,t:SESS}, r=>{
+    const items=(r&&r.items)||[];
+    if(!items.length){ $('ovTop20').innerHTML='<li class="muted">要全班開始做先有數。</li>'; return; }
+    $('ovTop20').innerHTML=items.map(x=>{
+      const c=chapOf(x.page,x.topic);
+      return '<li><a data-pg="'+esc(x.page)+'" data-tp="'+esc(x.topic)+'" data-key="'+esc(x.key)+'">'
+        +esc(x.key)+'</a> <span class="score">'+(c?esc(c[1]):'')+' · '+x.n+' 人清咗</span></li>';
+    }).join('');
+  });
+}
+$('ovTop20').addEventListener('click',e=>{
+  const a=e.target.closest('a[data-key]'); if(!a) return;
+  show('drill');
+  startSection(a.dataset.pg, a.dataset.tp, lbl(a.dataset.tp), a.dataset.key);
+});
+
+function loadCheer(){
+  jsonp({cmt:'__cheer', t:SESS}, r=>{
+    const items=(r&&r.items)||[];
+    $('cheerList').innerHTML=items.map(c=>
+      '<div class="cmt'+(c.verified?' ver':'')+'">'
+      +'<div class="hd2"><span class="nk">'+esc(c.nick)+'</span>'
+      +(c.verified?'<span class="vtag">老師</span>':'')
+      +'<button class="like'+(LIKED[c.cid]?' on':'')+'" data-cid="'+esc(c.cid)+'">▲ '+c.likes+'</button></div>'
+      +'<p style="margin:4px 0 0">'+esc(c.text)+'</p></div>').join('')
+      ||'<p class="muted">未有人出過 post。做第一個。</p>';
+  });
+}
+$('cheerSend').addEventListener('click',()=>{
+  const txt=$('cheerBox').value.trim();
+  if(!txt){ $('cheerMsg').textContent='寫啲嘢先。'; return; }
+  post({event:'comment', key:'__cheer', text:txt});
+  $('cheerBox').value=''; $('cheerMsg').textContent='出咗，一陣就見到。';
+  setTimeout(()=>{ $('cheerMsg').textContent=''; loadCheer(); }, 2500);
+});
+$('cheerList').addEventListener('click',e=>{
+  const lk=e.target.closest('.like'); if(!lk) return;
+  const cid=lk.dataset.cid, on=!LIKED[cid];
+  if(on) LIKED[cid]=1; else delete LIKED[cid];
+  lk.classList.toggle('on',on);
+  lk.textContent='▲ '+Math.max(0, Number(lk.textContent.replace(/\D/g,''))+(on?1:-1));
+  post({event:'like', cid:cid});
+});
 
 /* ------------------------------------------------------------ section list */
 function eachSection(type,fn){
@@ -565,17 +714,37 @@ function eachSection(type,fn){
   Object.keys(m).forEach(pg=>Object.keys(m[pg]).forEach(tp=>{ if(m[pg][tp]) fn(pg,tp,m[pg][tp]); }));
 }
 function buildSections(){
-  let html='';
+  const by={};                                 // chapter key -> [{pg,tp,n}]
   eachSection('mcq',(pg,tp,n)=>{
-    html+='<button class="sec" data-page="'+esc(pg)+'" data-topic="'+esc(tp)+'">'
-      +esc(lbl(tp))+'<small>'+n+' questions · '+esc(pg)+'</small></button>';
+    const c=chapOf(pg,tp); if(!c) return;
+    (by[c[0]]=by[c[0]]||[]).push({pg,tp,n});
   });
-  $('secgrid').innerHTML=html||'<p class="muted">The bank is empty. Run install() in Apps Script.</p>';
+  $('secgrid').innerHTML=CHAPTERS.map(c=>{
+    const secs=by[c[0]]; if(!secs||!secs.length) return '';
+    secs.sort((a,b)=>c[3].indexOf(a.tp)-c[3].indexOf(b.tp));   // book order, not size
+    const tot=secs.reduce((x,y)=>x+y.n,0);
+    return '<div class="chap"><div class="chap-hd"><span>'+esc(c[1])+'</span>'
+      +'<span class="score">'+tot+' Q</span></div><div class="chap-secs">'
+      +secs.map(x=>'<button class="sec" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'">'
+        +esc(lbl(x.tp))+'<small>'+x.n+' Q</small></button>').join('')
+      +'</div></div>';
+  }).join('')||'<p class="muted">The bank is empty. Run install() in Apps Script.</p>';
 }
 function buildSelects(){
   const opt=type=>{
+    const by={};
+    eachSection(type,(pg,tp,n)=>{
+      const c=chapOf(pg,tp); if(!c) return;
+      (by[c[0]]=by[c[0]]||[]).push({pg,tp,n});
+    });
     let o='<option value="">— pick a section —</option>';
-    eachSection(type,(pg,tp,n)=>{ o+='<option value="'+esc(type+'|'+pg+'|'+tp)+'">'+esc(lbl(tp))+' ('+n+')</option>'; });
+    CHAPTERS.forEach(c=>{
+      const secs=by[c[0]]; if(!secs||!secs.length) return;
+      secs.sort((a,b)=>c[3].indexOf(a.tp)-c[3].indexOf(b.tp));
+      o+='<optgroup label="'+esc(c[1])+'">'
+        +secs.map(x=>'<option value="'+esc(type+'|'+x.pg+'|'+x.tp)+'">'+esc(lbl(x.tp))+' ('+x.n+')</option>').join('')
+        +'</optgroup>';
+    });
     return o;
   };
   $('allqSec').innerHTML=opt('mcq');
@@ -585,14 +754,15 @@ $('secgrid').addEventListener('click',e=>{
   const b=e.target.closest('.sec');
   if(b) startSection(b.dataset.page,b.dataset.topic,lbl(b.dataset.topic));
 });
-function startSection(page,topic,label){
+function startSection(page,topic,label,focusKey){
   SECTION={page,topic,label};
   $('picker').classList.add('hide'); $('qcard').classList.remove('hide');
   $('stem').textContent='Loading…'; $('opts').innerHTML='';
   section('mcq',page,topic,items=>{
-    QUEUE=items.filter(q=>(q.opts&&q.opts.length)||q.img);
-    for(let i=QUEUE.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const x=QUEUE[i]; QUEUE[i]=QUEUE[j]; QUEUE[j]=x; }
-    POS=0; render();
+    QUEUE=items.filter(q=>(q.opts&&q.opts.length)||q.img).sort(byYearDesc);
+    POS=0;
+    if(focusKey){ const i=QUEUE.findIndex(q=>q.key===focusKey); if(i>=0) POS=i; }
+    render();
   });
 }
 
@@ -641,10 +811,13 @@ $('qnav').addEventListener('click',e=>{
 function render(){
   const q=QUEUE[POS];
   if(!q){ $('stem').textContent='Section finished. 做完呢個 section 喇。';
-    $('opts').innerHTML=''; $('why').classList.add('hide'); $('next').classList.add('hide');
+    $('opts').innerHTML=''; $('why').className='why'; $('next').classList.add('hide');
     drawNav(); return; }
-  $('qid').textContent=q.id;
-  $('why').classList.add('hide'); $('next').classList.add('hide');
+  const ch=chapOf(SECTION.page,SECTION.topic);
+  $('qid').innerHTML=(ch?'<span class="badge b-'+ch[0]+'">'+esc(ch[1])+'</span>':'')
+    +'<span class="subtag">'+esc(lbl(SECTION.topic))+'</span>'
+    +'<span class="qid">'+esc(q.id)+'</span>';
+  $('why').className='why'; $('next').classList.add('hide');
   $('prog').textContent=(POS+1)+' / '+QUEUE.length+' · '+(SECTION.label||'');
   $('stem').innerHTML=stemHtml(q);
   $('opts').innerHTML=optsHtml(q,-1);
@@ -657,18 +830,22 @@ $('opts').addEventListener('click',e=>{
   for(let i=0;i<kids.length;i++){
     kids[i].disabled=true;
     if(i===Number(q.ans)) kids[i].classList.add('right');
-    if(i===chose&&!ok)    kids[i].classList.add('wrong');
+    else if(i===chose)    kids[i].classList.add('wrong');
+    else                  kids[i].classList.add('dim');
   }
   let note='';
   if(ok){
     const credited=markRight(q.key,q.topic||q.sub||'');
     if(!credited&&P.wrong[q.key]) note='呢條啱啱答錯過，要隔 5 題或者 10 分鐘再答啱先計入進度。';
   }else{
-    markWrong(q.key);
-    note='呢條題已經入咗你嘅錯題本。喺嗰度用自己嘅話寫低你嘅理解。';
+    markWrong(q.key, q.topic||q.sub||'');
+    note='呢條題已經入咗你嘅 Correction Album。喺嗰度用自己嘅話寫低你嘅理解。';
     post({event:'mistake', key:q.key, chose:chose, correct:false, page:SECTION.page});
   }
-  $('why').innerHTML=esc(q.why||'')+(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':'');
+  $('why').className='why show '+(ok?'r':'w');
+  $('why').innerHTML='<b>'+esc(pick_(ok?CHEER_OK:CHEER_NO))+'</b><br>'
+    +'<b>'+(ok?'Correct — the answer is ':'The answer is ')+LAB[Number(q.ans)]+'.</b> '
+    +esc(q.why||'')+(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':'');
   if(!ok){
     /* Deliberately a button, not automatic. Only a student who has read the
        written explanation and is still stuck presses it — which is both the
@@ -681,10 +858,9 @@ $('opts').addEventListener('click',e=>{
   /* The thread opens only now, after the answer is locked in. Showing it any
      earlier would turn the top comment into the answer key. */
   $('why').innerHTML+='<div id="thread" data-key="'+esc(q.key)+'" '
-    +'style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">'
+    +'style="margin-top:16px;border-top:1px solid rgba(0,0,0,.12);padding-top:12px">'
     +'<p class="mono">同學討論 · 載入中…</p></div>';
   loadThread(q.key);
-  $('why').classList.remove('hide');
   $('next').classList.remove('hide');
   drawNav();
 });
@@ -695,8 +871,8 @@ $('why').addEventListener('click',e=>{
   jsonp({explain:b.dataset.key, chose:b.dataset.ch, t:SESS}, r=>{
     $('aiMsg').textContent='';
     if(r&&r.text){
-      $('aiOut').innerHTML='<div class="why" style="border-left-color:var(--brand)">'
-        +esc(r.text)+'</div>';
+      $('aiOut').innerHTML='<div style="background:var(--surface-2);border-left:3px solid var(--brand);'
+        +'padding:12px 14px;margin-top:12px">'+esc(r.text)+'</div>';
     }else{
       $('aiOut').innerHTML='<p class="mono">'+esc((r&&r.error)
         ||'Not available right now. Ask your teacher about this one.')+'</p>';
@@ -735,7 +911,7 @@ function buildExam(n){
     items.forEach(q=>{ if((q.opts&&q.opts.length)||q.img) pool.push(q); });
     if(--pending===0){
       for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const x=pool[i]; pool[i]=pool[j]; pool[j]=x; }
-      const set=pool.slice(0,n);
+      const set=pool.slice(0,n).sort(byYearDesc);
       EX={q:set, a:new Array(set.length).fill(-1), i:0, t0:Date.now(), timer:null};
       EX.timer=setInterval(()=>{
         const s=Math.floor((Date.now()-EX.t0)/1000);
@@ -766,14 +942,14 @@ $('exSubmit').addEventListener('click',()=>{
     const ok=EX.a[i]===Number(q.ans);
     if(ok){ right++; markRight(q.key,q.topic||q.sub||''); }
     else{
-      markWrong(q.key);
+      markWrong(q.key, q.topic||q.sub||'');
       post({event:'mistake', key:q.key, chose:EX.a[i], correct:false, page:'exam'});
     }
     html+='<div class="item"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
       +'<span class="pill '+(ok?'understood':'not')+'">'+(ok?'✓':'✗')+'</span></div>'
       +'<div class="stem" style="font-size:15px">'+stemHtml(q)+'</div>'
       +'<p class="mono">Your answer: '+(EX.a[i]>=0?LAB[EX.a[i]]:'—')+'  ·  Correct: '+LAB[Number(q.ans)]+'</p>'
-      +(q.why?'<div class="why">'+esc(q.why)+'</div>':'')+'</div>';
+      +(q.why?'<div class="why show '+(ok?'r':'w')+'">'+esc(q.why)+'</div>':'')+'</div>';
   });
   const secs=Math.floor((Date.now()-EX.t0)/1000);
   $('examRun').classList.add('hide');
@@ -796,8 +972,7 @@ function loadThread(key){
       + items.map(c=>
           '<div class="cmt'+(c.verified?' ver':'')+'" data-cid="'+esc(c.cid)+'">'
           +'<div class="hd2"><span class="nk">'+esc(c.nick)+'</span>'
-          +(c.verified?'<span class="pill understood">老師認證</span>':'')
-          +'<span class="grow"></span>'
+          +(c.verified?'<span class="vtag">老師認證</span>':'')
           +'<button class="like'+(LIKED[c.cid]?' on':'')+'" data-cid="'+esc(c.cid)+'">'
           +'▲ '+c.likes+'</button></div>'
           +'<p style="margin:4px 0 0">'+esc(c.text)+'</p></div>').join('')
@@ -890,7 +1065,7 @@ function renderAllq(){
   const parts=v.split('|'), find=$('allqFind').value.trim().toLowerCase();
   $('allqList').innerHTML='<p class="muted">Loading…</p>';
   section(parts[0],parts[1],parts[2],items=>{
-    const rows=items.filter(q=>!find
+    const rows=items.slice().sort(byYearDesc).filter(q=>!find
       || String(q.q||'').toLowerCase().indexOf(find)>=0
       || String(q.id||'').toLowerCase().indexOf(find)>=0);
     $('allqList').innerHTML=rows.map(q=>
@@ -899,7 +1074,7 @@ function renderAllq(){
       +(q.opts&&q.opts.length?q.opts.map((o,i)=>'<div class="'+(i===Number(q.ans)?'pill understood':'mono')
         +'" style="margin:3px 0">'+LAB[i]+'. '+esc(o)+'</div>').join('')
         :'<p class="mono">Correct answer: '+LAB[Number(q.ans)]+'</p>')
-      +(q.why?'<div class="why">'+esc(q.why)+'</div>':'')+'</div>'
+      +(q.why?'<div class="why show r" style="margin-top:8px">'+esc(q.why)+'</div>':'')+'</div>'
     ).join('')||'<p class="muted">Nothing matched.</p>';
   });
 }
@@ -913,59 +1088,19 @@ function renderLq(){
   const parts=v.split('|');
   $('lqList').innerHTML='<p class="muted">Loading…</p>';
   section(parts[0],parts[1],parts[2],items=>{
-    $('lqList').innerHTML=items.map(q=>
+    $('lqList').innerHTML=items.slice().sort(byYearDesc).map(q=>
       '<div class="item"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
       +(q.cmd?'<span class="pill">'+esc(q.cmd)+'</span>':'')
       +(q.marks?'<span class="pill">'+esc(q.marks)+' marks</span>':'')+'</div>'
       +'<div class="stem" style="font-size:15px">'+esc(q.q||'')+'</div>'
       +(q.fig?'<img src="'+esc(q.fig)+'" style="max-width:100%">':'')
-      +(q.structure?'<div class="why"><b>Structure</b><br>'+esc(q.structure)+'</div>':'')
-      +(q.scheme?'<div class="why" style="border-left-color:var(--brand)"><b>Marking points</b><br>'+esc(q.scheme)+'</div>':'')
+      +(q.structure?'<div style="background:var(--surface-2);border-left:3px solid var(--star);padding:12px 14px;margin-top:12px"><b>Structure</b><br>'+esc(q.structure)+'</div>':'')
+      +(q.scheme?'<div style="background:var(--surface-2);border-left:3px solid var(--brand);padding:12px 14px;margin-top:12px"><b>Marking points</b><br>'+esc(q.scheme)+'</div>':'')
       +(q.concept?'<p class="mono">Concept: '+esc(q.concept)+'</p>':'')+'</div>'
     ).join('')||'<p class="muted">No long questions here.</p>';
   });
 }
 $('lqSec').addEventListener('change',renderLq);
-
-/* ---------------------------------------------------------------- concepts */
-let CONS=null;
-function loadConcepts(){
-  if(CONS) return renderCon();
-  $('conList').innerHTML='<p class="muted">Loading…</p>';
-  let pend=0; const acc=[];
-  eachSection('concept',(pg,tp)=>{ pend++; section('concept',pg,tp,items=>{
-    items.forEach(x=>acc.push(x)); if(--pend===0){ CONS=acc; renderCon(); } }); });
-  if(!pend){ CONS=[]; renderCon(); }
-}
-function renderCon(){
-  const find=$('conFind').value.trim().toLowerCase();
-  const rows=(CONS||[]).filter(c=>!find||JSON.stringify(c).toLowerCase().indexOf(find)>=0);
-  $('conList').innerHTML=rows.map(c=>
-    '<div class="item"><h3>'+esc(c.title||'')+'</h3>'
-    +(c.defn?'<p><b>Definition.</b> '+esc(c.defn)+'</p>':'')
-    +(c.mech?'<p><b>Mechanism.</b> '+esc(c.mech)+'</p>':'')
-    +(c.example?'<p><b>Example.</b> '+esc(c.example)+'</p>':'')
-    +(c.edge?'<div class="why"><b>Edge case</b><br>'+esc(c.edge)+'</div>':'')+'</div>'
-  ).join('')||'<p class="muted">Nothing matched.</p>';
-}
-$('conFind').addEventListener('input',()=>{ clearTimeout(window._cf); window._cf=setTimeout(renderCon,250); });
-
-/* ------------------------------------------------------------------- traps */
-let TRAPS=null;
-function loadTraps(){
-  if(TRAPS) return renderTraps();
-  $('trapList').innerHTML='<p class="muted">Loading…</p>';
-  let pend=0; const acc=[];
-  eachSection('trap',(pg,tp)=>{ pend++; section('trap',pg,tp,items=>{
-    items.forEach(x=>acc.push(x)); if(--pend===0){ TRAPS=acc; renderTraps(); } }); });
-  if(!pend){ TRAPS=[]; renderTraps(); }
-}
-function renderTraps(){
-  $('trapList').innerHTML=(TRAPS||[]).map(t=>
-    '<div class="item"><div class="row">'
-    +((t.topic||t.g)?'<span class="pill">'+esc(lbl(t.topic||t.g))+'</span>':'')
-    +'</div><p>'+esc(t.text||'')+'</p></div>').join('')||'<p class="muted">No traps.</p>';
-}
 
 /* ----------------------------------------------------------------- account */
 $('saveNick').addEventListener('click',()=>{
@@ -975,19 +1110,20 @@ $('saveNick').addEventListener('click',()=>{
     pushScore();
   });
 });
-$('lbRefresh').addEventListener('click',loadBoard);
-function loadBoard(){
-  $('lb').innerHTML='<p class="muted">Loading…</p>';
+$('lbRefresh').addEventListener('click',()=>loadBoard('lb'));
+function loadBoard(target){
+  const el=$(target); if(!el) return;
+  el.innerHTML='<p class="muted">Loading…</p>';
   jsonp({lb:1, uid:djb2('tyn:'+(EMAIL||''))}, r=>{
-    if(!r||!r.top){ $('lb').innerHTML='<p class="muted">排行榜暫時讀唔到。</p>'; return; }
-    if(!r.top.length){ $('lb').innerHTML='<p class="muted">仲未有人上榜。</p>'; return; }
+    if(!r||!r.top){ el.innerHTML='<p class="muted">排行榜暫時讀唔到。</p>'; return; }
+    if(!r.top.length){ el.innerHTML='<p class="muted">仲未有人上榜。</p>'; return; }
     let h='<table><tr><th>#</th><th>花名</th><th>Lv</th><th>%</th></tr>';
     r.top.forEach((x,i)=>{ h+='<tr><td>'+(i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+x.pct+'%</td></tr>'; });
     h+='</table>';
     if(r.you) h+='<p class="mono" style="margin-top:10px">你排第 '+r.you.rank+' / '+r.n
       +'  ·  '+r.you.pct+'%  ·  Lv.'+r.you.lvl
       +(r.you.gap?'  ·  追前一位仲差 '+r.you.gapQ+' 題':'')+'</p>';
-    $('lb').innerHTML=h;
+    el.innerHTML=h;
   });
 }
 /* Must match hashUid_() in Code.gs exactly, or a student never finds their own
