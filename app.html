@@ -596,6 +596,7 @@ function enterApp(){
     pullProgress(drawOverview);
   });
   jsonp({likes:1,t:SESS}, r=>{ if(r&&r.liked) LIKED=r.liked; });
+  jsonp({mist:1,t:SESS}, r=>{ if(r&&r.items) BOOK=r.items; });   // silent preload
 }
 
 const PROF_ERR={
@@ -862,6 +863,20 @@ $('opts').addEventListener('click',e=>{
   $('why').innerHTML='<b>'+esc(pick_(ok?CHEER_OK:CHEER_NO))+'</b><br>'
     +'<b>'+(ok?'Correct — the answer is ':'The answer is ')+LAB[Number(q.ans)]+'.</b> '
     +esc(q.why||'')+(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':'');
+  if(!ok){
+    const rec=BOOK.find(m=>m.key===q.key)||{};
+    const rst=rec.status||'not';
+    $('why').innerHTML+='<div class="drillnote" data-key="'+esc(q.key)+'" '
+      +'style="margin-top:14px;border-top:1px solid rgba(0,0,0,.12);padding-top:10px">'
+      +'<p class="score" style="margin:0 0 2px"><b>Your reflection</b> — goes straight into your Correction Album</p>'
+      +'<textarea placeholder="In your own words: what is this question really testing, and why did your answer look right?">'+esc(rec.note||'')+'</textarea>'
+      +'<div class="statusrow">'
+      +'<button data-st="understood" aria-pressed="'+(rst==='understood')+'">Got it</button>'
+      +'<button data-st="partly" aria-pressed="'+(rst==='partly')+'">Partly</button>'
+      +'<button data-st="not" aria-pressed="'+(rst==='not')+'">Not yet</button>'
+      +'<span style="flex:1"></span><button class="dnSave btn sm">Save</button>'
+      +'<span class="mono dnMsg"></span></div></div>';
+  }
   if(!ok && q.q){
     /* Deliberately a button, not automatic — and only for text questions: the
        explainer cannot see a diagram, so offering it there would invite it to
@@ -999,6 +1014,27 @@ function loadThread(key){
   });
 }
 $('why').addEventListener('click',e=>{
+  const dn=e.target.closest('.drillnote');
+  if(dn){
+    const st=e.target.closest('[data-st]');
+    if(st){
+      dn.querySelectorAll('[data-st]').forEach(b=>b.setAttribute('aria-pressed',String(b===st)));
+      return;
+    }
+    if(e.target.closest('.dnSave')){
+      const picked=dn.querySelector('[data-st][aria-pressed="true"]');
+      const status=picked?picked.dataset.st:'not';
+      const note=dn.querySelector('textarea').value;
+      post({event:'note', key:dn.dataset.key, status:status, note:note});
+      const i=BOOK.findIndex(m=>m.key===dn.dataset.key);
+      if(i>=0){ BOOK[i].status=status; BOOK[i].note=note; }
+      else BOOK.push({key:dn.dataset.key, n:1, status:status, note:note});
+      dn.querySelector('.dnMsg').textContent=' saved to your album';
+      setTimeout(()=>{ const m=dn.querySelector('.dnMsg'); if(m) m.textContent=''; },2500);
+      return;
+    }
+    // fall through only if the click was on nothing actionable inside the box
+  }
   const lk=e.target.closest('.like');
   if(lk){
     const cid=lk.dataset.cid;
