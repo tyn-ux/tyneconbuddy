@@ -1,6 +1,6 @@
 # EconMon 經濟獸 — HKDSE Economics RPG
 
-A FireRed-style pixel RPG where every EconMon is one HKDSE Economics concept. Students catch EconMon by answering questions (bilingual EN / 繁中), level them up, evolve them, and challenge gym bosses. Current version: Tai O region (Textbook Ch.1–2).
+A FireRed-style pixel RPG where every EconMon is one HKDSE Economics concept. Students catch EconMon by answering questions (bilingual EN / 繁中), level them up, evolve them, and challenge gym bosses. Current version: Tai O (Ch.1–2) and Sham Shui Po (Ch.3–5).
 
 - Play: open `index.html` (GitHub Pages).
 - Class mode: set `window.ECONMON_API` near the top of `index.html` to your Google Apps Script Web app URL (see GUIDE.md). Leave it empty for offline mode.
