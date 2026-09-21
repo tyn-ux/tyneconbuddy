@@ -1,6 +1,6 @@
 # EconMon 經濟獸 — HKDSE Economics RPG
 
-A FireRed-style pixel RPG where every EconMon is one HKDSE Economics concept. Students catch EconMon by answering questions (bilingual EN / 繁中), level them up, evolve them, and challenge gym bosses. The player is 衫哥 (Sam Gor), 福伯's grandson, who loves Economics and new clothes. The screen fills the device automatically, with a 4:3 layout for iPads held sideways. Current version (v0.11): Tai O (Ch.1–2), Sham Shui Po (Ch.3–5), the Ch.1–5 mock exam hall, Kwun Tong (Ch.6–7), Mong Kok (Ch.8–10) and the Ch.6–10 mock exam hall.
+A FireRed-style pixel RPG where every EconMon is one HKDSE Economics concept. Students catch EconMon by answering questions (bilingual EN / 繁中), level them up, evolve them, and challenge gym bosses. The player is 衫哥 (Sam Gor), 福伯's grandson, who loves Economics and new clothes. The screen fills the device automatically, with a 4:3 layout for iPads held sideways. Current version (v0.12): Tai O (Ch.1–2), Sham Shui Po (Ch.3–5), the Ch.1–5 mock exam hall, Kwun Tong (Ch.6–7), Mong Kok (Ch.8–10), the Ch.6–10 mock exam hall and Yau Ma Tei (Ch.11–12).
 
 - Play: open `index.html` (GitHub Pages).
 - Class mode: set `window.ECONMON_API` near the top of `index.html` to your Google Apps Script Web app URL (see GUIDE.md). Leave it empty for offline mode.
