@@ -664,13 +664,23 @@ function onCredential(resp){
         msg(({blocked:'This account cannot use the drill. Speak to your teacher.',
               domain:'Please sign in with your school account.',
               roster:'Your account is not on the class list. Ask your teacher to add you.',
-              expired:'That sign-in timed out. Please try again.'})[r.error]
+              expired:'That sign-in timed out. Please try again.',
+              verify:'Google did not accept this sign-in for this site. (Teacher: see AUTH_LAST_ERROR in Script Properties.)'})[r.error]
             || ('Sign-in refused: '+r.error));
         return;
       }
       if(tries<6) return setTimeout(claim,1200);
-      msg('Signed in with Google, but the server never confirmed. Check that Code.gs is '
-        +'deployed at the SYNC_URL in this page.');
+      /* Tell apart "server unreachable" from "server up but silent", because
+         they have completely different fixes. */
+      jsonp({ping:1}, pg=>{
+        if(!pg){
+          msg('Cannot reach the server at all. The SYNC_URL in this page is wrong, or the '
+            +'deployment is not set to "Anyone". (Teacher: open SYNC_URL?ping=1 in a browser.)');
+        }else{
+          msg('Server is up (build '+(pg.build||'old — no build tag')+', '+pg.bank+' questions) '
+            +'but never confirmed this sign-in. Teacher: check AUTH_LAST_ERROR in Script Properties.');
+        }
+      }, 8000);
     }, 9000);
   })();
 }
@@ -1489,7 +1499,7 @@ $('lbRefresh').addEventListener('click',()=>loadBoard('lb'));
 function loadBoard(target){
   const el=$(target); if(!el) return;
   el.innerHTML='<p class="muted">Loading…</p>';
-  jsonp({lb:1, uid:djb2('tyn:'+(EMAIL||''))}, r=>{
+  jsonp({lb:1, uid:djb2('tyn:'+String(EMAIL||'').trim().toLowerCase())}, r=>{
     if(!r||!r.top){ el.innerHTML='<p class="muted">Leaderboard is unavailable right now.</p>'; return; }
     if(!r.top.length){ el.innerHTML='<p class="muted">No one on the board yet.</p>'; return; }
     let h='<table><tr><th>#</th><th>Nickname</th><th>Lv</th><th>%</th></tr>';
