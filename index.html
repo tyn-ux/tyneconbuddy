@@ -252,13 +252,20 @@ body.bside .panel{left:auto!important;right:1.5%!important;top:3%!important;bott
 body.bside.p-idle .panel{display:none}
 @media (max-height:500px){body.bside .panel{zoom:.8}}
 body.bside .ptext{font-size:calc(var(--fs,16px)*.95)}
+.pricerow{display:flex;align-items:center;gap:4px;justify-content:center;flex-wrap:nowrap}
+.ptag{font:900 13px var(--txt);color:#8a5a10;background:#fff3d6;border:1px solid #f0c060;border-radius:8px;padding:1px 5px;white-space:nowrap}
+.eyebtn{font-size:15px;line-height:1;width:28px;height:26px;border-radius:8px;border:2px solid var(--shell);background:#eaf6f7;cursor:pointer;padding:0}
+.eyebtn:hover{background:var(--shell)}
+.pvw{display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:2px solid var(--shell);border-radius:12px;padding:10px}
+.pvwc{width:144px;height:165px;image-rendering:pixelated;border-radius:10px}
+.adminbadge{font:900 11px var(--txt);background:#1f2b33;color:#ffd24a;border-radius:10px;padding:2px 8px;margin-left:6px}
 </style>
 </head>
 <body style="margin:0">
 
 
 <div class="wrap">
-  <div class="top"><div class="logo">EconMon</div><div class="sub">大澳・深水埗・觀塘・旺角・油麻地・石硤尾 · Ch.1–15 · 0.13.1</div>
+  <div class="top"><div class="logo">EconMon</div><span class="adminbadge" id="adminbadge" hidden>🔑 管理員</span><div class="sub">大澳・深水埗・觀塘・旺角・油麻地・石硤尾 · Ch.1–15 · PVP · 0.14</div>
     <button class="musicbtn" id="musicbtn" type="button" aria-label="背景音樂">♪ BGM</button></div>
   <div class="console" id="console">
     <div class="padL">
@@ -2002,12 +2009,14 @@ const KEY='econmon-taio-v3',OLDKEY='econmon-taio-v2';
 function fresh(){return {v:3,region:'taio',visited:{taio:1},started:false,starter:null,lead:null,pos:{x:17,y:18,dir:'down'},seen:{},caught:{},badges:{},hard:{},hpm:{},xp:{},items:{glass:1,scroll:1,potS:3,potL:1,potP:0},coins:30,beat:{},found:{},bought:{},lastDay:'',dayStreak:0,achV:2,legacyOut:[],wrong:{},ended:false,choice:null,music:true,done:{},ach:{},outfit:'def',stats:{right:0,best:0,reviews:0,buy:0},rev:{},titles:{},title:null,profile:null};}
 let S=fresh();
 const API=String(window.ECONMON_API||'').trim();
+const ADMIN_KEY='econmon-admin',ADMIN_SAVE='econmon-admin-save';let ADMIN=false;try{ADMIN=localStorage.getItem(ADMIN_KEY)==='1';}catch(e){}
 const PKEY='econmon-profile';let PROFILE=null;try{PROFILE=JSON.parse(localStorage.getItem(PKEY)||'null');}catch(e){}
-const saveKey=()=>API&&PROFILE?KEY+':'+PROFILE.key:KEY;
+const saveKey=()=>ADMIN?ADMIN_SAVE:(API&&PROFILE?KEY+':'+PROFILE.key:KEY);
 const OLD_OUT={first:'cap',c10:'school',c20:'scholar',epic:'purple',leg:'gold',streak10:'fisher',badgeF:'salt',badgeH:'market',hard:'dse'};
 function upg(o){if(!o||o.v!==3)return o;if(o.achV!==2){o.legacyOut=Object.keys(o.ach||{}).filter(k=>OLD_OUT[k]).map(k=>OLD_OUT[k]);o.achV=2;}if(o.items&&o.items.congee!=null){o.items.potL=(o.items.potL||0)+o.items.congee;delete o.items.congee;}if(o.stats){o.stats.reviews=o.stats.reviews||0;o.stats.buy=o.stats.buy||0;}if(o.coins==null)o.coins=30;return o;}
 function loadLocal(k){try{const raw=localStorage.getItem(k);const o=raw?JSON.parse(raw):null;if(o&&o.v===3)return Object.assign(fresh(),upg(o));}catch(e){}return null;}
 if(!API)try{let raw=localStorage.getItem(KEY);let o=raw?JSON.parse(raw):null;if(!o){const r2=localStorage.getItem(OLDKEY);const o2=r2?JSON.parse(r2):null;if(o2&&o2.v===2){o=Object.assign(fresh(),o2,{v:3,lead:o2.starter,hpm:{}});delete o.hp;}}if(o&&o.v===3)S=Object.assign(fresh(),upg(o));}catch(e){}
+if(ADMIN){S=loadLocal(ADMIN_SAVE)||S;}
 function save(quiet){S.t=Date.now();if(API&&PROFILE)scheduleSync();try{localStorage.setItem(saveKey(),JSON.stringify(S));if(!quiet)toast('已存檔');}catch(e){if(!quiet)toast('呢個瀏覽器唔俾存檔');}}
 let toastT=0;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>e.hidden=true,1600);}
 const maxHP=id=>statOf(id).hp;
@@ -2019,7 +2028,7 @@ function revMark(id){if(!S.caught[id])return;const r=S.rev[id]||{n:0,last:0};con
 function healAll(){Object.keys(S.caught).forEach(id=>S.hpm[id]=maxHP(id));save(true);}
 const bankOf=id=>(QB[id]||[]);
 const bankDone=id=>bankOf(id).filter(q=>S.done[q.id]).length;
-const OUTFITS={def:{en:'Village kid',zh:'村童'},raincoat:{en:'Rain coat',zh:'黃雨褸',l:{shirt:'#f2c230',pants:'#4a5a6a',acc:'#e0503c',hat:'#f2c230'}},sport:{en:'School team jersey',zh:'校隊運動衫',l:{shirt:'#e0503c',pants:'#ffffff',acc:'#2f6fb0'}},chef:{en:'Dai pai dong cook',zh:'大牌檔廚師',l:{shirt:'#f4f4f0',pants:'#2a2a38',acc:'#e0503c',hat:'#f4f4f0'}},tang:{en:'Tang suit',zh:'唐裝',l:{shirt:'#8a2a24',pants:'#2a1a18',acc:'#f2c230',scarf:'#f2c230'}},overall:{en:'Factory overalls',zh:'工廠工衣',l:{shirt:'#3e6fa8',pants:'#3e6fa8',acc:'#f2c230'}},denim:{en:'Denim jacket',zh:'牛仔褸',l:{shirt:'#4a6fa0',pants:'#2a3a58',acc:'#d8e0f0',hat:'#e0503c'}},cap:{en:'Red cap',zh:'紅帽',l:{hat:'#e0503c'}},fisher:{en:'Fisher hat',zh:'漁夫笠',l:{shirt:'#e0c890',hat:'#d8b060'}},school:{en:'School uniform',zh:'校服',l:{shirt:'#ffffff',pants:'#2f4f8a',acc:'#2f4f8a'}},salt:{en:'Salt-pan worker',zh:'鹽工裝',l:{shirt:'#f0ece0',pants:'#5a5040',acc:'#8a6a40',hat:'#d8b060'}},market:{en:'Market apron',zh:'墟市圍裙',l:{shirt:'#c84a5a',acc:'#f2c230',scarf:'#2f7f86'}},purple:{en:'Epic robe',zh:'史詩紫袍',l:{shirt:'#8a4fd0',pants:'#4a2a7a',acc:'#e6c4ff'}},gold:{en:'Legend jacket',zh:'傳說金褸',l:{shirt:'#f2c230',pants:'#8a5a10',acc:'#f08a1c',scarf:'#e0503c'}},scholar:{en:'Scholar gown',zh:'學者長衫',l:{shirt:'#3e7f86',pants:'#3e7f86',acc:'#ffffff'}},socialw:{en:'Social worker vest',zh:'社工背心',l:{shirt:'#8a4fd0',pants:'#2a3a48',acc:'#f4f4f0',hat:'#8a4fd0'}},artist:{en:'Artist hoodie',zh:'藝術家帽衫',l:{shirt:'#e07a3a',pants:'#3a3a48',acc:'#2f7fd0',scarf:'#f2c230'}},porter:{en:'Fruit porter kit',zh:'果欄搬運工裝',l:{shirt:'#f2c230',pants:'#3a4a58',acc:'#3fae5a',hat:'#3fae5a'}},jadecoat:{en:'Jade-green long coat',zh:'翡翠長衫',l:{shirt:'#2f9a6a',pants:'#1f3a30',acc:'#f2c230',scarf:'#e8f4ee'}},vest:{en:'Goldfish-street vest',zh:'金魚街背心',l:{shirt:'#f4f4f0',pants:'#2a3a58',acc:'#2f7fd0',hat:'#2f7fd0'}},sneak:{en:'Limited sneakers kit',zh:'限量波鞋套裝',l:{shirt:'#e0503c',pants:'#1f2b33',acc:'#f4f4f0',hat:'#1f2b33'}},boss:{en:'Factory owner suit',zh:'廠東唐裝背心',l:{shirt:'#e8e4d8',pants:'#3a3a48',acc:'#8a2a24',scarf:'#c8a020'}},suit:{en:'Office suit',zh:'寫字樓西裝',l:{shirt:'#3a4356',pants:'#2a3040',acc:'#c84a5a',scarf:'#ffffff'}},dse:{en:'DSE champion',zh:'DSE 狀元',l:{shirt:'#1f2b33',pants:'#1f2b33',acc:'#f2c230',hat:'#1f2b33'}}};
+const OUTFITS={def:{en:'Village kid',zh:'村童'},raincoat:{en:'Rain coat',zh:'黃雨褸',l:{shirt:'#f2c230',pants:'#4a5a6a',acc:'#e0503c',hat:'#f2c230'}},sport:{en:'School team jersey',zh:'校隊運動衫',l:{shirt:'#e0503c',pants:'#ffffff',acc:'#2f6fb0'}},chef:{en:'Dai pai dong cook',zh:'大牌檔廚師',l:{shirt:'#f4f4f0',pants:'#2a2a38',acc:'#e0503c',hat:'#f4f4f0'}},tang:{en:'Tang suit',zh:'唐裝',l:{shirt:'#8a2a24',pants:'#2a1a18',acc:'#f2c230',scarf:'#f2c230'}},overall:{en:'Factory overalls',zh:'工廠工衣',l:{shirt:'#3e6fa8',pants:'#3e6fa8',acc:'#f2c230'}},denim:{en:'Denim jacket',zh:'牛仔褸',l:{shirt:'#4a6fa0',pants:'#2a3a58',acc:'#d8e0f0',hat:'#e0503c'}},cap:{en:'Red cap',zh:'紅帽',l:{hat:'#e0503c'}},fisher:{en:'Fisher hat',zh:'漁夫笠',l:{shirt:'#e0c890',hat:'#d8b060'}},school:{en:'School uniform',zh:'校服',l:{shirt:'#ffffff',pants:'#2f4f8a',acc:'#2f4f8a'}},salt:{en:'Salt-pan worker',zh:'鹽工裝',l:{shirt:'#f0ece0',pants:'#5a5040',acc:'#8a6a40',hat:'#d8b060'}},market:{en:'Market apron',zh:'墟市圍裙',l:{shirt:'#c84a5a',acc:'#f2c230',scarf:'#2f7f86'}},purple:{en:'Epic robe',zh:'史詩紫袍',l:{shirt:'#8a4fd0',pants:'#4a2a7a',acc:'#e6c4ff'}},gold:{en:'Legend jacket',zh:'傳說金褸',l:{shirt:'#f2c230',pants:'#8a5a10',acc:'#f08a1c',scarf:'#e0503c'}},scholar:{en:'Scholar gown',zh:'學者長衫',l:{shirt:'#3e7f86',pants:'#3e7f86',acc:'#ffffff'}},socialw:{en:'Social worker vest',zh:'社工背心',l:{shirt:'#8a4fd0',pants:'#2a3a48',acc:'#f4f4f0',hat:'#8a4fd0'}},artist:{en:'Artist hoodie',zh:'藝術家帽衫',l:{shirt:'#e07a3a',pants:'#3a3a48',acc:'#2f7fd0',scarf:'#f2c230'}},porter:{en:'Fruit porter kit',zh:'果欄搬運工裝',l:{shirt:'#f2c230',pants:'#3a4a58',acc:'#3fae5a',hat:'#3fae5a'}},jadecoat:{en:'Jade-green long coat',zh:'翡翠長衫',l:{shirt:'#2f9a6a',pants:'#1f3a30',acc:'#f2c230',scarf:'#e8f4ee'}},vest:{en:'Goldfish-street vest',zh:'金魚街背心',l:{shirt:'#f4f4f0',pants:'#2a3a58',acc:'#2f7fd0',hat:'#2f7fd0'}},sneak:{en:'Limited sneakers kit',zh:'限量波鞋套裝',l:{shirt:'#e0503c',pants:'#1f2b33',acc:'#f4f4f0',hat:'#1f2b33'}},boss:{en:'Factory owner suit',zh:'廠東唐裝背心',l:{shirt:'#e8e4d8',pants:'#3a3a48',acc:'#8a2a24',scarf:'#c8a020'}},suit:{en:'Office suit',zh:'寫字樓西裝',l:{shirt:'#3a4356',pants:'#2a3040',acc:'#c84a5a',scarf:'#ffffff'}},diamond:{en:'Diamond battle suit',zh:'鑽石戰衣',l:{shirt:'#4a8cf0',pants:'#1f3a78',acc:'#bfe6ff',hat:'#bfe6ff',scarf:'#ffffff'}},challenger:{en:'Challenger divine outfit',zh:'挑戰者神裝',l:{shirt:'#e0503c',pants:'#2a1a18',acc:'#f2c230',hat:'#f2c230',scarf:'#ff9a3a'}},dse:{en:'DSE champion',zh:'DSE 狀元',l:{shirt:'#1f2b33',pants:'#1f2b33',acc:'#f2c230',hat:'#1f2b33'}}};
 const nCaught=()=>Object.keys(S.caught).length,nEvo=()=>Object.keys(S.caught).filter(isEvo).length,nBank=()=>MLIST.filter(m=>bankOf(m.id).length&&bankDone(m.id)>=bankOf(m.id).length).length,maxLv=()=>Math.max(1,...Object.keys(S.caught).map(lvOf));
 const hasTier=t=>Object.keys(S.caught).some(i=>MONS[i].tier===t);
 const nChTot=chs=>MLIST.filter(m=>chs.includes(m.ch)).length,nChGot=chs=>MLIST.filter(m=>chs.includes(m.ch)&&S.caught[m.id]).length;
@@ -2092,6 +2101,7 @@ const ACH=[
  {id:'hard2',ic:'🎓',en:'DSE champion',zh:'DSE 狀元',d:'【服裝】通關大澳兩個館主嘅困難模式',p:()=>[(S.hard.fubak?1:0)+(S.hard.hoitse?1:0),2],r:{outfit:'dse',title:'dsem'}}];
 const SPEEDS=[1,1.34,1.6,2];
 const TITLES={
+ get rank(){return {zh:rankName(rankS(),false),en:'Rank title',col:TIERC[rankS().t],d:'【排位】去到鑽石 Diamond 解鎖：頭頂顯示你嘅段位'};},
  taio:{zh:'棚屋水鄉人',en:'Stilt-house Islander',col:'#2f7f86',d:'【地區】拎齊大澳兩個徽章'},
  ssp:{zh:'布行車衣匠',en:'Cloth Street Tailor',col:'#c84a5a',d:'【地區】拎到深水埗車衣徽章'},
  dexm:{zh:'Econ-dex 達人',en:'Dex Master',col:'#8a5aa8',d:'【成就】捉到 25 隻 EconMon'},
@@ -2126,7 +2136,10 @@ function loginScreen(){return new Promise(res=>{const L=document.getElementById(
  const [l1,iName]=f('姓名 Name','陳大文 Chan Tai Man'),[l2,iCls]=f('班別 Class','4A'),[l3,iNo]=f('學號 Class no.','12','number',{min:'1',max:'60',inputmode:'numeric'}),[l4,iNick]=f('花名 Nickname（排行榜顯示 shown on leaderboard）','鹽田小王子'),[l5,iPin]=f('4 位數字密碼 PIN（第一次登入時設定 set on first login）','••••','password',{inputmode:'numeric',maxlength:'4'});
  const err=el('div',{class:'err'});const btn=el('button',{class:'submit',type:'button',text:'登入 Log in'});
  B.appendChild(el('h2',{text:'ECONMON 班級模式'}));B.appendChild(el('div',{style:'font-size:13px;color:var(--muted)',text:'請用真實姓名、班別同學號登入，進度會同步到老師嘅紀錄。Use your real name, class and class number.'}));
- [l1,el('div',{class:'row2'},l2,l3),l4,l5,err,btn].forEach(x=>B.appendChild(x));L.hidden=false;
+ [l1,el('div',{class:'row2'},l2,l3),l4,l5,err,btn].forEach(x=>B.appendChild(x));
+ {const ap=el('input',{type:'password',inputmode:'numeric',placeholder:'管理員密碼 Admin password',autocomplete:'off',style:'font:500 16px var(--txt);padding:8px 10px;border:2px solid var(--line);border-radius:8px'});const box=el('div',{style:'display:none;flex-direction:column;gap:6px'},ap,el('button',{class:'mbtn',type:'button',text:'管理員登入',onclick:()=>{if(ap.value!==String(1866)){err.textContent='管理員密碼唔啱。Wrong admin password.';return;}setAdmin(true);S=loadLocal(ADMIN_SAVE)||fresh();adminUnlock();L.hidden=true;G.modal=false;document.getElementById('adminbadge').hidden=false;res();}}));
+  B.appendChild(el('button',{class:'mbtn',type:'button',style:'align-self:flex-start;font-size:12px',text:'🔑 管理員 Admin',onclick:()=>{box.style.display='flex';ap.focus();}}));B.appendChild(box);}
+ L.hidden=false;
  btn.addEventListener('click',async()=>{const name=iName.value.trim(),cls=iCls.value.trim().toUpperCase(),no=parseInt(iNo.value,10),nick=iNick.value.trim(),pin=iPin.value.trim();
   if(!name||!cls||!no){err.textContent='請填姓名、班別同學號。Please fill in name, class and class no.';return;}if(!/^\d{4}$/.test(pin)){err.textContent='PIN 要係 4 位數字。PIN must be 4 digits.';return;}
   btn.disabled=true;err.textContent='登入中… Logging in…';
@@ -2136,9 +2149,9 @@ function loginScreen(){return new Promise(res=>{const L=document.getElementById(
    let loc=loadLocal(saveKey());let srv=null;try{srv=r.save?JSON.parse(r.save):null;}catch(e){}
    if(srv&&srv.v===3&&(!loc||(srv.t||0)>(loc.t||0)))loc=Object.assign(fresh(),upg(srv));S=loc||fresh();S.profile={key:PROFILE.key,name,cls,no};
    L.hidden=true;G.modal=false;res();}catch(e){btn.disabled=false;err.textContent='連唔到伺服器，請檢查網絡。Cannot reach the server.';}});});}
-async function ensureLogin(){if(!API)return;if(!PROFILE){await loginScreen();return;}S=loadLocal(saveKey())||fresh();S.profile={key:PROFILE.key,name:PROFILE.name,cls:PROFILE.cls,no:PROFILE.no};
+async function ensureLogin(){if(!API)return;if(ADMIN){S=loadLocal(ADMIN_SAVE)||fresh();return;}if(!PROFILE){await loginScreen();return;}S=loadLocal(saveKey())||fresh();S.profile={key:PROFILE.key,name:PROFILE.name,cls:PROFILE.cls,no:PROFILE.no};
  api('sync',{key:PROFILE.key,token:PROFILE.token,summary:summary(),logs:[]}).then(r=>{if(r&&r.blocked){BLOCKED=true;showBlocked(r.msg);}else if(r&&r.error==='relogin')logout(true);}).catch(()=>{});}
-async function classTab(b){if(!API){b.appendChild(el('div',{class:'note',text:'班級模式未開啟。老師喺 index.html 設定 ECONMON_API 之後，呢度會顯示全班排行榜。Class mode is off.'}));return;}
+async function classTab(b){if(ADMIN&&!PROFILE){b.appendChild(el('div',{class:'note',text:'管理員模式：唔會同步去班級紀錄，亦唔會出現喺排行榜。'}));return;}if(!API){b.appendChild(el('div',{class:'note',text:'班級模式未開啟。老師喺 index.html 設定 ECONMON_API 之後，呢度會顯示全班排行榜。Class mode is off.'}));return;}
  b.appendChild(el('div',{class:'note',text:`玩家 Player：${PROFILE.cls}-${PROFILE.no} ${PROFILE.name}（花名 ${PROFILE.nick||'—'}）\n排行榜按題庫完成度（答啱過嘅題目 %）排名，只顯示花名。`}));
  const box=el('div',{class:'board',text:'載入中… Loading…'});b.appendChild(box);
  const row2=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'});row2.appendChild(el('button',{class:'mbtn',type:'button',text:'立即同步 Sync now',onclick:async()=>{await cloudSync(true);toast('已同步 Synced');}}));row2.appendChild(el('button',{class:'mbtn',type:'button',text:'登出 Log out',onclick:async()=>{await cloudSync(true);logout();}}));b.appendChild(row2);
@@ -2290,7 +2303,7 @@ function gEstateGym(){return hrc(96,80,(x,{P,E,Ln},rr)=>{
  R(x,32,58,16,22,'#2a2e32');R(x,33,59,6.5,21,'#6a5a7a');R(x,40.5,59,6.5,21,'#6a5a7a');E(38.5,70,.7,.7,'#f2c230');E(41.5,70,.7,.7,'#f2c230');
  [[10,72],[18,72],[78,72],[86,72]].forEach(([a,b])=>{R(x,a-4,b-2,8,6,'#8a8a96');R(x,a-4,b-2,8,1,'#b8b8c4');R(x,a-1,b-5,2,3,'#3fae5a');E(a,b-6,3,2,'#58c070');});
  R(x,2,64,5,14,'#3a3a44');R(x,2.5,64.5,4,5,'#e0503c');R(x,89,64,5,14,'#3a3a44');R(x,89.5,64.5,4,5,'#2f7fd0');});}
-const GFX={gymH:{zh:'屋邨道館',en:'ESTATE GYM',boss:'hokoo',col:'#8a4fd0',y:-3},gymY:{zh:'果欄道館',en:'FRUIT GYM',boss:'lanzie',col:'#3fae5a',y:-3},hut:{zh:'鹽田道館',en:'SALT GYM',boss:'fubak',col:'#c8602a',y:18},hall:{zh:'墟市道館',en:'MARKET GYM',boss:'hoitse',col:'#2f8a6a',y:-2},gymS:{zh:'車衣道館',en:'GARMENT GYM',boss:'maytse',col:'#2f7f86',y:-3},gymK:{zh:'工廈道館',en:'FACTORY GYM',boss:'chowban',col:'#d8302a',y:-4},gymM:{zh:'金魚街道館',en:'GOLDFISH GYM',boss:'biusuk',col:'#2f7fd0',y:-3}};
+const GFX={dojo:{zh:'PVP 道場',en:'PVP DOJO',boss:null,col:'#c83a30',y:-2},gymH:{zh:'屋邨道館',en:'ESTATE GYM',boss:'hokoo',col:'#8a4fd0',y:-3},gymY:{zh:'果欄道館',en:'FRUIT GYM',boss:'lanzie',col:'#3fae5a',y:-3},hut:{zh:'鹽田道館',en:'SALT GYM',boss:'fubak',col:'#c8602a',y:18},hall:{zh:'墟市道館',en:'MARKET GYM',boss:'hoitse',col:'#2f8a6a',y:-2},gymS:{zh:'車衣道館',en:'GARMENT GYM',boss:'maytse',col:'#2f7f86',y:-3},gymK:{zh:'工廈道館',en:'FACTORY GYM',boss:'chowban',col:'#d8302a',y:-4},gymM:{zh:'金魚街道館',en:'GOLDFISH GYM',boss:'biusuk',col:'#2f7fd0',y:-3}};
 const NEON={skm:['茶餐廳','涼茶','藥房','士多','押','五金'],ymt:['生果','玉器','涼茶','粥麵','押','大牌檔'],mk:['金魚','波鞋','花墟','涼茶','押','茶餐廳','電器'],ssp:['布行','成衣','車衣','鈕扣','押'],kt:['五金','塑膠','印刷'],taio:['鹹魚','蝦醬']};
 let VIG=null,VIGK='';
 function regionFX(ox,oy){const t=G.tick,words=NEON[CUR]||[];
@@ -2301,7 +2314,7 @@ function regionFX(ox,oy){const t=G.tick,words=NEON[CUR]||[];
   if(CUR==='kt'&&b.w>=4){for(let k=0;k<4;k++){const ph=(t*.45+k*30+i*23)%120;const px=sx+W*.8+Math.sin((ph+i)/14)*2,py=sy-2-ph*.35;ctx.fillStyle=`rgba(235,235,235,${(.45*(1-ph/120)).toFixed(3)})`;ctx.beginPath();ctx.arc(px,py,2.5+ph/28,0,7);ctx.fill();}
    if(b.h>=4&&((t>>4)+i)%4===0){R(ctx,sx+2,sy+1,2,2,'#ff3a3a');}}
   if(CUR==='taio'&&b.h>=2&&i%3===1){const sw=Math.sin(t/25+i)*1.5;const lx=sx+W-5+sw,ly=sy+H*.45;R(ctx,sx+W-5,ly-5,.6,5,'#3a2a20');ctx.fillStyle='#e0302a';ctx.beginPath();ctx.ellipse(lx,ly+2.5,2.4,3.2,0,0,7);ctx.fill();R(ctx,lx-1.5,ly-.5,3,1,'#f2c230');R(ctx,lx-1.5,ly+5.2,3,1,'#f2c230');}});
- const key=VW+'x'+VH+CUR;if(VIGK!==key){VIGK=key;const [c,x]=mk(VW,VH);const g=x.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.35,VW/2,VH/2,Math.hypot(VW,VH)*.62);const tint={skm:'30,20,50',ymt:'50,30,10',mk:'40,10,50',kt:'40,30,10',ssp:'40,30,20',taio:'10,40,60'}[CUR]||'20,30,40';g.addColorStop(0,`rgba(${tint},0)`);g.addColorStop(1,`rgba(${tint},.28)`);x.fillStyle=g;x.fillRect(0,0,VW,VH);VIG=c;}
+ const key=VW+'x'+VH+CUR;if(VIGK!==key){VIGK=key;const [c,x]=mk(VW,VH);const g=x.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.35,VW/2,VH/2,Math.hypot(VW,VH)*.62);const tint={pvpz:'60,20,20',skm:'30,20,50',ymt:'50,30,10',mk:'40,10,50',kt:'40,30,10',ssp:'40,30,20',taio:'10,40,60'}[CUR]||'20,30,40';g.addColorStop(0,`rgba(${tint},0)`);g.addColorStop(1,`rgba(${tint},.28)`);x.fillStyle=g;x.fillRect(0,0,VW,VH);VIG=c;}
  ctx.drawImage(VIG,0,0,VW,VH);}
 function gymFX(b,sx,sy){const g=GFX[b.id];if(!g)return;const W=b.w*T,t=G.tick,got=S.badges&&S.badges[g.boss];
  ctx.font='900 9px "Noto Sans HK",sans-serif';const tw=ctx.measureText(g.zh).width;const bw=Math.max(tw+22,44),bh=15,bx=sx+W/2-bw/2,by=sy+g.y-bh+4;
@@ -2840,6 +2853,35 @@ function mkSKM(){const MW=46,MH=34;const map=newMap(MW,MH,'v');const fill=(x0,y0
  const ZONE_OF={'q':'meiho','j':'skpark','I':'artfac','b':'cloth','y':'emkt'};
  const ZONE_NAME={meiho:'美荷樓前地',skpark:'石硤尾公園',artfac:'舊工廠大廈',cloth:'棚仔布市場',emkt:'屋邨街市'};
  return {MW,MH,map,BUILD,DOORS,BOATS,SIGNS,NPCS,ZONE_OF,ZONE_NAME};}
+function gDojo(){return hrc(160,96,(x,{P,E,Ln},rr)=>{
+ R(x,6,34,148,62,'#f0e4c8');for(let yy=38;yy<96;yy+=5)R(x,6,yy,148,.5,'#e0d0b0');
+ P([[-2,38],[14,12],[146,12],[162,38]],'#b8302a');tiles2(x,14,13,132,24,'#c83a30','#e05a48','#7a1e1a');R(x,-2,36,164,3.5,'#6a1a16');
+ P([[-4,39],[-6,32],[4,36]],'#e0b020');P([[164,39],[166,32],[156,36]],'#e0b020');
+ P([[30,12],[40,0],[120,0],[130,12]],'#a82a24');tiles2(x,40,1,80,11,'#c83a30','#e05a48','#7a1e1a');R(x,26,10,108,2.5,'#6a1a16');E(80,1,6,3,'#f2c230');E(80,1,3.5,1.8,'#fff0a0');
+ [10,34,58,98,122,146].forEach(a=>{R(x,a,40,5,56,'#c8402a');R(x,a,40,1.5,56,'#f08070');R(x,a-1,38,7,3,'#e0b020');});
+ R(x,66,52,28,44,'#2a1810');R(x,67,53,12.5,43,'#8a2a20');R(x,80.5,53,12.5,43,'#8a2a20');for(let yy=58;yy<94;yy+=6){E(71,yy,.8,.8,'#f2c230');E(76,yy,.8,.8,'#f2c230');E(84,yy,.8,.8,'#f2c230');E(89,yy,.8,.8,'#f2c230');}
+ R(x,62,48,36,4,'#e0b020');
+ [[20,60],[46,60],[110,60],[136,60]].forEach(([a,b])=>{R(x,a-8,b-8,16,22,'#f8f0dc');R(x,a-8,b-8,16,1,'#c8a060');x.strokeStyle='#c83a30';x.lineWidth=1;x.strokeRect(a-7,b-7,14,20);Ln([[a-4,b],[a+4,b+8]],1.2,'#1f2b33');Ln([[a+4,b],[a-4,b+8]],1.2,'#1f2b33');});
+ [[24,44],[136,44]].forEach(([a,b])=>{Ln([[a,b-6],[a,b-2]],.6,'#3a2a20');E(a,b+2,4,5,'#e0302a');R(x,a-2.5,b-3.5,5,1,'#f2c230');R(x,a-2.5,b+6.5,5,1,'#f2c230');});});}
+function mkPVP(){const MW=30,MH=22;const map=newMap(MW,MH,'q');const fill=(x0,y0,x1,y1,ch)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(map[y]&&map[y][x]!==undefined)map[y][x]=ch;};
+ fill(0,0,MW-1,0,'X');fill(0,0,0,MH-1,'X');fill(MW-1,0,MW-1,MH-1,'X');
+ fill(1,19,28,21,'~');fill(13,16,16,21,'=');fill(1,18,12,18,'s');fill(17,18,28,18,'s');
+ fill(13,10,16,15,',');fill(2,12,27,12,',');
+ [[1,1],[2,1],[27,1],[28,1],[1,8],[28,8],[4,16],[25,16]].forEach(([x,y])=>map[y][x]='T');
+ [[3,3],[26,3],[6,14],[23,14],[9,16],[20,16]].forEach(([x,y])=>map[y][x]='f');
+ [[12,9],[17,9],[5,11],[24,11]].forEach(([x,y])=>map[y][x]='L');
+ [[11,11],[18,11],[12,15]].forEach(([x,y])=>map[y][x]='S');
+ const BUILD=[{id:'dojo',x:10,y:2,w:10,h:6,mk:()=>gDojo()},{id:'rkA',x:2,y:4,w:4,h:3,mk:()=>bStall('#e0503c','#f2c230','dried')},{id:'rkB',x:24,y:4,w:4,h:3,mk:()=>bStall('#2f7fd0','#ffffff','dried')}];
+ const DOORS={'14,7':'dojo','15,7':'dojo'};
+ const BOATS=[{x:17.2,y:19.2,ferry:1}];
+ const SIGNS={'11,11':'PVP 道場 排位規則\n青銅 → 白銀 → 黃金 → 白金 → 鑽石（每段 3、2、1）→ 挑戰者。\n每贏 3 場升一個小段；由黃金 1 開始要打 BO5 晉級賽。\n輸咗扣勝場，0 勝再輸會跌段。','18,11':'排行榜 Leaderboard →\n全校學生排名，只顯示花名。','12,15':'↓ 碼頭：搭船返大澳'};
+ const NPCS=[
+  {id:'dojoQ',x:16,y:9,dir:'down',look:'teacher'},
+  {id:'dojoTeam',x:8,y:10,dir:'right',look:'clerk'},
+  {id:'dojoBoard',x:21,y:10,dir:'left',look:'scout'},
+  {id:'dojoGuide',x:9,y:14,dir:'down',look:'guide'},
+  {id:'boatBack',x:15,y:17,dir:'up',look:'ferry'}];
+ return {MW,MH,map,BUILD,DOORS,BOATS,SIGNS,NPCS,ZONE_OF:{},ZONE_NAME:{}};}
 function mkExamHall(k){const MW=22,MH=16;const map=newMap(MW,MH,'v');const fill=(x0,y0,x1,y1,ch)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(map[y]&&map[y][x]!==undefined)map[y][x]=ch;};
  fill(0,0,MW-1,0,'X');fill(0,MH-1,MW-1,MH-1,'X');fill(0,0,0,MH-1,'X');fill(MW-1,0,MW-1,MH-1,'X');
  for(let r=0;r<4;r++)for(let c=0;c<5;c++){map[5+r*2][3+c*3]='e';map[5+r*2][4+c*3]='e';}
@@ -2857,6 +2899,7 @@ const REGIONS={taio:{name:'大澳',era:'1960s',chs:[1,2],mk:mkTaiO,home:{x:17,y:
  mk:{name:'旺角',era:'1990s',chs:[8,9,10],mk:mkMK,home:{x:12,y:30,dir:'up'},arrive:{x:22,y:29,dir:'down'},need:'chowban'},
  ymt:{name:'油麻地',era:'2003',chs:[11,12],mk:mkYMT,home:{x:35,y:30,dir:'up'},arrive:{x:30,y:29,dir:'down'},need:'biusuk'},
  skm:{name:'石硤尾',era:'2011',chs:[13,14,15],mk:mkSKM,home:{x:35,y:30,dir:'up'},arrive:{x:30,y:29,dir:'down'},need:'lanzie'},
+ pvpz:{name:'PVP 對戰區',era:'排位賽',chs:[],mk:mkPVP,home:{x:14,y:14,dir:'up'},arrive:{x:14,y:14,dir:'up'},need:null},
  pp2:{name:'模擬試場 II',era:'Ch.6–10',chs:[],mk:()=>mkExamHall('pp2'),home:{x:10,y:12,dir:'up'},arrive:{x:10,y:12,dir:'up'},need:'biusuk'}};
 function setRegion(id){if(!REGIONS[id])id='taio';if(!RC[id]){const r=REGIONS[id].mk();r.BUILD.forEach(b=>b.img=b.mk());r.BOATS.forEach(b=>b.img=bBoat(b.ferry));r.occ=[];for(let y=0;y<r.MH;y++)r.occ.push(new Array(r.MW).fill(null));r.BUILD.forEach(b=>{for(let y=b.y;y<b.y+b.h;y++)for(let x=b.x;x<b.x+b.w;x++)r.occ[y][x]=b.id;});RC[id]=r;}
  const r=RC[id];({MW,MH,map,BUILD,occ,DOORS,BOATS,SIGNS,NPCS,ZONE_OF,ZONE_NAME}=r);CUR=id;}
@@ -2991,7 +3034,7 @@ function updateUI(){
  else if(UI.kind==='points'){if(consume('a'))finishUI();}
  else if(UI.kind==='q')updateQ();
 }
-function idlePanel(){UI.kind=null;$c.innerHTML='';clearQ();$t.hidden=false;if(G.mode==='world'){$t.innerHTML='';$t.appendChild(el('span',{class:'place',text:REGIONS[CUR].name+' '+REGIONS[CUR].era}));const goal=EXAMS[CUR]?(S.titles[CUR]?'目標：再考一次模擬卷練手感（合格有 💰$80）':`目標：搵考官開始 ${EXAMS[CUR].range} 模擬卷，答啱 70% 拎「${EXAMS[CUR].titleZh}」稱號`):CUR==='ssp'?(!S.badges.maytse?`目標：捉 Ch.3–5 EconMon ${nChGot([3,4,5])}/${gymNeed('maytse')}・對戰玩家 ${nBeat(GYMREQ.maytse.tr)}/4 → 挑戰 May 姐`:(S.titles.pp1?'目標：去巴士站搵司機過海去觀塘（Ch.6–7）':'目標：去東南面嘅模擬試場考 Ch.1–5 混合卷')):CUR==='kt'?(!S.badges.chowban?`目標：捉 Ch.6–7 EconMon ${nChGot([6,7])}/${gymNeed('chowban')}・對戰玩家 ${nBeat(GYMREQ.chowban.tr)}/4 → 挑戰周老闆`:'目標：去碼頭邊搵小巴司機，出旺角（Ch.8–10）'):CUR==='mk'?(!S.badges.biusuk?`目標：捉 Ch.8–10 EconMon ${nChGot([8,9,10])}/${gymNeed('biusuk')}・對戰玩家 ${nBeat(GYMREQ.biusuk.tr)}/4 → 挑戰標叔`:(S.titles.pp2?'目標：去彌敦道巴士站，搭巴士去油麻地（Ch.11–12）':'目標：去東南面嘅模擬試場考 Ch.6–10 混合卷')):CUR==='ymt'?(!S.badges.lanzie?`目標：捉 Ch.11–12 EconMon ${nChGot([11,12])}/${gymNeed('lanzie')}・對戰玩家 ${nBeat(GYMREQ.lanzie.tr)}/4 → 挑戰蘭姐`:'目標：去彌敦道巴士站，搭巴士去石硤尾（Ch.13–15）'):CUR==='skm'?(!S.badges.hokoo?`目標：捉 Ch.13–15 EconMon ${nChGot([13,14,15])}/${gymNeed('hokoo')}・對戰玩家 ${nBeat(GYMREQ.hokoo.tr)}/4 → 挑戰何姑娘`:'目標：集齊石硤尾 15 隻 EconMon、挑戰何姑娘困難模式（模擬試場 III 稍後推出）'):!S.badges.fubak?`目標：捉 Ch.1 EconMon ${nChGot([1])}/${gymNeed('fubak')}・打贏對戰玩家 ${nBeat(GYMREQ.fubak.tr)}/2 → 挑戰福伯`:!S.badges.hoitse?`目標：過對岸捉 Ch.2 EconMon ${nChGot([2])}/${gymNeed('hoitse')}・對戰玩家 ${nBeat(GYMREQ.hoitse.tr)}/2 → 挑戰海姐`:(!S.ended?'目標：返屋企同阿爺傾吓':!S.badges.maytse?'目標：去東岸碼頭搵船家，出市區去深水埗':'大澳已完成。可以用「傳送」去各個館溫習');$t.appendChild(el('span',{class:'hint',text:`　${goal}\n夥伴：${S.lead?nmS(S.lead)+' Lv'+lvOf(S.lead)+' HP '+curHP()+'/'+maxHP(S.lead):'—'}　💰$${S.coins||0}${(()=>{const n=Object.keys(S.caught).filter(revDue).length;return n?`\n💤 ${n} 隻 EconMon 要溫習（START → Econ-dex → 即刻溫習）`:'';})()}
+function idlePanel(){UI.kind=null;$c.innerHTML='';clearQ();$t.hidden=false;if(G.mode==='world'){$t.innerHTML='';$t.appendChild(el('span',{class:'place',text:REGIONS[CUR].name+' '+REGIONS[CUR].era}));const goal=CUR==='pvpz'?`目標：${teamOK()?'搵道場門口嘅登記員排隊打排位賽':'先搵隊伍登記員揀好 6 隻排位隊伍'}・你係【${rankName(rankS(),true)}】${rankProg()}`:EXAMS[CUR]?(S.titles[CUR]?'目標：再考一次模擬卷練手感（合格有 💰$80）':`目標：搵考官開始 ${EXAMS[CUR].range} 模擬卷，答啱 70% 拎「${EXAMS[CUR].titleZh}」稱號`):CUR==='ssp'?(!S.badges.maytse?`目標：捉 Ch.3–5 EconMon ${nChGot([3,4,5])}/${gymNeed('maytse')}・對戰玩家 ${nBeat(GYMREQ.maytse.tr)}/4 → 挑戰 May 姐`:(S.titles.pp1?'目標：去巴士站搵司機過海去觀塘（Ch.6–7）':'目標：去東南面嘅模擬試場考 Ch.1–5 混合卷')):CUR==='kt'?(!S.badges.chowban?`目標：捉 Ch.6–7 EconMon ${nChGot([6,7])}/${gymNeed('chowban')}・對戰玩家 ${nBeat(GYMREQ.chowban.tr)}/4 → 挑戰周老闆`:'目標：去碼頭邊搵小巴司機，出旺角（Ch.8–10）'):CUR==='mk'?(!S.badges.biusuk?`目標：捉 Ch.8–10 EconMon ${nChGot([8,9,10])}/${gymNeed('biusuk')}・對戰玩家 ${nBeat(GYMREQ.biusuk.tr)}/4 → 挑戰標叔`:(S.titles.pp2?'目標：去彌敦道巴士站，搭巴士去油麻地（Ch.11–12）':'目標：去東南面嘅模擬試場考 Ch.6–10 混合卷')):CUR==='ymt'?(!S.badges.lanzie?`目標：捉 Ch.11–12 EconMon ${nChGot([11,12])}/${gymNeed('lanzie')}・對戰玩家 ${nBeat(GYMREQ.lanzie.tr)}/4 → 挑戰蘭姐`:'目標：去彌敦道巴士站，搭巴士去石硤尾（Ch.13–15）'):CUR==='skm'?(!S.badges.hokoo?`目標：捉 Ch.13–15 EconMon ${nChGot([13,14,15])}/${gymNeed('hokoo')}・對戰玩家 ${nBeat(GYMREQ.hokoo.tr)}/4 → 挑戰何姑娘`:'目標：集齊石硤尾 15 隻 EconMon、挑戰何姑娘困難模式（模擬試場 III 稍後推出）'):!S.badges.fubak?`目標：捉 Ch.1 EconMon ${nChGot([1])}/${gymNeed('fubak')}・打贏對戰玩家 ${nBeat(GYMREQ.fubak.tr)}/2 → 挑戰福伯`:!S.badges.hoitse?`目標：過對岸捉 Ch.2 EconMon ${nChGot([2])}/${gymNeed('hoitse')}・對戰玩家 ${nBeat(GYMREQ.hoitse.tr)}/2 → 挑戰海姐`:(!S.ended?'目標：返屋企同阿爺傾吓':!S.badges.maytse?'目標：去東岸碼頭搵船家，出市區去深水埗':'大澳已完成。可以用「傳送」去各個館溫習');$t.appendChild(el('span',{class:'hint',text:`　${goal}\n夥伴：${S.lead?nmS(S.lead)+' Lv'+lvOf(S.lead)+' HP '+curHP()+'/'+maxHP(S.lead):'—'}　💰$${S.coins||0}${(()=>{const n=Object.keys(S.caught).filter(revDue).length;return n?`\n💤 ${n} 隻 EconMon 要溫習（START → Econ-dex → 即刻溫習）`:'';})()}
 同人傾偈按 A · B 返回 · START 開選單`}));}}
 function runScript(fn){if(G.busy)return;G.busy=true;(async()=>{try{await fn();}catch(e){console.error(e);}G.busy=false;G.needRelease=true;idlePanel();})();}
 
@@ -3007,7 +3050,7 @@ function renderQ(){const q=Q.q;$q.hidden=false;$q.innerHTML='';
  const ibtn=(k,label,fn)=>{const b=el('button',{class:'itm',type:'button',text:`${label} ×${S.items[k]||0}`,onclick:()=>{if(Q.done||!(S.items[k]>0))return;if(fn()===false)return;S.items[k]--;b.textContent=`${label} ×${S.items[k]}`;b.disabled=!S.items[k];save(true);toast(`用咗 ${ITEMS[k].zh}`);}});b.disabled=!(S.items[k]>0);ib.appendChild(b);};
  ibtn('glass','⏳ +10s',()=>{Q.left+=10;Q.total=Math.max(Q.total,Q.left);});
  ibtn('scroll','📜 Free hint 免費提示',()=>{if(Q.hint)return false;Q.hint=true;hb.disabled=true;hintBox.hidden=false;});
- if(G.B&&S.lead)['potS','potL','potP'].forEach(k=>{if(S.items[k]>0)ibtn(k,`${ITEMS[k].ic} ${k==='potP'?'Full':'+'+ITEMS[k].heal} HP`,()=>{if(curHP()>=maxHP(S.lead))return false;setHP(S.lead,curHP()+ITEMS[k].heal);});});
+ if(G.B&&!G.B.pvp&&S.lead)['potS','potL','potP'].forEach(k=>{if(S.items[k]>0)ibtn(k,`${ITEMS[k].ic} ${k==='potP'?'Full':'+'+ITEMS[k].heal} HP`,()=>{if(curHP()>=maxHP(S.lead))return false;setHP(S.lead,curHP()+ITEMS[k].heal);});});
  $q.appendChild(ib);
  const body=el('div',{style:'display:flex;flex-direction:column;gap:10px'});$q.appendChild(body);
  if(q.type!=='fill')body.appendChild(biEl(q.prompt,'qprompt'));
@@ -3146,7 +3189,7 @@ function drawWorld(){const P=G.p;const [dx,dy]=P.moving?DIRS[P.dir]:[0,0];const 
   if(n.boss){const bb=Math.round(Math.sin(G.tick/8)*1.5);const got=S.badges[n.boss];R(ctx,sx+1,sy-17+bb,14,9,got?'#2f7f86':'#e0503c');R(ctx,sx+2,sy-16+bb,12,7,got?'#5fb0b6':'#f07a60');ctx.fillStyle='#fff';ctx.font='6px "Press Start 2P",monospace';ctx.textBaseline='top';ctx.fillText(EXAMS[n.boss]?n.boss.toUpperCase():(got?'★':'GYM'),sx+(EXAMS[n.boss]?1:(got?5:2)),sy-15+bb);}}}));
  const fr=P.moving?(P.prog<8?(P.stepN%2?1:2):0):0;
  if(S.lead&&SPR[S.lead]){const F=G.fol,t=P.moving?clamp(P.prog/16,0,1):1;const fx=(F.fx+(F.x-F.fx)*t)*T,fy=(F.fy+(F.y-F.fy)*t)*T;if(Math.abs(fx-px)+Math.abs(fy-py)>2)ents.push({y:fy-1,draw:()=>{const sx=Math.round(fx-ox),sy=Math.round(fy-oy);const hop=P.moving?Math.round(Math.abs(Math.sin(P.prog/16*Math.PI))*-2):Math.round(Math.sin(G.tick/15));R(ctx,sx+2,sy+14,12,2,'rgba(0,0,0,.2)');const img=miniMon(S.lead);const flip=(F.x<P.x)||(F.dir==='right');ctx.save();if(flip){ctx.translate(sx+20,0);ctx.scale(-1,1);ctx.drawImage(img,0,sy-8+hop);}else ctx.drawImage(img,sx-4,sy-8+hop);ctx.restore();const t2=MONS[S.lead].tier;if(t2==='epic'||t2==='legendary'){if((G.tick>>3)%3===0)R(ctx,sx+(G.tick%14),sy-8+((G.tick>>2)%10),1,1,t2==='epic'?'#e6c4ff':'#fff1a0');}}});}
- ents.push({y:py,draw:()=>{const sx=Math.round(px-ox),sy=Math.round(py-oy);R(ctx,sx+3,sy+14,10,2,'rgba(0,0,0,.18)');ctx.drawImage(personSprite(meLook(),P.dir,fr),sx-1,sy-4);if(S.title&&TITLES[S.title]){const tt=TITLES[S.title];ctx.font='900 8px "Noto Sans HK",sans-serif';ctx.textBaseline='middle';const w=Math.ceil(ctx.measureText(tt.zh).width)+8;ctx.fillStyle=tt.col;rrect(sx+8-w/2,sy-16,w,11,3);ctx.fill();R(ctx,sx+9-w/2,sy-15.5,w-2,.75,'rgba(255,255,255,.55)');ctx.fillStyle='#fff';ctx.fillText(tt.zh,sx+12-w/2,sy-10.3);ctx.textBaseline='top';}const cx=P.moving?P.tx:P.x,cy=P.moving?P.ty:P.y;const ch=map[cy][cx];if(ZONE_OF[ch]&&(!P.moving||P.prog>6))ctx.drawImage(tileImg(ch,cx,cy),0,10,16,6,cx*T-ox,cy*T-oy+10,16,6);}});
+ ents.push({y:py,draw:()=>{const sx=Math.round(px-ox),sy=Math.round(py-oy);outfitFX(sx,sy,px,py,ox,oy,'back');R(ctx,sx+3,sy+14,10,2,'rgba(0,0,0,.18)');ctx.drawImage(personSprite(meLook(),P.dir,fr),sx-1,sy-4);outfitFX(sx,sy,px,py,ox,oy,'front');if(S.title&&TITLES[S.title]){const tt=TITLES[S.title];ctx.font='900 8px "Noto Sans HK",sans-serif';ctx.textBaseline='middle';const w=Math.ceil(ctx.measureText(tt.zh).width)+8;ctx.fillStyle=tt.col;rrect(sx+8-w/2,sy-16,w,11,3);ctx.fill();R(ctx,sx+9-w/2,sy-15.5,w-2,.75,'rgba(255,255,255,.55)');ctx.fillStyle='#fff';ctx.fillText(tt.zh,sx+12-w/2,sy-10.3);ctx.textBaseline='top';}const cx=P.moving?P.tx:P.x,cy=P.moving?P.ty:P.y;const ch=map[cy][cx];if(ZONE_OF[ch]&&(!P.moving||P.prog>6))ctx.drawImage(tileImg(ch,cx,cy),0,10,16,6,cx*T-ox,cy*T-oy+10,16,6);}});
  HIDDEN.forEach(h=>{if(h.reg!==CUR||(S.found&&S.found[h.k]))return;const ph=(G.tick+h.x*17+h.y*29)%120;if(ph<24){const sx=h.x*T-ox+8,sy=h.y*T-oy+6;const s2=ph<12?1:2;R(ctx,sx-s2,sy,s2*2+1,1,'#fffbd0');R(ctx,sx,sy-s2,1,s2*2+1,'#fffbd0');R(ctx,sx,sy,1,1,'#ffd24a');}});
  ents.sort((a,b)=>a.y-b.y).forEach(e=>e.draw());
  regionFX(ox,oy);BUILD.forEach(b=>gymFX(b,b.x*T-ox,b.y*T-oy));
@@ -3162,8 +3205,8 @@ function fitText(t,max,sizes,fam){for(const s2 of sizes){ctx.font=`${s2}px ${fam
 function hpBar(x,y,w,cur,max){R(ctx,x-1,y-1,w+2,7,'#33474f');R(ctx,x,y,w,5,'#dfe5e8');const p=clamp(cur/Math.max(1,max),0,1);const c=hpCol(p*100);R(ctx,x,y,Math.round(w*p),5,c);R(ctx,x,y,Math.round(w*p),2,'rgba(255,255,255,.45)');}
 function xpBarC(x,y,w,p,col){R(ctx,x-1,y-1,w+2,4,'#33474f');R(ctx,x,y,w,2,'#dfe5e8');R(ctx,x,y,Math.round(w*clamp(p,0,1)),2,col);}
 function statRow(x,y,st,compact){ctx.font='6px "Press Start 2P",monospace';const items=[['ATK',st.atk,'#e0503c'],['DEF',st.def,'#2f7fd0'],['HP',st.hp,'#2f8a5a']];let cx=x;items.forEach(([k,v,c])=>{if(compact&&k==='HP')return;ctx.fillStyle=c;ctx.fillText(k,cx,y);cx+=ctx.measureText(k).width+2;ctx.fillStyle='#1f2b33';ctx.fillText(String(v),cx,y);cx+=ctx.measureText(String(v)).width+6;});}
-const SKYS={taio:['#ffe9c0','#cfe8ee','#9fd0e0'],ssp:['#f3e2c6','#dfe3e8','#b8c2c8'],kt:['#f6d9a8','#d9dde0','#a8b6be'],mk:['#ffd9b8','#f0dcd8','#c8b8c8'],ymt:['#ffe4b0','#f4dcc8','#d0c0a8'],skm:['#f8e0c8','#e0dce8','#b8b8c8']};
-const BOSSPLAT={taio:['#c9b98f','#e0d2aa'],ssp:['#b8a88c','#d8ccb0'],kt:['#9aa4aa','#c4ccd0'],mk:['#c89aa0','#ecc8c8'],ymt:['#a8804a','#d8b888'],skm:['#a8a0b8','#d8d0e0'],pp1:['#b8c4c8','#dde4e6'],pp2:['#b8c4c8','#dde4e6']};
+const SKYS={pvpz:['#ffd8a0','#f0c8b8','#c8a8c0'],taio:['#ffe9c0','#cfe8ee','#9fd0e0'],ssp:['#f3e2c6','#dfe3e8','#b8c2c8'],kt:['#f6d9a8','#d9dde0','#a8b6be'],mk:['#ffd9b8','#f0dcd8','#c8b8c8'],ymt:['#ffe4b0','#f4dcc8','#d0c0a8'],skm:['#f8e0c8','#e0dce8','#b8b8c8']};
+const BOSSPLAT={pvpz:['#c8a060','#f0d898'],taio:['#c9b98f','#e0d2aa'],ssp:['#b8a88c','#d8ccb0'],kt:['#9aa4aa','#c4ccd0'],mk:['#c89aa0','#ecc8c8'],ymt:['#a8804a','#d8b888'],skm:['#a8a0b8','#d8d0e0'],pp1:['#b8c4c8','#dde4e6'],pp2:['#b8c4c8','#dde4e6']};
 function battleBG(X){const ell=(a,b,rx,ry,col)=>{ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(a,b,rx,ry,0,0,7);ctx.fill();};const hz=X.offY+92*X.s;
  ctx.globalAlpha=.4;for(let i=0;i<6;i++){const cx=((G.tick*.18+i*97)%(VW+140))-70;ell(cx,16+((i%3)*12),28,8,'#ffffff');ell(cx+18,12+((i%3)*12),16,7,'#ffffff');}ctx.globalAlpha=1;
  if(CUR==='ssp'||CUR==='kt'||CUR==='mk'||CUR==='ymt'||CUR==='skm'){const n=Math.ceil(VW/34)+1;for(let i=0;i<n;i++){const w=18+((i*13)%16),h=(CUR==='kt'?40:30)+((i*23)%(CUR==='mk'?60:40));const x0=i*34-6;R(ctx,x0,hz-h,w,h,'rgba(110,122,134,.45)');for(let wy=4;wy<h-4;wy+=7)for(let wx=3;wx<w-3;wx+=5)R(ctx,x0+wx,hz-h+wy,2.5,3,((i+wy+wx)%5)?'rgba(255,245,210,.55)':'rgba(255,210,120,.8)');
@@ -3250,15 +3293,23 @@ function worldUpdate(){const P=G.p;
 function resetFol(){const P=G.p;G.fol={x:P.x,y:P.y,fx:P.x,fy:P.y,dir:P.dir};}
 function onStep(){const P=G.p;S.pos={x:P.x,y:P.y,dir:P.dir};save(true);{const z=ZONE_LABEL();if(z!==G.lastZone){G.lastZone=z;if(z)G.zoneBanner=90;}}const hd=hiddenAt(P.x,P.y);if(hd){runScript(()=>findHidden(hd));return;}const z=ZONE_OF[map[P.y][P.x]];if(z&&Math.random()<.13*(repelOn(CUR)?.2:1)){const pool=ZONES[z]||[];const un=pool.filter(i=>!S.caught[i]);const src=un.length&&Math.random()<.7?un:pool;if(src.length){const tot=src.reduce((a,i)=>a+TIER[MONS[i].tier].w,0);let r=Math.random()*tot,pick=src[0];for(const i of src){r-=TIER[MONS[i].tier].w;if(r<=0){pick=i;break;}}runScript(()=>wildFlow(pick));}}}
 function interact(){const P=G.p;const [dx,dy]=DIRS[P.dir];const x=P.x+dx,y=P.y+dy;const n=npcAt(x,y);if(n){n.dir=OPP[P.dir];runScript(()=>talk(n));return;}const s=SIGNS[x+','+y];if(s){runScript(async()=>{await say(s);});return;}const door=DOORS[x+','+y];if(door)runScript(()=>doorFlow(door));}
-async function teleport(x,y,dir,rid){G.fade=0;for(let i=0;i<10;i++){G.fade=i/10;await wait(2);}if(rid&&rid!==CUR){setRegion(rid);S.region=rid;MUSIC.mode(townSong());if(S.music)MUSIC.fanfare();G.zoneBanner=110;G.lastZone='';}const P=G.p;P.x=x;P.y=y;P.dir=dir;P.moving=false;resetFol();S.pos={x,y,dir};save(true);for(let i=10;i>=0;i--){G.fade=i/10;await wait(2);}G.fade=0;}
+async function teleport(x,y,dir,rid){G.fade=0;for(let i=0;i<10;i++){G.fade=i/10;await wait(2);}if(rid&&rid!==CUR){setRegion(rid);S.region=rid;MUSIC.mode(townSong());if(S.music)MUSIC.fanfare();G.zoneBanner=110;G.lastZone='';}const P=G.p;P.x=x;P.y=y;P.dir=dir;P.moving=false;resetFol();S.pos={x,y,dir};save(true);entryFx();for(let i=10;i>=0;i--){G.fade=i/10;await wait(2);}G.fade=0;}
 async function talk(n){
  const id=n.id;
  if(n.boss){await bossFlow(n.boss);return;}
  if(n.trainer){await trainerFlow(n.trainer);return;}
  if(n.shop){await shopFlow(id==='hawker'?'流動小販':'雜貨舖老闆');return;}
  if(id==='examOut'){const c=await choose('職員：離開試場？',['離開','留低'],{cancel:true});if(c!==0)return;const bk=(EXAMS[CUR]||EXAMS.pp1).back;await teleport(bk.x,bk.y,bk.dir,bk.rid);return;}
- if(id==='boatCity'){if(!S.badges.hoitse){await say('船家：出市區？要等你拎齊鹽花同墟市兩個徽章先啦。大澳嘅嘢未學完，出到去都唔明㗎。');return;}
-  const c=await choose('船家：坐船出市區，去深水埗？',['出發去深水埗','唔使住'],{cancel:true});if(c!==0)return;await sspArrive();return;}
+ if(id==='dojoQ'){const R=rankS();const c=await choose(`登記員：歡迎嚟到 PVP 道場！你而家係【${rankName(R,true)}】，${rankProg(R)}。`,['⚔️ 開始排位賽','🎒 設定 6 隻隊伍','🏆 睇排行榜','唔使住'],{cancel:true});if(c===0)await rankedFlow();else if(c===1)await new Promise(res=>teamEditor(res));else if(c===2)await new Promise(res=>{leaderboardFlow();G.onModalClose=res;});return;}
+ if(id==='dojoTeam'){await say(`隊伍登記員：排位隊伍要 ${TEAM_N} 隻已捉到嘅 EconMon，最多 1 隻 Legendary、2 隻 Epic。`);await new Promise(res=>teamEditor(res));return;}
+ if(id==='dojoBoard'){await new Promise(res=>{leaderboardFlow();G.onModalClose=res;});return;}
+ if(id==='dojoGuide'){await say('道場師兄：排位賽係回合制 1v1。系統會喺雙方 6 隻隊伍入面各隨機抽一隻。');await say('道場師兄：輪到你，就要答對手 EconMon 嘅題目；輪到對手，佢就答你隻嘅題目。每人每場只可以回血一次，諗清楚幾時用！');await say('道場師兄：去到鑽石有段位稱號同鑽石戰衣；挑戰者有彩虹火焰神裝；全校第一嘅 Challenger 1 仲會攞到去粉嶺嘅船票。');return;}
+ if(id==='boatBack'){const c=await choose('船家：返大澳？',['返大澳','唔使住'],{cancel:true});if(c!==0)return;await teleport(39,24,'left','taio');return;}
+ if(id==='boatCity'){const opts=['🏙 去深水埗（市區）','⚔️ 去 PVP 對戰區（排位賽）'].concat(S.fanling?['🎫 去粉嶺（粉嶺船票）']:[]).concat(['唔使住']);
+  const c=await choose('船家：坐船去邊？',opts,{cancel:true});if(c<0||c===opts.length-1)return;
+  if(c===0){if(!S.badges.hoitse){await say('船家：出市區？要等你拎齊鹽花同墟市兩個徽章先啦。大澳嘅嘢未學完，出到去都唔明㗎。');return;}await sspArrive();return;}
+  if(c===1){await say('船家：PVP 對戰區？坐穩啦，開船！');await teleport(REGIONS.pvpz.arrive.x,REGIONS.pvpz.arrive.y,REGIONS.pvpz.arrive.dir,'pvpz');if(!S.visited.pvpz){S.visited.pvpz=1;save(true);await say('歡迎嚟到 PVP 對戰區！中間嗰座就係 PVP 道場。門口嘅登記員會幫你排隊打排位賽；隊伍登記員幫你揀 6 隻排位隊伍；排行榜喺右邊。');}return;}
+  if(c===2){await say('船家：粉嶺？嘩，你攞到粉嶺船票喎！不過呢條航線仲準備緊，要等下次更新先開船。張船票你收好佢！');return;}}
  if(id==='invig'){await say(`監考員：呢份係 ${(EXAMS[CUR]||EXAMS.pp1).range} 混合模擬卷。`);await say(`規則：一共 ${PP_N} 題（Paper 1 式 MC／判斷／分類，加 Paper 2 式長題）。答錯唔會扣 HP，但有時限。`);await say(`監考員：答啱 70% 或以上合格，可以拎到「${(EXAMS[CUR]||EXAMS.pp1).titleZh}」稱號。合格之後都可以再考，練手感。`);return;}
  if(id==='busTaiO'){const c=await choose('巴士司機：返大澳？（坐車去碼頭再轉船）',['返大澳','唔使住'],{cancel:true});if(c!==0)return;await say('你搭巴士去碼頭，再坐船返大澳……');await teleport(REGIONS.taio.arrive.x,REGIONS.taio.arrive.y,REGIONS.taio.arrive.dir,'taio');return;}
  if(id==='busKT'){if(!S.badges.maytse){await say('司機：過海去觀塘？你搞掂咗深水埗未先？拎到車衣徽章先上車啦。');return;}
@@ -3360,61 +3411,139 @@ async function talk(n){
  if(id==='vendor'){await say('海產檔主：今日黃花魚少，大家排晒隊先到先得。');await say('海產檔主：有人話不如價高者得。你覺得呢：兩種分法，邊個會輸？');return;}
  if(id==='kid'){await say('細路：我阿爸專做蝦醬，隔籬屋專打魚，大家用蝦醬換魚。');await say('細路：如果大家唔可以交換，我阿爸仲敢唔敢淨係做蝦醬？');return;}
 }
-/* ============ PvP 對戰 (v0.13) ============ */
-const GHOSTS=[{key:'g1',nick:'阿明（虛構）',lead:'marketail',lv:2,acc:.5,rating:950},{key:'g2',nick:'Kiki（虛構）',lead:'queuepus',lv:3,acc:.58,rating:1010},{key:'g3',nick:'阿 Sam（虛構）',lead:'rivalrow',lv:3,acc:.62,rating:1060},{key:'g4',nick:'Jason（虛構）',lead:'stockbat',lv:3,acc:.66,rating:1110},{key:'g5',nick:'芷晴（虛構）',lead:'brandbetta',lv:4,acc:.7,rating:1160},{key:'g6',nick:'家豪（虛構）',lead:'costcrab',lv:4,acc:.74,rating:1210},{key:'g7',nick:'Yan（虛構）',lead:'equilibee',lv:5,acc:.8,rating:1280},{key:'g8',nick:'家欣（虛構）',lead:'floortoise',lv:4,acc:.8,rating:1300},{key:'g9',nick:'阿俊（虛構）',lead:'incidenkite',lv:5,acc:.84,rating:1350},{key:'g10',nick:'DSE 狀元（虛構）',lead:'balancheron',lv:5,acc:.88,rating:1420}];
-const pvpS=()=>{S.pvp=S.pvp||{rating:1000,w:0,l:0,hist:[]};return S.pvp;};
+/* ============ PvP 對戰 v0.14: hot-seat (START) + ranked (PVP 對戰區, Dojo) ============ */
+if(/autotest/.test(location.hash))window.__T={judge:ok=>{if(Q&&!Q.done)judge(ok);},q:()=>!!(Q&&!Q.done),x:c=>eval(c)};
+const TIERN=['Bronze','Silver','Gold','Platinum','Diamond','Challenger'],TIERZ=['青銅','白銀','黃金','白金','鑽石','挑戰者'],TIERC=['#b0763a','#9aa4ae','#e0b020','#3fb0a0','#4a8cf0','#e0503c'],TIERI=['🥉','🥈','🥇','💠','💎','👑'];
+const rankNew=()=>({t:0,d:3,w:0,s:null,cp:0,W:0,L:0,peak:0});
+const rankS=()=>{S.rank=Object.assign(rankNew(),S.rank||{});return S.rank;};
+function rankIdx(r){return r.t>=5?60+(r.cp||0):r.t*10+(3-r.d)*3+(r.w||0)+(r.s?1:0);}
+function rankName(r,zh){r=r||rankS();if(r.t>=5)return zh?`${TIERZ[5]} Challenger`:'Challenger';return zh?`${TIERZ[r.t]} ${TIERN[r.t]} ${r.d}`:`${TIERN[r.t]} ${r.d}`;}
+function rankProg(r){r=r||rankS();if(r.t>=5)return `挑戰者積分 ${r.cp||0}`;if(r.s)return `晉級賽 BO5：${r.s.w} 勝 ${r.s.l} 負（先贏 3 場晉級）`;return `${r.w}/3 勝${r.d===1&&r.t>=2?'（夠 3 勝就打晉級賽 BO5）':''}`;}
+/* same rules as Code.gs rankApply_ */
+function rankApply(r,win){r=Object.assign(rankNew(),r);r.W+=win?1:0;r.L+=win?0:1;const before=r.t;let ev='';
+ if(r.t>=5){if(win)r.cp++;else{r.cp--;if(r.cp<0){r.t=4;r.d=1;r.w=2;r.cp=0;ev='demote';}}}
+ else if(r.s){if(win)r.s.w++;else r.s.l++;if(r.s.w>=3){r.t++;r.d=3;r.w=0;r.s=null;r.cp=0;ev='promote';}else if(r.s.l>=3){r.s=null;r.w=0;ev='seriesfail';}}
+ else if(win){r.w++;if(r.w>=3){if(r.d>1){r.d--;r.w=0;ev='up';}else if(r.t<2){r.t++;r.d=3;r.w=0;ev='promote';}else{r.s={w:0,l:0};r.w=0;ev='series';}}}
+ else{if(r.w>0)r.w--;else if(r.d<3){r.d++;r.w=2;ev='down';}else if(r.t>0){r.t--;r.d=1;r.w=2;ev='demote';}}
+ r.peak=Math.max(r.peak||0,r.t);return {r,ev,before};}
+/* ---------- team of 6 ---------- */
+const TEAM_N=6;
+function teamCheck(ids){ids=(ids||[]).filter(i=>MONS[i]&&S.caught[i]);const leg=ids.filter(i=>MONS[i].tier==='legendary').length,epi=ids.filter(i=>MONS[i].tier==='epic').length;
+ if(ids.length!==TEAM_N)return `要揀啱 ${TEAM_N} 隻（而家 ${ids.length} 隻）`;if(leg>1)return `Legendary 最多 1 隻（而家 ${leg} 隻）`;if(epi>2)return `Epic 最多 2 隻（而家 ${epi} 隻）`;return '';}
+const teamOK=()=>!teamCheck(S.pvpTeam);
+function teamEditor(done){openModal('PVP 隊伍 Team（6 隻）',b=>{let sel=(S.pvpTeam||[]).filter(i=>S.caught[i]);
+ b.appendChild(el('div',{class:'note',text:`揀 ${TEAM_N} 隻已捉到嘅 EconMon 做排位隊伍：最多 1 隻 Legendary、2 隻 Epic。每場排位，系統會喺雙方 6 隻入面各隨機抽 1 隻，打 1v1。`}));
+ const info=el('div',{style:'font-weight:900'}),grid=el('div',{class:'wgrid'});b.appendChild(info);b.appendChild(grid);
+ const draw=()=>{grid.innerHTML='';const err=teamCheck(sel);info.textContent=`已揀 ${sel.length}/${TEAM_N}　${err?'⚠ '+err:'✓ 隊伍符合規定'}`;info.style.color=err?'var(--bad)':'var(--ok)';
+  MLIST.filter(m=>S.caught[m.id]).forEach(m=>{const on=sel.includes(m.id);const [c,x]=mk(64,64);x.drawImage(SPR[m.id],0,0);c.style.cssText='width:48px;height:48px;image-rendering:pixelated';
+   grid.appendChild(el('button',{type:'button',class:'mbtn wcell',style:on?'border-color:var(--shell);background:#eaf6f7;box-shadow:0 0 0 2px rgba(47,127,134,.35)':'',onclick:()=>{if(on)sel=sel.filter(i=>i!==m.id);else if(sel.length<TEAM_N)sel.push(m.id);else{toast(`最多 ${TEAM_N} 隻`);return;}draw();}},c,el('span',{text:(on?'✓ ':'')+m.zh}),el('span',{class:'tier '+m.tier,text:TIER[m.tier].en})));});};
+ draw();b.appendChild(el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},el('button',{class:'submit',type:'button',text:'🔒 鎖定隊伍 Lock in',onclick:()=>{const e=teamCheck(sel);if(e){toast(e);return;}S.pvpTeam=sel.slice();save(true);toast('隊伍已鎖定');closeModal();}})));});G.onModalClose=done||null;}
+/* ---------- opponents ---------- */
+const RIVAL_NAMES=['阿明','Kiki','阿 Sam','Jason','芷晴','家豪','Yan','家欣','阿俊','Hei','Mandy','子軒','Ivy','阿杰','Cathy'];
+function randTeam(seed){const r=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};const pool=MLIST.filter(m=>(QB[m.id]||[]).length).map(m=>m.id);const out=[];let leg=0,epi=0,guard=0;
+ while(out.length<TEAM_N&&guard++<500){const id=pool[Math.floor(r()*pool.length)];if(out.includes(id))continue;const t=MONS[id].tier;if(t==='legendary'&&leg>=1)continue;if(t==='epic'&&epi>=2)continue;if(t==='legendary')leg++;if(t==='epic')epi++;out.push(id);}return out;}
+function ghostAt(idx,seed){const t=Math.min(5,Math.floor(idx/10)),rem=idx-t*10;const r=t>=5?{t:5,d:1,w:0,cp:Math.max(0,idx-60)}:{t,d:3-Math.min(2,Math.floor(rem/3)),w:rem%3};const lv=Math.min(5,1+Math.floor(idx/12));
+ return {key:'g'+seed,nick:RIVAL_NAMES[seed%RIVAL_NAMES.length]+'（虛構）',rank:r,team:randTeam(seed+7),lv,acc:Math.min(.9,.45+idx*.007),ghost:1};}
+const PRACTICE_BOARD=[['DSE 狀元（虛構）',63],['阿俊（虛構）',61],['家欣（虛構）',46],['Yan（虛構）',40],['家豪（虛構）',34],['芷晴（虛構）',27],['Jason（虛構）',20],['阿 Sam（虛構）',13],['Kiki（虛構）',8],['阿明（虛構）',3]];
+async function fetchRank(){if(!(API&&PROFILE))return null;try{const r=await api('rankList',{key:PROFILE.key,token:PROFILE.token});return r&&r.ok?r:null;}catch(e){return null;}}
+async function publishTeam(){if(!(API&&PROFILE)||!teamOK())return;try{await api('rankTeam',{key:PROFILE.key,token:PROFILE.token,nick:PROFILE.nick||'',team:S.pvpTeam,lvs:S.pvpTeam.map(lvOf),acc:myAcc()});}catch(e){}}
 const myAcc=()=>{const a=S.stats&&S.stats.ans||0;return a>=10?Math.round((S.stats.ok||0)/a*100)/100:.6;};
+/* ---------- battle (1v1, turn-based, one heal each) ---------- */
 function pvpStat(id,lv){const m=MONS[id];const g=TIER[m.tier].grow*((lv||1)-1)+((lv||1)>=5?5:0);return {atk:Math.min(100,m.atk+g),def:Math.min(100,m.dfn+g),hp:Math.min(100,m.hp+g)};}
 function pvpDmg(a,d){return Math.max(6,Math.round(30*(1+a.atk/100)*(1-Math.min(d.def,70)/100)));}
-function elo(me,op,win){const E=1/(1+Math.pow(10,(op-me)/400));return Math.round(me+32*((win?1:0)-E));}
-function pvpTab(b){const P=pvpS();
- b.appendChild(el('div',{class:'note',text:'回合制對戰：輪到你嗰陣，你要答對手 EconMon 嘅題目，答啱就攻擊；輪到對手，佢就要答你 EconMon 嘅題目。邊隻先冇晒 HP 就輸。對戰唔會扣你隊伍嘅 HP。'}));
- const row=el('div',{style:'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px'});
- row.appendChild(el('button',{class:'mbtn',type:'button',style:'padding:12px;text-align:left',onclick:()=>{closeModal();runScript(hotseatFlow);}},el('div',{style:'font-weight:900;font-size:16px',text:'👥 同機對戰 Hot-seat'}),el('div',{style:'font-size:13px;color:var(--muted)',text:'兩個同學用同一部機，輪流答對方 EconMon 嘅題目（唔計排名）。'})));
- row.appendChild(el('div',{class:'mbtn',style:'padding:12px;text-align:left;cursor:default'},el('div',{style:'font-weight:900;font-size:16px',text:`🏆 排位 Rating：${P.rating}`}),el('div',{style:'font-size:13px;color:var(--muted)',text:`${P.w} 勝 ${P.l} 負・你嘅答題準確度 ${Math.round(myAcc()*100)}%`})));
- b.appendChild(row);
- if(!S.lead){b.appendChild(el('div',{class:'note',text:'先捉一隻 EconMon 做夥伴先可以對戰。'}));return;}
- b.appendChild(el('div',{style:'font-weight:900;font-size:15px;margin-top:6px',text:API&&PROFILE?'排位對戰：全班玩家 Ranked (class)':'排位對戰：練習對手 Ranked (practice rivals)'}));
- const list=el('div',{class:'board',text:'載入中… Loading…'});b.appendChild(list);
- b.appendChild(el('div',{style:'font-weight:900;font-size:15px;margin-top:6px',text:'排行榜 Leaderboard'}));
- const lb=el('div',{class:'board',text:'載入中… Loading…'});b.appendChild(lb);
- (async()=>{let opps=GHOSTS.map(g=>Object.assign({},g)),top=null;
-  if(API&&PROFILE){try{await api('pvpPublish',{key:PROFILE.key,token:PROFILE.token,lead:S.lead,lv:lvOf(S.lead),acc:myAcc(),nick:PROFILE.nick||''});const r=await api('pvpList',{key:PROFILE.key,token:PROFILE.token});if(r&&r.ok){if(r.me&&r.me.rating){P.rating=r.me.rating;P.w=r.me.wins;P.l=r.me.losses;}opps=(r.opps||[]).filter(o=>MONS[o.lead]).concat(opps.filter(()=>!(r.opps||[]).length));top=r.top;}}catch(e){}}
-  list.innerHTML='';if(!opps.length)list.appendChild(el('div',{text:'暫時未有其他玩家。'}));
-  opps.sort((a,b)=>Math.abs(a.rating-P.rating)-Math.abs(b.rating-P.rating)).slice(0,10).forEach(o=>{const m=MONS[o.lead];list.appendChild(el('div',null,el('b',{text:String(o.rating)}),el('span',{text:`${o.nick}・${m.en} ${m.zh} Lv${o.lv||1}・準確度 ${Math.round((o.acc||.5)*100)}%`}),el('button',{class:'mbtn',type:'button',text:'挑戰',onclick:()=>{closeModal();runScript(()=>rankedFlow(o));}})));});
-  if(!top){top=GHOSTS.map(g=>({nick:g.nick,rating:g.rating,w:0,l:0})).concat([{nick:(PROFILE&&PROFILE.nick)||'你 You',rating:P.rating,w:P.w,l:P.l,me:1}]).sort((a,b)=>b.rating-a.rating);}
-  lb.innerHTML='';top.slice(0,12).forEach((t,i)=>lb.appendChild(el('div',{class:t.me?'me':''},el('b',{text:'#'+(i+1)}),el('span',{text:t.nick}),el('span',{text:`${t.rating}（${t.w||t.wins||0}勝 ${t.l||t.losses||0}負）`}))));
- })();}
-if(/autotest/.test(location.hash))window.__T={judge:ok=>{if(Q&&!Q.done)judge(ok);},q:()=>!!(Q&&!Q.done)};
-async function pvpBattle(o){/* o: {left:{id,lv,name}, right:{id,lv,name,acc?,ai}} ; returns true if left wins */
- const keep={lead:S.lead};S.lead=o.left.id;const ls=pvpStat(o.left.id,o.left.lv),rs=pvpStat(o.right.id,o.right.lv);
+async function pvpBattle(o){const keep={lead:S.lead};S.lead=o.left.id;const ls=pvpStat(o.left.id,o.left.lv),rs=pvpStat(o.right.id,o.right.lv);
  await startBattle({enemy:o.right.id,plat:PLAT[MONS[o.right.id].zone]||['#b8c4c8','#dde4e6'],eHP:rs.hp,eMax:rs.hp,mHpD:ls.hp,pvp:{l:o.left.name,r:o.right.name,turn:'l'}});
- const B=G.B;let lhp=ls.hp;const askedL=new Set(),askedR=new Set();let round=0,win=null;
- await say(`⚔️ ${o.left.name}（${nm(o.left.id)}）VS ${o.right.name}（${nm(o.right.id)}）！回合制對戰開始！`);
+ const B=G.B;let lhp=ls.hp;const healed={l:false,r:false};const askedL=new Set(),askedR=new Set();let round=0,win=null;
+ const HEAL=.5;
+ await say(`⚔️ ${o.left.name}（${nm(o.left.id)}）VS ${o.right.name}（${nm(o.right.id)}）！回合制對戰開始！每人每場只可以回血一次（+50% HP，用咗就當用咗嗰個回合）。`);
  while(win===null&&round<12){round++;
-  B.pvp.turn='l';await say(`第 ${round} 回合・${o.left.name} 嘅回合：答 ${nm(o.right.id)} 嘅題目！`);
-  const q1=pickQ(o.right.id,askedL);if(q1){const r1=await askQ(q1);if(r1==='right'){let d=pvpDmg(ls,rs);if(G.lastFast&&Math.random()*100<ls.atk/2){d=Math.round(d*1.5);G.msgs.push('💥 快答暴擊！');}hitE(d);await wait(12);await say(`${o.left.name} 答啱！${nm(o.right.id)} −${d} HP。`);}else await say(`${o.left.name} 答錯，攻擊落空。`);}
+  B.pvp.turn='l';let act=0;if(!healed.l&&lhp<ls.hp)act=await choose(`第 ${round} 回合・${o.left.name}：${nm(o.left.id)} HP ${lhp}/${ls.hp}`,['⚔️ 答題攻擊',`💊 回血（每場一次，+${Math.round(ls.hp*HEAL)} HP）`]);
+  if(act===1){healed.l=true;lhp=Math.min(ls.hp,lhp+Math.round(ls.hp*HEAL));B.mHpD=lhp;fl('+'+Math.round(ls.hp*HEAL),64,104,'#58d070');await say(`${o.left.name} 用咗回血！${nm(o.left.id)} HP ${lhp}/${ls.hp}。`);}
+  else{await say(`第 ${round} 回合・${o.left.name}：答 ${nm(o.right.id)} 嘅題目！`);const q1=pickQ(o.right.id,askedL);if(q1){const r1=await askQ(q1);if(r1==='right'){let d=pvpDmg(ls,rs);if(G.lastFast&&Math.random()*100<ls.atk/2){d=Math.round(d*1.5);G.msgs.push('💥 快答暴擊！');}hitE(d);await wait(12);await say(`${o.left.name} 答啱！${nm(o.right.id)} −${d} HP。`);}else await say(`${o.left.name} 答錯，攻擊落空。`);}}
   if(B.eHP<=0){win=true;break;}
   B.pvp.turn='r';
-  if(o.right.ai){await say(`${o.right.name} 嘅回合：佢要答 ${nm(o.left.id)} 嘅題目……`);const q2=pickQ(o.left.id,askedR);if(q2)await say(`（${o.right.name} 諗緊：「${String(q2.prompt.zh||q2.prompt.en).slice(0,46)}…」）`);
-   if(Math.random()<(o.right.acc||.6)){const d=pvpDmg(rs,ls);lhp=Math.max(0,lhp-d);B.mHpD=lhp;B.mShake=18;fl('-'+d,64,104,'#ff6a50');await wait(12);await say(`${o.right.name} 答啱！${nm(o.left.id)} −${d} HP。`);}else await say(`${o.right.name} 答錯，你避過咗！`);}
-  else{await say(`${o.right.name} 嘅回合：答 ${nm(o.left.id)} 嘅題目！（${o.left.name} 唔好睇答案呀）`);const q2=pickQ(o.left.id,askedR);if(q2){const r2=await askQ(q2);if(r2==='right'){const d=pvpDmg(rs,ls);lhp=Math.max(0,lhp-d);B.mHpD=lhp;B.mShake=18;fl('-'+d,64,104,'#ff6a50');await wait(12);await say(`${o.right.name} 答啱！${nm(o.left.id)} −${d} HP。`);}else await say(`${o.right.name} 答錯，攻擊落空。`);}}
+  if(o.right.ai){if(!healed.r&&B.eHP<rs.hp*.35){healed.r=true;B.eHP=Math.min(rs.hp,B.eHP+Math.round(rs.hp*HEAL));B.eHPD=B.eHP;fl('+'+Math.round(rs.hp*HEAL),190,10,'#58d070');await say(`${o.right.name} 用咗回血！${nm(o.right.id)} HP ${B.eHP}/${rs.hp}。`);}
+   else{await say(`${o.right.name} 嘅回合：佢要答 ${nm(o.left.id)} 嘅題目……`);const q2=pickQ(o.left.id,askedR);if(q2)await say(`（${o.right.name} 諗緊：「${String(q2.prompt.zh||q2.prompt.en).slice(0,46)}…」）`);
+    if(Math.random()<(o.right.acc||.6)){const d=pvpDmg(rs,ls);lhp=Math.max(0,lhp-d);B.mHpD=lhp;B.mShake=18;fl('-'+d,64,104,'#ff6a50');await wait(12);await say(`${o.right.name} 答啱！${nm(o.left.id)} −${d} HP。`);}else await say(`${o.right.name} 答錯，你避過咗！`);}}
+  else{let act2=0;if(!healed.r&&B.eHP<rs.hp)act2=await choose(`${o.right.name}：${nm(o.right.id)} HP ${B.eHP}/${rs.hp}`,['⚔️ 答題攻擊',`💊 回血（每場一次，+${Math.round(rs.hp*HEAL)} HP）`]);
+   if(act2===1){healed.r=true;B.eHP=Math.min(rs.hp,B.eHP+Math.round(rs.hp*HEAL));B.eHPD=B.eHP;fl('+'+Math.round(rs.hp*HEAL),190,10,'#58d070');await say(`${o.right.name} 用咗回血！`);}
+   else{await say(`${o.right.name} 嘅回合：答 ${nm(o.left.id)} 嘅題目！（${o.left.name} 唔好睇答案呀）`);const q2=pickQ(o.left.id,askedR);if(q2){const r2=await askQ(q2);if(r2==='right'){const d=pvpDmg(rs,ls);lhp=Math.max(0,lhp-d);B.mHpD=lhp;B.mShake=18;fl('-'+d,64,104,'#ff6a50');await wait(12);await say(`${o.right.name} 答啱！${nm(o.left.id)} −${d} HP。`);}else await say(`${o.right.name} 答錯，攻擊落空。`);}}}
   if(lhp<=0){win=false;break;}}
  if(win===null){const a=lhp/ls.hp,b2=B.eHP/rs.hp;win=a>=b2;await say(`12 回合完結！剩餘 HP：${Math.round(a*100)}% 對 ${Math.round(b2*100)}%。`);}
  G.msgs=[];S.lead=keep.lead;await endBattle();return win;}
+/* ---------- START menu: hot-seat only ---------- */
+function pvpTab(b){b.appendChild(el('div',{class:'note',text:'同機對戰：兩個同學用同一部機，各揀一隻 EconMon，輪流答「對方 EconMon」嘅題目，答啱先攻擊得到。每人每場只可以回血一次。唔計排名，唔會扣隊伍 HP。\n想打排位賽？去大澳碼頭搵船家，搭船去「PVP 對戰區」，喺道場門口排隊。'}));
+ b.appendChild(el('button',{class:'mbtn',type:'button',style:'padding:14px;text-align:left',onclick:()=>{closeModal();runScript(hotseatFlow);}},el('div',{style:'font-weight:900;font-size:17px',text:'👥 開始同機對戰 Hot-seat'}),el('div',{style:'font-size:13px;color:var(--muted)',text:'玩家 1 同玩家 2 輪流答題'})));
+ const r=rankS();b.appendChild(el('div',{class:'bagrow'},el('div',{class:'ic',text:TIERI[r.t]}),el('div',null,el('div',{style:'font-weight:900'},`你嘅排位：${rankName(r,true)}`),el('div',{style:'font-size:13px;color:var(--muted)'},`${rankProg(r)}・${r.W} 勝 ${r.L} 負`)),el('span')));}
 async function hotseatFlow(){const own=Object.keys(S.caught).filter(i=>MONS[i]&&(QB[i]||[]).length);if(!own.length){await say('未有 EconMon，唔可以對戰。');return;}
  const opts=own.map(i=>`${nm(i)} Lv${lvOf(i)}`);
  const a=await choose('玩家 1：揀你嘅 EconMon（對手要答佢嘅題目）',opts,{cancel:true});if(a<0)return;
  const b=await choose('玩家 2：揀你嘅 EconMon（玩家 1 要答佢嘅題目）',opts,{cancel:true});if(b<0)return;
  const w=await pvpBattle({left:{id:own[a],lv:lvOf(own[a]),name:'玩家 1'},right:{id:own[b],lv:lvOf(own[b]),name:'玩家 2'}});
  await say(w?'🏆 玩家 1 贏！':'🏆 玩家 2 贏！');}
-async function rankedFlow(o){const P=pvpS();const before=P.rating;
- const w=await pvpBattle({left:{id:S.lead,lv:lvOf(S.lead),name:(PROFILE&&PROFILE.nick)||'你'},right:{id:o.lead,lv:o.lv||1,name:o.nick,acc:o.acc||.6,ai:1}});
- let after=elo(before,o.rating,w);
- if(API&&PROFILE&&!String(o.key).startsWith('g')){try{const r=await api('pvpResult',{key:PROFILE.key,token:PROFILE.token,opp:o.key,win:w?1:0});if(r&&r.ok)after=r.rating;}catch(e){}}
- else{const g=GHOSTS.find(g=>g.key===o.key);if(g)g.rating=elo(g.rating,before,!w);}
- P.rating=after;if(w)P.w++;else P.l++;P.hist=(P.hist||[]).concat([{t:Date.now(),o:o.nick,w:w?1:0}]).slice(-20);if(w)addCoins(30);save(true);
- await say(w?`🏆 你贏咗 ${o.nick}！Rating ${before} → ${after}（+💰$30）`:`你輸咗俾 ${o.nick}。Rating ${before} → ${after}。返去溫習吓，再嚟過！`);checkAch();await flushMsgs();}
+/* ---------- ranked (Dojo) ---------- */
+async function rankedFlow(){const R0=rankS();
+ if(!teamOK()){await say(`登記員：你未有合格嘅 6 隻排位隊伍（${teamCheck(S.pvpTeam)}）。先揀好隊伍再嚟排隊。`);await new Promise(res=>teamEditor(res));if(!teamOK())return;}
+ await publishTeam();
+ await say(`登記員：你而家係【${rankName(R0,true)}】，${rankProg(R0)}。配對緊對手……`);
+ let opp=null;const srv=await fetchRank();if(srv&&srv.me&&srv.me.rank){S.rank=Object.assign(rankNew(),srv.me.rank);Object.assign(R0,S.rank);}const myI=rankIdx(R0);
+ if(srv&&srv.players&&srv.players.length){const cand=srv.players.filter(p=>p.team&&p.team.length===TEAM_N&&p.team.every(i=>MONS[i])).map(p=>Object.assign(p,{idx:rankIdx(p.rank)})).sort((a,b)=>Math.abs(a.idx-myI)-Math.abs(b.idx-myI)).slice(0,3);if(cand.length)opp=cand[Math.floor(Math.random()*cand.length)];}
+ if(!opp){const seed=Math.floor(Math.random()*1e6)+1;opp=ghostAt(Math.max(0,myI+Math.floor(Math.random()*7)-3),seed);}
+ const mine=S.pvpTeam[Math.floor(Math.random()*TEAM_N)],theirs=opp.team[Math.floor(Math.random()*opp.team.length)];const theirLv=Array.isArray(opp.lvs)?opp.lvs[opp.team.indexOf(theirs)]||1:(opp.lv||1);
+ await say(`配對成功！對手：${opp.nick}【${rankName(opp.rank,true)}】\n隨機抽選：你出 ${nm(mine)}，對手出 ${nm(theirs)}。`);
+ const w=await pvpBattle({left:{id:mine,lv:lvOf(mine),name:(PROFILE&&PROFILE.nick)||'衫哥'},right:{id:theirs,lv:theirLv,name:opp.nick,acc:opp.acc||.6,ai:1}});
+ let res=null,isC1=false;
+ if(API&&PROFILE&&srv){try{const r=await api('rankResult',{key:PROFILE.key,token:PROFILE.token,win:w?1:0,opp:opp.ghost?'ghost':opp.key});if(r&&r.ok){res={r:Object.assign(rankNew(),r.rank),ev:r.ev,before:R0.t};isC1=!!r.c1;}}catch(e){}}
+ if(!res){res=rankApply(R0,w);if(res.r.t>=5){const top=Math.max(...PRACTICE_BOARD.map(p=>p[1]))-60;isC1=res.r.cp>top;if(API&&PROFILE&&srv&&srv.c1)isC1=srv.c1===PROFILE.key;}}
+ S.rank=res.r;if(w)addCoins(30);save(true);
+ const R=S.rank;const msg={up:`⬆️ 升段！而家係【${rankName(R,true)}】`,down:`⬇️ 跌段……而家係【${rankName(R,true)}】`,promote:`🎉 晉升新段位！而家係【${rankName(R,true)}】`,demote:`⬇️ 跌咗一個大段，而家係【${rankName(R,true)}】`,series:`🔥 夠 3 勝喇！下一步係晉級賽 BO5：五場贏三場就升上 ${TIERN[R.t+1]||''}。`,seriesfail:'晉級賽失敗，今個小段由 0 勝重新儲。'}[res.ev]||'';
+ await say(`${w?'🏆 你贏咗！（💰+$30）':'你輸咗。'}　${rankName(R,true)}・${rankProg(R)}`);if(msg)await say(msg);
+ await rankRewards(isC1);checkAch();await flushMsgs();}
+async function rankRewards(isC1){const R=rankS();S.legacyOut=S.legacyOut||[];
+ if(R.peak>=4&&!S.titles.rank){S.titles.rank=true;if(!S.legacyOut.includes('diamond'))S.legacyOut.push('diamond');save(true);await say('💎 你去到鑽石 Diamond！解鎖：\n・段位稱號：喺 START → 成就 → 稱號 揀「段位」，頭頂會顯示你嘅段位名；\n・鑽石戰衣：著住佢入場會有鑽石光柱入場動畫（START → 成就 → 衣櫃）。');}
+ if(R.peak>=5&&!S.legacyOut.includes('challenger')){S.legacyOut.push('challenger');save(true);await say('👑 你去到挑戰者 Challenger！解鎖：挑戰者神裝——彩虹光環，行路仲有火焰拖尾（START → 成就 → 衣櫃）。');}
+ if(isC1&&!S.fanling){S.fanling=true;save(true);await say('🎫 你係全校排行榜第一——Challenger 1！你得到「粉嶺船票」。船票已經收好：大澳碼頭嘅船家以後會開「粉嶺」航線——粉嶺地區會喺之後嘅更新開放，到時你可以第一批上船！');}}
+async function leaderboardFlow(){openModal('排行榜 Leaderboard',b=>{const me=rankS();const box=el('div',{class:'board',text:'載入中… Loading…'});
+ b.appendChild(el('div',{class:'note',text:'段位：青銅 Bronze → 白銀 Silver → 黃金 Gold → 白金 Platinum → 鑽石 Diamond（每個大段 3、2、1，每贏 3 場升一個小段）→ 挑戰者 Challenger。由黃金 1 開始，升大段要打 BO5 晉級賽。輸咗會扣勝場，0 勝再輸會跌段。挑戰者只有一級，排行榜第一名就係 Challenger 1。'}));b.appendChild(box);
+ (async()=>{const r=await fetchRank();box.innerHTML='';let rows;
+  if(r&&r.top){rows=r.top.map(p=>({nick:p.nick,rank:p.rank,me:p.me}));}
+  else{rows=PRACTICE_BOARD.map(([n,i])=>({nick:n,rank:ghostAt(i,1).rank})).concat([{nick:(PROFILE&&PROFILE.nick)||'你 You',rank:me,me:1}]).sort((a,b)=>rankIdx(b.rank)-rankIdx(a.rank));box.appendChild(el('div',{class:'note',text:'（單機模式：練習對手全部係虛構人物。班級模式先有全校排行榜。）'}));}
+  let c1=false;rows.forEach((p,i)=>{const isC1=p.rank.t>=5&&!c1;if(isC1)c1=true;box.appendChild(el('div',{class:p.me?'me':''},el('b',{text:'#'+(i+1)}),el('span',{text:`${TIERI[p.rank.t]} ${p.nick}`}),el('span',{style:`color:${TIERC[p.rank.t]};font-weight:900`,text:isC1?'Challenger 1':rankName(p.rank)+(p.rank.t>=5?` · ${p.rank.cp}分`:'')})));});})();});}
+/* ---------- costume preview (store) ---------- */
+function lookFor(k){const o=OUTFITS[k]||OUTFITS.def;const key='me_'+k;if(!LOOKS[key])LOOKS[key]=Object.assign({},LOOKS.me,o.l||{});return key;}
+function previewCostume(k){const o=OUTFITS[k];const wrap=el('div',{class:'pvw'});const [c,x]=mk(96,110);c.className='pvwc';wrap.appendChild(el('div',{style:'font-weight:900;font-size:16px',text:`👁 試身 Preview：${o.zh} ${o.en}`}));wrap.appendChild(c);
+ const dirs=['down','left','up','right'];let f=0;if(animTimer)clearInterval(animTimer);animTimer=setInterval(()=>{if(!c.isConnected){clearInterval(animTimer);animTimer=null;return;}f++;x.clearRect(0,0,96,110);x.fillStyle='#e9f1f2';x.fillRect(0,0,96,110);
+  if(k==='challenger'){for(let i=0;i<12;i++){x.fillStyle=`hsla(${(f*8+i*30)%360},90%,60%,.35)`;x.beginPath();x.arc(48,58,40-i*1.2,0,7);x.fill();}}
+  if(k==='diamond'&&f%40<16){x.fillStyle='rgba(120,190,255,.35)';x.fillRect(30,0,36,110);}
+  x.imageSmoothingEnabled=false;x.drawImage(personSprite(lookFor(k),dirs[Math.floor(f/16)%4],(f>>2)%3),12,10,72,76);x.fillStyle='rgba(0,0,0,.15)';x.fillRect(28,88,40,5);},90);
+ wrap.appendChild(el('div',{style:'font-size:13px;color:var(--muted)',text:'角色會轉四個方向俾你睇。滿意先買。'}));return wrap;}
+function skinShop(who){return new Promise(res=>{const render=b=>{const ks=Object.keys(SKINS);
+  b.appendChild(el('div',{class:'note',text:`${who}：服裝。你有 💰$${S.coins||0}。撳價錢旁邊嘅 👁 可以試身。`}));const pv=el('div');b.appendChild(pv);const g=el('div',{class:'wgrid'});b.appendChild(g);
+  ks.forEach(k=>{const o=OUTFITS[k],own=!!(S.bought&&S.bought[k]);const [c,x]=mk(36,38);x.imageSmoothingEnabled=false;x.drawImage(personSprite(lookFor(k),'down',0),0,0,18,19,0,0,36,38);c.style.cssText='width:36px;height:38px;image-rendering:pixelated';
+   g.appendChild(el('div',{class:'mbtn wcell',style:'cursor:default'},c,el('span',{text:o.zh}),el('div',{class:'pricerow'},el('span',{class:'ptag',text:own?'已擁有':'$'+SKINS[k]}),el('button',{type:'button',class:'eyebtn',title:'試身 Preview','aria-label':'試身 Preview',text:'👁',onclick:()=>{pv.innerHTML='';pv.appendChild(previewCostume(k));pv.scrollIntoView({block:'nearest'});}})),
+    own?el('button',{type:'button',class:'mbtn',text:S.outfit===k?'著緊':'著上',onclick:()=>{S.outfit=k;save(true);openModal('服裝店 Costume shop',render);}}):el('button',{type:'button',class:'submit',style:'padding:4px 12px;font-size:13px',text:'買 Buy',onclick:()=>{if((S.coins||0)<SKINS[k]){toast('唔夠錢');return;}addCoins(-SKINS[k]);S.bought=Object.assign(S.bought||{},{[k]:Date.now()});S.stats.buy=(S.stats.buy||0)+1;S.outfit=k;save(true);toast('買咗 '+o.zh+'，即刻著上');checkAch();openModal('服裝店 Costume shop',render);}})));});};
+ openModal('服裝店 Costume shop',render);G.onModalClose=()=>res();});}
+/* ---------- costume FX: Diamond entry animation, Challenger aura + flame trail ---------- */
+function entryFx(){if(S.outfit==='diamond'||S.outfit==='challenger')G.entryFx=70;}
+function outfitFX(sx,sy,px,py,ox,oy,layer){const t=G.tick;
+ if(S.outfit==='challenger'){if(layer==='back'){for(let i=0;i<6;i++){ctx.fillStyle=`hsla(${(t*6+i*60)%360},95%,60%,.22)`;ctx.beginPath();ctx.ellipse(sx+8,sy+6,13-i,17-i*1.3,0,0,7);ctx.fill();}
+   G.trail=G.trail||[];const last=G.trail[G.trail.length-1];if(G.p.moving&&(!last||Math.hypot(last.x-px,last.y-py)>3))G.trail.push({x:px,y:py,t});G.trail=G.trail.filter(p=>t-p.t<40);
+   G.trail.forEach(p=>{const a=1-(t-p.t)/40;const fx=p.x-ox+8,fy=p.y-oy+14;ctx.fillStyle=`rgba(255,${120+Math.floor(a*100)},40,${(a*.8).toFixed(2)})`;ctx.beginPath();ctx.ellipse(fx+Math.sin((t+p.t)/3)*1.5,fy-(1-a)*6,2.5*a+1,4*a+1,0,0,7);ctx.fill();ctx.fillStyle=`rgba(255,240,120,${(a*.7).toFixed(2)})`;ctx.beginPath();ctx.ellipse(fx,fy-(1-a)*5,1.2*a+.4,2*a+.4,0,0,7);ctx.fill();});}
+  else if((t>>2)%2===0){const a=t/12;R(ctx,sx+8+Math.cos(a)*12,sy+4+Math.sin(a)*14,1.5,1.5,'#fff7b0');}}
+ if(G.entryFx>0&&layer==='front'){const k=G.entryFx,p=1-k/70;ctx.save();ctx.globalAlpha=Math.min(1,k/25);const g=ctx.createLinearGradient(0,sy-60,0,sy+18);g.addColorStop(0,'rgba(120,200,255,0)');g.addColorStop(1,S.outfit==='challenger'?'rgba(255,120,80,.55)':'rgba(120,200,255,.6)');ctx.fillStyle=g;ctx.fillRect(sx-4,sy-60,24,78);
+  for(let i=0;i<10;i++){const a=i*Math.PI/5+p*3,r=6+p*26;const dx=sx+8+Math.cos(a)*r,dy=sy+6+Math.sin(a)*r*.6;ctx.fillStyle=i%2?'#bfe6ff':'#ffffff';ctx.beginPath();ctx.moveTo(dx,dy-3);ctx.lineTo(dx+2,dy);ctx.lineTo(dx,dy+3);ctx.lineTo(dx-2,dy);ctx.fill();}
+  ctx.restore();G.entryFx--;}}
+/* ---------- admin account ---------- */
+function adminPrompt(){return new Promise(res=>{openModal('🔑 管理員登入 Admin',b=>{const i=el('input',{type:'password',inputmode:'numeric',placeholder:'密碼 Password',autocomplete:'off',style:'font:500 18px var(--txt);padding:8px 10px;border:2px solid var(--line);border-radius:8px'});const err=el('div',{style:'color:var(--bad);font-weight:700;min-height:1em'});
+ const go=()=>{if(i.value===String(1866)){G.onModalClose=null;closeModal();res(true);}else err.textContent='密碼唔啱 Wrong password';};i.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+ b.appendChild(el('div',{class:'note',text:'管理員帳戶會解鎖所有地區、道具同服裝，方便老師試玩。管理員進度獨立儲存，唔會同步去班級紀錄。'}));b.appendChild(i);b.appendChild(err);b.appendChild(el('button',{class:'submit',type:'button',text:'登入 Log in',onclick:go}));setTimeout(()=>i.focus(),50);});G.onModalClose=()=>res(false);});}
+function adminUnlock(){S.admin=true;S.started=true;if(!S.starter){S.starter='oppcostra';}
+ MLIST.forEach(m=>{S.seen[m.id]=true;S.caught[m.id]=true;if(S.hpm[m.id]==null)S.hpm[m.id]=maxHP(m.id);});if(!S.lead)S.lead=S.starter;
+ Object.keys(GYMREQ).forEach(k=>S.badges[k]=true);Object.keys(TRAINERS).forEach(k=>S.beat[k]=S.beat[k]||Date.now());Object.keys(REGIONS).forEach(r=>S.visited[r]=1);
+ Object.keys(TITLES).forEach(k=>S.titles[k]=true);['glass','scroll','potS','potL','potP'].forEach(k=>S.items[k]=99);S.coins=Math.max(S.coins||0,99999);
+ S.bought=Object.assign(S.bought||{},...Object.keys(SKINS).map(k=>({[k]:Date.now()})));S.legacyOut=Object.keys(OUTFITS);S.fanling=true;
+ if(!teamOK()){const t=randTeam(99).filter(i=>S.caught[i]);S.pvpTeam=t;}save(true);}
+function setAdmin(on){ADMIN=on;try{if(on)localStorage.setItem(ADMIN_KEY,'1');else localStorage.removeItem(ADMIN_KEY);}catch(e){}}
 async function trainerFlow(tid){const t=TRAINERS[tid];
  if(S.beat[tid]){const c=await choose(`${t.name}：再比過？（贏咗有 💰$10）`,['再比一場','下次先'],{cancel:true});if(c!==0)return;}
  else for(const l of t.intro)await say(l);
@@ -3435,11 +3564,7 @@ async function shopFlow(who){while(true){const c0=await choose(`${who}：要啲�
  if(c0===0){while(true){const ks=Object.keys(SHOP);const c=await choose(`${who}：道具。你有 💰$${S.coins||0}`,ks.map(k=>`${ITEMS[k].ic} ${ITEMS[k].zh} ${ITEMS[k].en}　$${SHOP[k]}（有 ${S.items[k]||0}）`).concat(['返上一頁']),{cancel:true});
   if(c<0||c>=ks.length)break;const k=ks[c];if((S.coins||0)<SHOP[k]){await say(`${who}：唔夠錢喎。去答多啲題、練大啲你隻 EconMon 先啦！`);continue;}
   addCoins(-SHOP[k]);S.items[k]=(S.items[k]||0)+1;S.stats.buy=(S.stats.buy||0)+1;save(true);toast(`買咗 ${ITEMS[k].zh}`);checkAch();await flushMsgs();}continue;}
- while(true){const ks=Object.keys(SKINS).filter(k=>!(S.bought&&S.bought[k]));
-  if(!ks.length){await say(`${who}：所有服裝你都買晒喇！去 START → 成就 → 衣櫃 換啦。`);break;}
-  const c=await choose(`${who}：服裝。你有 💰$${S.coins||0}`,ks.map(k=>`👕 ${OUTFITS[k].zh} ${OUTFITS[k].en}　$${SKINS[k]}`).concat(['返上一頁']),{cancel:true});
-  if(c<0||c>=ks.length)break;const k=ks[c];if((S.coins||0)<SKINS[k]){await say(`${who}：呢件貴啲，儲多陣先啦。捉 EconMon、升級、打贏對戰玩家都有錢收。`);continue;}
-  addCoins(-SKINS[k]);S.bought=Object.assign(S.bought||{},{[k]:Date.now()});S.stats.buy=(S.stats.buy||0)+1;S.outfit=k;save(true);toast('買咗 '+OUTFITS[k].zh);await say(`${who}：${OUTFITS[k].zh} 買咗喇，即刻幫你換上！（可以喺 START → 成就 → 衣櫃 換返）`);checkAch();await flushMsgs();}}}
+ await skinShop(who);checkAch();await flushMsgs();}}
 async function dailyBonus(){const d=new Date().toLocaleDateString('en-CA');if(S.lastDay===d)return;const y=new Date(Date.now()-864e5).toLocaleDateString('en-CA');S.dayStreak=S.lastDay===y?(S.dayStreak||0)+1:1;S.lastDay=d;const c=10+Math.min(5,S.dayStreak)*10;addCoins(c);S.items.potS=(S.items.potS||0)+1;save(true);
  await say(`📅 每日登入獎勵 Daily bonus（連續 ${S.dayStreak} 日）：💰$${c} + 🥣細碗白粥×1。\n連續登入，獎勵會越嚟越多（最多每日 $60）！`);checkAch();await flushMsgs();}
 async function findHidden(h){S.found[h.k]=Date.now();let t='';if(h.r){Object.entries(h.r).forEach(([k,n])=>S.items[k]=(S.items[k]||0)+n);t=Object.entries(h.r).map(([k,n])=>`${ITEMS[k].ic}${ITEMS[k].zh}×${n}`).join(' ');}if(h.c){addCoins(h.c);t+=(t?' ':'')+`💰$${h.c}`;}save(true);
@@ -3490,6 +3615,7 @@ async function doorFlow(d){
  if(d==='gymK'){await bossFlow('chowban');return;}
  if(d==='homeM'){await say('媽媽：返嚟喇？呢層唐樓喺旺角，出面好嘈，不過入到屋就靜晒。唞吓先。');await heal();return;}
  if(d==='gymM'){await bossFlow('biusuk');return;}
+ if(d==='dojo'){await say('道場入面人山人海，全部都喺度等排位。搵門口嘅登記員排隊啦！');return;}
  if(d==='homeY'){await say('媽媽：返嚟喇？油麻地呢間唐樓細細間，但係近果欄，你凌晨開工都方便。唞吓先。');await heal();return;}
  if(d==='gymY'){await bossFlow('lanzie');return;}
  if(d==='homeH'){await say('媽媽：返嚟喇？公屋單位唔大，但係有自己個廚房同廁所，好過以前好多。唞吓先。');await heal();return;}
@@ -3499,7 +3625,7 @@ async function doorFlow(d){
 }
 
 /* ============ battles ============ */
-const townSong=()=>(CUR==='ssp'||CUR==='kt'||CUR==='mk'||CUR==='ymt'||CUR==='skm')?'city':'town';
+const townSong=()=>(CUR==='pvpz'||CUR==='ssp'||CUR==='kt'||CUR==='mk'||CUR==='ymt'||CUR==='skm')?'city':'town';
 async function startBattle(opt){G.flash=28;MUSIC.mode(opt&&opt.boss?'boss':'battle');await wait(30);G.mode='battle';G.floats=[];G.B=Object.assign({mHpD:curHP(),eHP:0,eMax:1,eHPD:0,eShake:0,mShake:0,eDrop:0,hideE:false,net:null,plat:['#8cbf74','#aad690']},opt);G.B.eHPD=G.B.eHP;}
 async function endBattle(){for(let i=0;i<10;i++){G.fade=i/10;await wait(2);}G.mode='world';G.B=null;G.floats=[];MUSIC.mode(townSong());clearQ();for(let i=10;i>=0;i--){G.fade=i/10;await wait(2);}G.fade=0;save(true);}
 function fl(t,x,y,c){G.floats.push({t,x,y,c,life:48});}
@@ -3583,8 +3709,10 @@ async function bossFlow(k){if(EXAMS[k]){await examFlow(k);return;}const b=META.b
  await flushMsgs();await endBattle();}
 
 /* ============ story ============ */
-async function titleFlow(){G.mode='title';G.showStarters=false;const has=S.started&&S.starter;const i=await choose('EconMon 經濟獸（大澳・深水埗・觀塘・旺角・油麻地・石硤尾｜Ch.1–15・兩個模擬試場）'+(API&&PROFILE?`\n玩家：${PROFILE.cls}-${PROFILE.no} ${PROFILE.name}`:''),has?['繼續冒險','新遊戲']:['開始新遊戲']);
- if(has&&i===0){enterWorld();await dailyBonus();return;}if(has){const c=await choose('新遊戲會清除而家嘅進度同 Econ-dex。確定？',['確定，重新開始','返回']);if(c!==0)return titleFlow();}const pf=S.profile;S=fresh();S.profile=pf;await intro();}
+async function titleFlow(){G.mode='title';G.showStarters=false;const has=S.started&&S.starter;const adm=ADMIN?'🔓 登出管理員 Admin log out':'🔑 管理員登入 Admin';const i0=await choose('EconMon 經濟獸（大澳・深水埗・觀塘・旺角・油麻地・石硤尾｜Ch.1–15・兩個模擬試場）'+(API&&PROFILE?`\n玩家：${PROFILE.cls}-${PROFILE.no} ${PROFILE.name}`:''),(has?['繼續冒險','新遊戲']:['開始新遊戲']).concat([adm]));const nOpt=has?2:1;
+ if(i0===nOpt){if(ADMIN){setAdmin(false);location.reload();return;}const ok=await adminPrompt();if(!ok)return titleFlow();setAdmin(true);S=loadLocal(ADMIN_SAVE)||fresh();adminUnlock();document.getElementById('adminbadge').hidden=false;if(!S.pos||S.region==null){S.region='taio';}enterWorld();await say('🔑 管理員模式：所有地區、道具、服裝同 EconMon 已經解鎖。快速傳送可以去每一個館；PVP 對戰區喺大澳碼頭船家。進度獨立儲存，唔會同步去班級紀錄。');return;}
+ const i=i0;
+ if(has&&i===0){if(ADMIN)adminUnlock();enterWorld();await dailyBonus();return;}if(has){const c=await choose('新遊戲會清除而家嘅進度同 Econ-dex。確定？',['確定，重新開始','返回']);if(c!==0)return titleFlow();}const pf=S.profile;S=fresh();S.profile=pf;await intro();}
 async function intro(){
  await say('1960 年代初，大澳。');
  G.showHero=true;
@@ -3612,7 +3740,7 @@ async function intro(){
  await say('鄧 Sir：屋企門口個阿哥會教你點操作；地圖上閃吓閃吓嘅地方可能收埋寶物，記得周圍探索！');
  await say('鄧 Sir：START 可以開選單：Econ-dex、隊伍（換夥伴）同背包。福伯同海姐會喺館門口等你。出發啦！');
  S.started=true;S.pos={x:17,y:18,dir:'down'};save();enterWorld();await dailyBonus();}
-function enterWorld(){setRegion(S.region||'taio');MUSIC.mode(townSong());if(S.pos.x>=MW||S.pos.y>=MH||blocked(S.pos.x,S.pos.y)&&!npcAt(S.pos.x,S.pos.y)){const h=REGIONS[CUR].home;S.pos={x:h.x,y:h.y,dir:h.dir};}G.mode='world';const P=G.p;P.x=S.pos.x;P.y=S.pos.y;P.dir=S.pos.dir||'down';P.moving=false;P.prog=0;resetFol();}
+function enterWorld(){setRegion(S.region||'taio');MUSIC.mode(townSong());if(S.pos.x>=MW||S.pos.y>=MH||blocked(S.pos.x,S.pos.y)&&!npcAt(S.pos.x,S.pos.y)){const h=REGIONS[CUR].home;S.pos={x:h.x,y:h.y,dir:h.dir};}G.mode='world';entryFx();const P=G.p;P.x=S.pos.x;P.y=S.pos.y;P.dir=S.pos.dir||'down';P.moving=false;P.prog=0;resetFol();}
 async function ending(){
  await say('你返到屋企。阿爺、媽媽同你圍住張枱坐低。');
  await say('福伯：乖孫，你兩個徽章都拎咗。你話俾阿爺聽，我哋應該點揀？');
@@ -3627,7 +3755,7 @@ async function ending(){
 
 /* ============ Econ-dex ============ */
 function openModal(title,render){G.modal=true;for(const k in keys)keys[k]=0;pressed={};$mt.textContent=title;$modal.hidden=false;$mb.innerHTML='';render($mb);$mb.scrollTop=0;}
-function closeModal(){$modal.hidden=true;G.modal=false;}
+function closeModal(){$modal.hidden=true;G.modal=false;if(G.onModalClose){const f=G.onModalClose;G.onModalClose=null;f();}}
 document.getElementById('mclose').addEventListener('click',closeModal);
 function thumb(id,show,big,evo){const t=el('div',{class:'thumb'});if(show){const [c,x]=mk(64,64);x.drawImage(evo?evoImg(SPR[id]):SPR[id],0,0);if(big)c.className='big';t.appendChild(c);if(big)return c;}else t.textContent='?';return t;}
 let animTimer=null;
@@ -3792,7 +3920,7 @@ function loop(){G.tick++;for(let i=G.timers.length-1;i>=0;i--){if(--G.timers[i].
  if(!G.modal){if(UI.kind)updateUI();else if(G.mode==='world')worldUpdate();}
  panelCls();render();pressed={};requestAnimationFrame(loop);}
 async function boot(){try{await Promise.race([Promise.all([document.fonts.load('8px "Press Start 2P",monospace'),document.fonts.load('700 10px "Noto Sans HK"','經濟獸大澳篇慾望寄居蟹稀缺黃花抉擇魚機會成本鱟全成本蟹時鐘彈塗魚潮變蝦沉沒蚶鹽精利息蠔三問鷺傳統白海豚指令鳶市場斑業權龜交換鷗排隊八爪魚三活蝦醬精循環鯆魚判斷蜻蜓福伯墟市海姐理解')]),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
- layout();makeTiles();makeMons();setRegion('taio');requestAnimationFrame(loop);setTimeout(layout,300);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(layout);await ensureLogin();runScript(titleFlow);}
+ document.getElementById('adminbadge').hidden=!ADMIN;layout();makeTiles();makeMons();setRegion('taio');requestAnimationFrame(loop);setTimeout(layout,300);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(layout);await ensureLogin();runScript(titleFlow);}
 boot();
 })();
 </script>
