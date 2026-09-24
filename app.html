@@ -534,17 +534,32 @@ const msg = t => { $('gmsg').textContent = t; };
 const lbl = t => LABELS[t] || t;
 
 /* --------------------------------------------------------------- transport */
+/* GET transport. Tries fetch() WITHOUT cookies first: a plain <script> tag
+   sends the student's Google cookies to script.google.com, and some browsers
+   (several Google accounts signed in, or a school account with restrictions)
+   then get an HTML error page instead of our JSON — the sign-in reaches the
+   server but the page never hears back. If fetch fails for any reason, it
+   falls back to the old <script> (JSONP) method, so nothing gets worse. */
 function jsonp(params, cb, ms){
-  const fn='__cb'+Math.random().toString(36).slice(2);
   let done=false;
-  const finish=v=>{ if(done)return; done=true; cb(v); clean(); };
-  window[fn]=v=>finish(v);
-  const s=document.createElement('script');
-  s.src=SYNC_URL+'?'+Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&')+'&callback='+fn;
-  s.onerror=()=>finish(null);
-  document.head.appendChild(s);
-  function clean(){ try{ delete window[fn]; s.remove(); }catch(e){} }
-  setTimeout(()=>finish(null), ms||15000);
+  const finish=v=>{ if(done)return; done=true; clearTimeout(timer); cb(v); };
+  const timer=setTimeout(()=>finish(null), ms||15000);
+  const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');
+  function viaScript(){
+    if(done) return;
+    const fn='__cb'+Math.random().toString(36).slice(2);
+    window[fn]=v=>{ finish(v); clean(); };
+    const s=document.createElement('script');
+    s.src=SYNC_URL+'?'+qs+'&callback='+fn;
+    s.onerror=()=>{ finish(null); clean(); };
+    document.head.appendChild(s);
+    function clean(){ try{ delete window[fn]; s.remove(); }catch(e){} }
+  }
+  if(!window.fetch){ viaScript(); return; }
+  fetch(SYNC_URL+'?'+qs,{credentials:'omit',cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject(r.status))
+    .then(v=>finish(v))
+    .catch(()=>viaScript());
 }
 function post(body){
   if(SESS) body.t=SESS;
@@ -669,7 +684,7 @@ function onCredential(resp){
             || ('Sign-in refused: '+r.error));
         return;
       }
-      if(tries<6) return setTimeout(claim,1200);
+      if(tries<10){ msg('Checking with Google… ('+tries+')'); return setTimeout(claim,1500); }
       /* Tell apart "server unreachable" from "server up but silent", because
          they have completely different fixes. */
       jsonp({ping:1}, pg=>{
