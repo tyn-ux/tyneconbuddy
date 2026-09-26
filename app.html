@@ -553,7 +553,8 @@ function jsonp(params, cb, ms){
     s.src=SYNC_URL+'?'+qs+'&callback='+fn;
     s.onerror=()=>{ finish(null); clean(); };
     document.head.appendChild(s);
-    function clean(){ try{ delete window[fn]; s.remove(); }catch(e){} }
+    function clean(){ try{ window[fn]=function(){}; s.remove();
+      setTimeout(function(){ try{ delete window[fn]; }catch(e){} },30000); }catch(e){} }
   }
   if(!window.fetch){ viaScript(); return; }
   fetch(SYNC_URL+'?'+qs,{credentials:'omit',cache:'no-store'})
@@ -656,6 +657,32 @@ function pushScore(){
   }, 4000);
 }
 
+/* ---------------------------------------------------------- session store
+ * The session token the server issued is kept on this device so a reload, a
+ * closed tab or a flat battery does not mean signing in with Google all over
+ * again. The server decides how long it stays valid (12 hours); this copy is
+ * simply not offered after 11, so the page never resumes with a token the
+ * server is about to refuse. */
+const SKEY='tjx2:sess';
+function saveSess(){ try{ localStorage.setItem(SKEY,
+  JSON.stringify({t:SESS,e:EMAIL,p:PROFILE,at:Date.now()})); }catch(e){} }
+function dropSess(){ try{ localStorage.removeItem(SKEY); }catch(e){} }
+function resumeSess(cb){
+  let v=null; try{ v=JSON.parse(localStorage.getItem(SKEY)); }catch(e){}
+  if(!v||!v.t||(Date.now()-(v.at||0))>11*3600*1000) return cb(false);
+  SESS=v.t; EMAIL=v.e||null; PROFILE=v.p||v.e||'student';
+  msg('Signing you back in\u2026');
+  jsonp({prof:1,t:SESS}, p=>{
+    if(!p||(p.error&&p.error!=='none')){ SESS=null; EMAIL=null; dropSess(); msg(''); return cb(false); }
+    pLoad();
+    $('gate').classList.add('hide');
+    $('acctWho').textContent=PROFILE+'  \u00b7  '+EMAIL;
+    if(p.cls){ ME={cls:p.cls,num:p.num,nick:p.nick}; enterApp(); }
+    else $('setup').classList.remove('hide');
+    cb(true);
+  }, 15000);
+}
+
 /* ------------------------------------------------------------------- auth */
 function onCredential(resp){
   const nonce=Math.random().toString(36).slice(2)+Date.now().toString(36);
@@ -674,7 +701,7 @@ function onCredential(resp){
   (function claim(){
     tries++;
     jsonp({claim:nonce}, r=>{
-      if(r&&r.t){ SESS=r.t; afterAuth(); return; }
+      if(r&&r.t){ SESS=r.t; saveSess(); afterAuth(); return; }
       if(r&&r.error&&r.error!=='not ready'){
         msg(({blocked:'This account cannot use the drill. Speak to your teacher.',
               domain:'Please sign in with your school account.',
@@ -684,7 +711,7 @@ function onCredential(resp){
             || ('Sign-in refused: '+r.error));
         return;
       }
-      if(tries<10){ msg('Checking with Google… ('+tries+')'); return setTimeout(claim,1500); }
+      if(tries<15){ msg('Checking with Google\u2026 ('+tries+')'); return setTimeout(claim,2000); }
       /* Tell apart "server unreachable" from "server up but silent", because
          they have completely different fixes. */
       jsonp({ping:1}, pg=>{
@@ -696,7 +723,7 @@ function onCredential(resp){
             +'but never confirmed this sign-in. Teacher: check AUTH_LAST_ERROR in Script Properties.');
         }
       }, 8000);
-    }, 9000);
+    }, 20000);
   })();
 }
 
@@ -747,7 +774,7 @@ $('pSave').addEventListener('click',()=>{
 });
 
 function lockOut(){
-  SESS=null;
+  SESS=null; dropSess();
   $('nav').classList.add('hide');
   document.querySelectorAll('[id^=tab-]').forEach(e=>e.classList.add('hide'));
   $('gate').classList.remove('hide'); $('who').textContent='';
@@ -1550,6 +1577,10 @@ window.addEventListener('load',()=>{
   if(location.protocol==='file:'){
     msg('Google Sign-In cannot run from a file on disk. Open the https:// link instead.'); return;
   }
+  resumeSess(function(ok){ if(!ok) initGoogle(); });
+});
+
+function initGoogle(){
   let scriptFailed=false;
   const tag=document.querySelector('script[src*="gsi/client"]');
   if(tag) tag.addEventListener('error',()=>{ scriptFailed=true; });
@@ -1574,7 +1605,7 @@ window.addEventListener('load',()=>{
           +' is listed under Authorised JavaScript origins for this OAuth client.');
     }
   },200);
-});
+}
 </script>
 </body>
 </html>
