@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HKDSE Economics — Ch.1 Basic Economic Concepts</title>
+<style>
+  :root{
+    --ink:#111317; --muted:#6b7280; --line:#ececf0; --bg:#ffffff;
+    --card:#ffffff; --accent:#2563eb; --accent-soft:#eef3ff;
+    --story:#7c3aed; --exam:#0f766e; --debate:#c2410c; --warn:#b91c1c; --voice:#0e7490;
+    --radius:16px; --maxw:800px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Noto Sans TC","Segoe UI",sans-serif;
+    line-height:1.65;font-size:16px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:48px 22px 110px;}
+  .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;}
+  h1{font-size:32px;line-height:1.2;margin:10px 0 12px;letter-spacing:-.02em;font-weight:700;}
+  .standfirst{color:var(--muted);font-size:17px;margin:0 0 26px;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 34px;}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);
+    color:var(--ink);padding:8px 15px;border-radius:10px;transition:.15s;font-size:14px;}
+  button:hover{border-color:var(--accent);}
+  .concept{margin:0 0 26px;}
+  .concept>h2{font-size:21px;margin:26px 0 2px;letter-spacing:-.01em;}
+  .concept .pos{font-size:13px;color:var(--muted);margin:0 0 16px;}
+  .voice{background:var(--accent-soft);border-left:3px solid var(--voice);border-radius:0 12px 12px 0;
+    padding:12px 16px;margin:14px 0;color:#0c4a52;font-size:15px;}
+  .voice b{color:var(--voice);}
+  .sec{border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden;}
+  .sec>.head{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;
+    border:none;border-radius:0;padding:14px 16px;font-size:15px;font-weight:600;}
+  .sec>.head .tag{font-size:11px;padding:3px 9px;border-radius:7px;color:#fff;font-weight:600;white-space:nowrap;}
+  .tag.story{background:var(--story)}.tag.exam{background:var(--exam)}
+  .tag.debate{background:var(--debate)}.tag.warn{background:var(--warn)}
+  .sec>.head .chev{margin-left:auto;color:var(--muted);transition:.2s;}
+  .sec.open>.head .chev{transform:rotate(90deg);}
+  .sec .body{display:none;padding:2px 16px 16px;} .sec.open .body{display:block;}
+  .term{color:var(--accent);font-weight:600;}
+  .reveal{border-bottom:2px dotted var(--accent);cursor:pointer;color:var(--accent);}
+  .reveal .hidden-def{display:none;}
+  .reveal.shown{border-bottom:none;cursor:default;color:var(--ink);background:var(--accent-soft);
+    padding:2px 6px;border-radius:6px;}
+  .reveal.shown .prompt{display:none;} .reveal.shown .hidden-def{display:inline;}
+  figure{margin:14px 0;text-align:center;} figure svg{max-width:100%;height:auto;}
+  figcaption{font-size:13px;color:var(--muted);margin-top:6px;}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0;}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;}
+  th{background:#f7f8fa;}
+  .checklist{font-size:13px;color:var(--muted);background:#f7f8fa;border-radius:10px;padding:10px 14px;margin:10px 0;}
+  .card{perspective:1000px;display:inline-block;width:100%;max-width:340px;height:130px;margin:8px 8px 8px 0;vertical-align:top;}
+  .card-inner{position:relative;width:100%;height:100%;transition:transform .5s;
+    transform-style:preserve-3d;cursor:pointer;}
+  .card.flipped .card-inner{transform:rotateY(180deg);}
+  .card-face{position:absolute;inset:0;backface-visibility:hidden;display:flex;align-items:center;
+    justify-content:center;text-align:center;padding:14px;border:1px solid var(--line);
+    border-radius:12px;background:var(--accent-soft);font-size:14px;}
+  .card-back{transform:rotateY(180deg);background:var(--card);}
+  .quiz{background:#f7f8fa;border-radius:12px;padding:16px;margin:10px 0;}
+  .quiz .opt{display:block;width:100%;text-align:left;margin:6px 0;background:var(--card);}
+  .quiz .opt.correct{border-color:var(--exam);background:#e7f6f2;}
+  .quiz .opt.wrong{border-color:var(--warn);background:#fdeaea;}
+  .quiz .explain{display:none;margin-top:10px;font-size:14px;color:var(--muted);}
+  .quiz.answered .explain{display:block;}
+  ul{margin:8px 0;padding-left:22px;} li{margin:4px 0;}
+  footer{color:var(--muted);font-size:13px;text-align:center;margin-top:36px;}
+  .flag{background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:6px 10px;font-size:13px;color:#9a3412;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">HKDSE Economics · Contextualized Notes</div>
+  <h1>Chapter 1 — Basic Economic Concepts</h1>
+  <p class="standfirst">Scarcity → choice → cost: the reasoning engine behind every later chapter. Paper 1 tests it with trap-heavy MC every year; Paper 2 loves "will the opportunity cost <em>necessarily</em> change?"</p>
+
+  <div class="controls">
+    <button onclick="setAll(true)">Expand all 全部展開</button>
+    <button onclick="setAll(false)">Collapse all 全部收起</button>
+  </div>
+
+  <div class="voice">🎙️ <b>老師開場</b> — 呢一章好多同學以為「背定義就得」,錯喇。DSE 年年喺呢章捉死人,尤其係 "necessarily change" 嗰類題。你今日搞唔清 opportunity cost,之後 demand、production、trade 全部冧檔。我哋由故仔講起,慢慢嚟。</div>
+
+  <!-- ============ 1. SCARCITY ============ -->
+  <section class="concept">
+    <h2>1 · Scarcity, Wants and Choice</h2>
+    <p class="pos">Syllabus: Basic economic concepts — the source of all economic problems.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag story">🎬 STORY</span><span>Hong Kong, June 1963 — 制水</span><span class="chev">▶</span></button>
+      <div class="body"><p>The worst drought in Hong Kong's recorded history. Reservoirs nearly empty, the government imposes water rationing (制水): at the worst point, tap water flows for only <strong>four hours every four days</strong>. Whole neighbourhoods queue in the street with buckets and kerosene tins; 「樓下閂水喉」 enters local folklore.</p>
+      <p>Water didn't vanish — there was still <em>some</em>. But the amount available could no longer satisfy what people wanted. That gap is the economist's precise meaning of <strong>scarcity</strong> — and the queues show what scarcity forces on us: choice, competition, and rules deciding who gets what.</p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 DEFINITION</span><span>Exam-grade precision</span><span class="chev">▶</span></button>
+      <div class="body">
+        <p><span class="term">Scarcity (缺乏)</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">the situation in which the resources available are <b>not enough (insufficient)</b> to satisfy all people's wants.</span></span></p>
+        <ul>
+          <li><b>Economics</b> — the study of how human beings allocate scarce resources to satisfy their unlimited wants. Micro: individuals' maximizing behaviour · Macro: aggregate phenomena.</li>
+          <li><b>Wants</b> are unlimited — new wants come up when some are satisfied.</li>
+          <li>Scarcity is <b>relative</b>, not absolute: compare resources <em>against wants</em>. Limited resources <b>alone</b> ≠ scarcity.</li>
+          <li>Scarcity ⇒ <b>choice</b>: pick which wants to satisfy, which to give up. If a resource has only one use, no choice can be made.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag warn">⚠️ TRAP</span><span>Misconceptions</span><span class="chev">▶</span></button>
+      <div class="body"><ul>
+        <li>"Limited resources ⇒ scarcity" — <b>False</b>. If limited resources can still satisfy all wants, there is no scarcity.</li>
+        <li>"Scarcity ⇒ there must be a market price" — <b>False</b>. Competition may be non-price (next section).</li>
+      </ul></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">✍️ TEST</span><span>Self-test</span><span class="chev">▶</span></button>
+      <div class="body">
+        <div class="quiz">
+          <p><strong>MC:</strong> Which statement is correct?</p>
+          <button class="opt" data-c="0" onclick="answer(this)">A. Whenever a resource is limited, it must be scarce.</button>
+          <button class="opt" data-c="1" onclick="answer(this)">B. Scarcity exists only when resources are insufficient relative to wants.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">C. Scarcity implies a market price must exist.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">D. Wants are limited but resources are unlimited.</button>
+          <div class="explain">💡 B. Scarcity is a comparison of resources <em>against wants</em> — the classic True/False trap "limited resource ⇒ scarcity" is False, and competition criteria need not be price.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="voice">🎙️ <b>過場</b> — 唔夠分,咁邊個攞到?1963 年制水啲水點分?排隊。點解係排隊唔係價高者得?下一節就係講呢樣。</div>
+
+  <!-- ============ 2. COMPETITION ============ -->
+  <section class="concept">
+    <h2>2 · Competition and Discrimination</h2>
+    <p class="pos">Syllabus: relationship between scarcity, competition and discrimination.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag story">🎬 STORY</span><span>Alchian → 張五常賣桔 (1984)</span><span class="chev">▶</span></button>
+      <div class="body"><p>At UCLA in the 1960s, economist <strong>Armen Alchian</strong> taught a way of seeing that travelled to Hong Kong through his student <strong>Steven N.S. Cheung (張五常)</strong>, later a professor at HKU — who famously sold mandarin oranges at a Lunar New Year fair (《賣桔者言》, 1984) to watch pricing and competition happen live.</p>
+      <p>The insight: scarcity means not everyone gets the good, so <strong>some rule must decide who wins</strong> — price, queuing, exam results, lottery, connections. And every rule favours somebody and excludes somebody. <em>There is no neutral rule.</em></p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 DEFINITION</span><span>Exam-grade precision</span><span class="chev">▶</span></button>
+      <div class="body">
+        <p><span class="term">Competition (競爭)</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">the process of resolving interpersonal conflicts over scarce goods — <b>who can get the goods?</b> Winners obtain them; losers do not.</span></span></p>
+        <table>
+          <tr><th></th><th>Price competition</th><th>Non-price competition</th></tr>
+          <tr><td><b>Basis</b></td><td>Willing <em>and able</em> to pay the market price</td><td>Age, qualifications, queuing, lottery…</td></tr>
+          <tr><td><b>Example</b></td><td>Artworks sold at auction to the highest bidder</td><td>Subsidised university places by exam results</td></tr>
+        </table>
+        <p><span class="term">Discrimination (歧視)</span> — competition criteria by nature favour some group; those who cannot get the good are <b>discriminated against by the rules of competition</b>. Discrimination is <b>always implied</b> under competition.</p>
+        <div class="checklist">Logic chain to memorise: Scarcity ⇒ competition ⇒ discrimination ✔ · Discrimination ⇒ scarcity ✔ · Market price ⇒ scarcity ✔ · Scarcity ⇒ market price ✘</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag debate">⚔️ DEBATE</span><span>Is any rule fair?</span><span class="chev">▶</span></button>
+      <div class="body"><p>Price discriminates against the poor — but rewards serving others' wants. Queuing "feels" fair but discriminates against those whose time is valuable, and burns hours. Lotteries are equal but reward nobody's effort. Economists disagree about which rule is <em>better</em>; they agree that <b>no rule avoids discrimination</b> — changing the rule only changes who is favoured. That is the Level 5** takeaway.</p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">✍️ TEST</span><span>Self-test</span><span class="chev">▶</span></button>
+      <div class="body">
+        <div class="quiz">
+          <p><strong>MC:</strong> A public hospital allocates specialist appointments by waiting list. Which is correct?</p>
+          <button class="opt" data-c="0" onclick="answer(this)">A. No one is discriminated against, since no money is charged.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">B. There is no competition because there is no price.</button>
+          <button class="opt" data-c="1" onclick="answer(this)">C. Those who cannot afford the waiting time are discriminated against.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">D. Discrimination implies the allocation is illegal.</button>
+          <div class="explain">💡 C. First-come-first-served is non-price competition; it favours those able to wait and discriminates against those who cannot. "Discrimination" here is a technical description of any allocation rule, not a moral or legal accusation.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="voice">🎙️ <b>過場</b> — 記住條鏈:缺乏 → 競爭 → 歧視。而家入正題:成個 Chapter 1 最重要、Paper 2 考到爛嘅 opportunity cost。</div>
+
+  <!-- ============ 3. OPPORTUNITY COST ============ -->
+  <section class="concept">
+    <h2>3 · Opportunity Cost</h2>
+    <p class="pos">Syllabus: concept of opportunity cost — the single most-tested idea in this chapter.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag story">🎬 STORY</span><span>Vienna turns cost inside out</span><span class="chev">▶</span></button>
+      <div class="body"><p>For most of the 19th century, British economists thought cost meant the <em>pain and toil of production</em> — labour hours embodied in the thing. Then the Austrian school in Vienna — <strong>Friedrich von Wieser</strong> and colleagues, late 1800s — flipped it: the cost of anything is not the effort behind you, but <strong>the road not taken in front of you</strong> — the value of the best alternative you give up. (The English term "opportunity cost" was coined by David I. Green in 1894, building on the Austrian idea.)</p>
+      <p>Every DSE question about resale values, sunk payments and changing preferences tests whether you've made this mental switch.</p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 DEFINITION</span><span>Exam-grade precision</span><span class="chev">▶</span></button>
+      <div class="body">
+        <p><span class="term">Opportunity cost (機會成本)</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">the value of the <b>highest-valued option forgone</b> when a choice is made.</span></span></p>
+        <ul>
+          <li>The <b>next-best single alternative</b> given up — <b>not the sum</b> of all alternatives forgone.</li>
+          <li>Arises from <b>scarcity and choice</b>; may have <b>no relation to money</b>. Money is only a unit for calculating cost.</li>
+          <li>No alternatives, or unlimited resources → opportunity cost does <b>not exist</b>.</li>
+          <li>The O.C. of the maximizing (first) choice is the <b>lowest</b> among all options — that's why a rational person picks it.</li>
+        </ul>
+        <p><b>Micro-case:</b> $10; ranking ① coke ② chocolate ③ fruit (each $10). Choose coke → O.C. = <b>one bar of chocolate</b>. Not "chocolate + fruit", not "$10".</p>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag warn">⚠️ TRAP</span><span>Misconceptions</span><span class="chev">▶</span></button>
+      <div class="body"><ul>
+        <li>O.C. ≠ money price — the $10 isn't the cost; the forgone chocolate is.</li>
+        <li>O.C. ≠ all alternatives added up — only the highest-valued forgone option.</li>
+        <li>"Free of charge" ≠ no opportunity cost (see §7, free goods).</li>
+      </ul></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">✍️ TEST</span><span>Flip card + MC</span><span class="chev">▶</span></button>
+      <div class="body">
+        <div class="card" onclick="this.classList.toggle('flipped')"><div class="card-inner">
+          <div class="card-face">Opportunity cost 機會成本<br><small>tap to flip</small></div>
+          <div class="card-face card-back">The value of the highest-valued option forgone when a choice is made.</div>
+        </div></div>
+        <div class="quiz">
+          <p><strong>MC:</strong> Andy may join only one club. Ranking: ① Red Cross ② Drama ③ Science. He joins Red Cross. His opportunity cost?</p>
+          <button class="opt" data-c="0" onclick="answer(this)">A. Joining the Drama Club and the Science Club</button>
+          <button class="opt" data-c="1" onclick="answer(this)">B. Joining the Drama Club</button>
+          <button class="opt" data-c="0" onclick="answer(this)">C. Joining the Science Club</button>
+          <button class="opt" data-c="0" onclick="answer(this)">D. The membership fee of the Red Cross</button>
+          <div class="explain">💡 B — the single highest-valued option forgone. A is the "sum of all alternatives" trap; D is the "cost = money" trap.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="voice">🎙️ <b>過場</b> — 定義只係入場券。DSE 真正想考:個成本會唔會<b>變</b>?學識 EE+HVOF,九成題目送分。</div>
+
+  <!-- ============ 4. EE+HVOF ============ -->
+  <section class="concept">
+    <h2>4 · Will the Cost Change? — EE + HVOF</h2>
+    <p class="pos">Syllabus: explain whether and how cost changes — asked in <b>every single year</b> 2012–2024.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 FRAMEWORK</span><span>The rule + the algorithm</span><span class="chev">▶</span></button>
+      <div class="body">
+        <p>Opportunity cost changes <b>only when</b>: ① the <b>highest-valued option forgone (HVOF)</b> itself changes (order rearranges), <b>or</b> ② the <b>value of the HVOF</b> changes. A change in the value of the <b>chosen option never</b> changes the cost.</p>
+        <figure>
+        <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="14">
+          <rect x="230" y="10" width="240" height="44" rx="10" fill="#eef3ff" stroke="#2563eb"/>
+          <text x="350" y="30" text-anchor="middle" fill="#111317" font-weight="600">1. EE — Effect of the Event</text>
+          <text x="350" y="47" text-anchor="middle" fill="#6b7280" font-size="12">which option's value moved?</text>
+          <line x1="350" y1="54" x2="350" y2="82" stroke="#6b7280" marker-end="url(#a)"/>
+          <rect x="230" y="84" width="240" height="44" rx="10" fill="#eef3ff" stroke="#2563eb"/>
+          <text x="350" y="104" text-anchor="middle" font-weight="600">2. Does the order rearrange?</text>
+          <line x1="230" y1="106" x2="120" y2="150" stroke="#6b7280" marker-end="url(#a)"/>
+          <text x="150" y="128" fill="#0f766e" font-size="12">YES</text>
+          <line x1="470" y1="106" x2="580" y2="150" stroke="#6b7280" marker-end="url(#a)"/>
+          <text x="540" y="128" fill="#b91c1c" font-size="12">NO</text>
+          <rect x="20" y="152" width="220" height="52" rx="10" fill="#e7f6f2" stroke="#0f766e"/>
+          <text x="130" y="173" text-anchor="middle" font-weight="600" fill="#0f766e">New HVOF → cost CHANGES</text>
+          <text x="130" y="192" text-anchor="middle" fill="#6b7280" font-size="12">name the new forgone option</text>
+          <rect x="460" y="152" width="230" height="52" rx="10" fill="#fff" stroke="#6b7280"/>
+          <text x="575" y="173" text-anchor="middle" font-weight="600">3. Value of the HVOF moved?</text>
+          <text x="575" y="192" text-anchor="middle" fill="#6b7280" font-size="12">Yes → cost changes · No → unchanged</text>
+          <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#6b7280"/></marker></defs>
+        </svg>
+        <figcaption>The EE + HVOF answering algorithm — write the ranking out (1st/2nd/3rd) before answering.</figcaption>
+        </figure>
+        <table>
+          <tr><th>Event (coke ①, chocolate ②, fruit ③, all $10)</th><th>EE</th><th>HVOF check</th><th>Cost?</th></tr>
+          <tr><td>Chocolate price falls to $5</td><td>$10 now buys 2 bars</td><td>HVOF still chocolate, but more of it</td><td><b>↑</b> (1→2 bars)</td></tr>
+          <tr><td>50% discount on fruit</td><td>3rd option's value ↑</td><td>order unchanged; HVOF untouched</td><td><b>unchanged</b></td></tr>
+          <tr><td>Chocolate rises to $20 (only have $10)</td><td>2nd option unavailable</td><td>order rearranges → fruit is HVOF</td><td><b>changes</b> (now fruit)</td></tr>
+          <tr><td>Friends: "coke tastes bad"</td><td>chosen option's value ↓</td><td>HVOF untouched</td><td><b>unchanged</b></td></tr>
+          <tr><td>Friends: "chocolate factory is dirty"</td><td>HVOF's value ↓</td><td>same HVOF, lower value</td><td><b>↓</b></td></tr>
+        </table>
+        <div class="checklist"><b>Keyword "necessarily remain unchanged":</b> a change is <em>possible</em> → answer <b>No, not necessarily</b> (most common) · no room for change → <b>Yes</b>.</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">✍️ TEST</span><span>Real DSE drill</span><span class="chev">▶</span></button>
+      <div class="body">
+        <div class="quiz">
+          <p><strong>DSE 2014 Q1(b):</strong> Serine's ranking: ① government AO ② accounting trainee ③ keep seeking a job. The government provides unemployment benefits to all graduates seeking jobs. Will her O.C. of choosing ① necessarily remain unchanged?</p>
+          <button class="opt" data-c="0" onclick="answer(this)">A. Yes — the benefit only affects the third option, which is not the HVOF.</button>
+          <button class="opt" data-c="1" onclick="answer(this)">B. No — the third option's value rises and may overtake the second, changing the HVOF.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">C. Yes — her chosen option is unaffected, so the cost is unchanged.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">D. No — any change in the situation always changes the opportunity cost.</button>
+          <div class="explain">💡 B (official logic, 3 marks): benefit raises the 3rd option's value [EE] → it is <em>possible</em> the order rearranges → the HVOF may become "seeking a job with benefits". A is the exact trap "necessarily" is designed to catch; D is the opposite over-reaction.</div>
+        </div>
+        <div class="quiz">
+          <p><strong>DSE 2022 Q10f:</strong> Will the O.C. of being a professional athlete be affected if the average income of professional athletes increases?</p>
+          <button class="opt" data-c="1" onclick="answer(this)">A. Unchanged — it only increases the value of the chosen option.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">B. Increases — higher income means a bigger sacrifice.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">C. Decreases — being an athlete is now more worthwhile.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">D. Cannot be determined.</button>
+          <div class="explain">💡 A — chosen-option value ↑ never touches the HVOF. B confuses value of the choice with the cost of the choice.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="voice">🎙️ <b>過場</b> — EE+HVOF 六個字母,好過背十版 model answer。下一步:如果個選擇唔止使錢,仲使<b>時間</b>呢?</div>
+
+  <!-- ============ 5. FULL COST ============ -->
+  <section class="concept">
+    <h2>5 · Full Cost & Sunk Cost</h2>
+    <p class="pos">Syllabus: explicit + implicit cost; why past irrecoverable expenditure is not a cost.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag story">🎬 STORY</span><span>"No free lunch" & the Concorde fallacy</span><span class="chev">▶</span></button>
+      <div class="body"><p>Nineteenth-century American saloons offered a "<b>free lunch</b>" with any drink — bread, cheese, salted meat. The lunch was priced into the drinks and into the hour you stood there; the saying "there ain't no such thing as a free lunch" grew from exactly this (Milton Friedman put it on a 1975 book cover). The cost of anything includes <b>everything</b> you give up — dollars <em>and time</em>.</p>
+      <p>And the opposite lesson: Britain and France kept funding <b>Concorde</b> through the 1960s–70s long after commercial failure was clear — partly <em>because</em> so much was already spent. Biologists Dawkins & Carlisle mocked this in 1976 as the "<b>Concorde fallacy</b>". Money already gone is not a cost of anything you do next.</p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 DEFINITION</span><span>Exam-grade precision</span><span class="chev">▶</span></button>
+      <div class="body">
+        <p><span class="term">Full cost</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">the highest-valued option forgone of the <b>money/resources</b> spent + the highest-valued option forgone of the <b>time</b> spent.</span></span></p>
+        <ul>
+          <li><b>Explicit cost (外顯成本)</b> — direct monetary payment (the ticket). <b>Implicit cost (隱含成本)</b> — value of resources given up with no direct payment (the time).</li>
+          <li><b>Time cost</b> = the <b>highest</b> value of the time in its alternative use within that period — one job, never the sum of several.</li>
+          <li>Money is not itself a cost — only a <b>unit used to calculate</b> cost.</li>
+          <li><b>Sunk cost rule:</b> irrecoverable past expenditure is <b>not a cost</b>; count only options <b>available at the moment of decision</b>.</li>
+        </ul>
+        <p><b>Worked case:</b> ① movie ($150, 2 hrs) ② KFC $40/hr ③ 7-Eleven $30/hr → time cost = 2 × $40 = <b>$80</b> (KFC only). Full cost = HVOF of the $150 + $80 forgone KFC earnings.</p>
+        <p><b>DSE 2019 MC:</b> car bought $60,000 (3 yrs ago), resale $2,000, repair $5,000 → cost of continuing to use = $5,000 + $2,000 = <b>$7,000</b>. The $60,000 is sunk.</p>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag debate">⚔️ LEVEL 5</span><span>Full-cost comparisons</span><span class="chev">▶</span></button>
+      <div class="body"><ul>
+        <li><b>Same queue ≠ same cost</b> (DSE 2013 Q9c, MTR free-ticket queues): people have different alternative uses of time → different time costs → different full costs.</li>
+        <li><b>Holiday travel</b> (DSE 2018 Q1): monetary cost higher, but income forgone (time cost) may be far lower — if the time-cost saving outweighs the extra monetary cost, holiday travel has the <em>lower full cost</em>.</li>
+        <li>Same family: free MOOC vs paid campus course (2015 Q1b) · weekend karaoke (SP Q4b) · queuing 10 hours vs paying touts (2023 Q11c — the housewife's time cost was low, so queuing was the cheaper <em>full</em> cost).</li>
+      </ul></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">✍️ TEST</span><span>Self-test</span><span class="chev">▶</span></button>
+      <div class="body">
+        <div class="quiz">
+          <p><strong>DSE 2021 Q4:</strong> Schools reopen after COVID online teaching. Which is the LEAST important factor for teachers choosing between online and face-to-face lessons?</p>
+          <button class="opt" data-c="0" onclick="answer(this)">A. Lower COVID risk when teaching online.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">B. Not knowing what students do behind switched-off cameras.</button>
+          <button class="opt" data-c="1" onclick="answer(this)">C. Time already spent learning the video software.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">D. Teachers' eyesight worsened by intensive screen use.</button>
+          <div class="explain">💡 C — that time is a <b>sunk cost</b>: irrecoverable, identical whichever option is chosen now. A, B, D are live present/future costs and benefits.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="voice">🎙️ <b>過場</b> — 見到 "necessarily" 就寫 Full cost = monetary + time cost,先拆件,後表態。下一個:利息——「時間嘅價錢」。</div>
+
+  <!-- ============ 6. INTEREST ============ -->
+  <section class="concept">
+    <h2>6 · Interest — the Cost of Earlier Availability</h2>
+    <p class="pos">Syllabus: interest as the cost of earlier availability of resources; MC regular.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag story">🎬 STORY</span><span>Two thousand years of "sin"</span><span class="chev">▶</span></button>
+      <div class="body"><p><strong>Aristotle</strong> called interest unnatural — "money does not breed money." The medieval Church banned usury; Dante put usurers in the seventh circle of Hell. England legalized interest (capped at 10%) only in 1545 under Henry VIII.</p>
+      <p>In the 1880s, Austrian economist <strong>Böhm-Bawerk</strong> (<em>Capital and Interest</em>) reframed it: interest is the <b>price of time</b>. Present goods are worth more than identical future goods — we are impatient, the present is certain, resources now can produce now. Whoever gives up present availability deserves compensation; whoever gains earlier availability pays. That's interest — and it exists <b>even with no money at all</b> (lend a sack of rice, want a bit more rice back).</p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 DEFINITION</span><span>Exam-grade precision</span><span class="chev">▶</span></button>
+      <div class="body">
+        <p><span class="term">Interest (利息)</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">the cost of <b>earlier availability of resources</b>. Interest = interest rate × principal.</span></span></p>
+        <ul>
+          <li>To the <b>borrower</b>: the cost paid for obtaining resources earlier (earlier consumption).</li>
+          <li>To the <b>lender</b>: the compensation received for <b>deferring consumption</b>.</li>
+          <li>Interest rate ↑ → cost of present consumption ↑ → present consumption ↓, saving ↑ (and vice versa).</li>
+          <li>Interest exists <b>without money</b> (barter) and <b>without inflation</b>; without <b>scarcity</b>, interest does not exist.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">✍️ TEST</span><span>Self-test</span><span class="chev">▶</span></button>
+      <div class="body">
+        <div class="quiz">
+          <p><strong>DSE 2012 Q3:</strong> Which statement about interest is correct?</p>
+          <button class="opt" data-c="0" onclick="answer(this)">A. People will reduce current consumption when the interest rate drops.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">B. The interest rate will be zero if there is no inflation.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">C. Interest does not exist in a planned economy.</button>
+          <button class="opt" data-c="1" onclick="answer(this)">D. Interest still exists without money.</button>
+          <div class="explain">💡 D — interest is the price of <em>time</em>, needing only scarcity and time preference; it survives barter, zero inflation, and any economic system. A reverses the direction; B confuses level with existence.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="voice">🎙️ <b>過場</b> — 「利息係時間嘅價錢」,三條 MC 陷阱即刻睇穿。跟住又一個 MC 常客:free good vs economic good。</div>
+
+  <!-- ============ 7. GOODS ============ -->
+  <section class="concept">
+    <h2>7 · Free Goods vs Economic Goods</h2>
+    <p class="pos">Syllabus: definition and distinction — a 2-mark P2 template you can bank.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag story">🎬 STORY</span><span>The MTR free newspaper</span><span class="chev">▶</span></button>
+      <div class="body"><p>The free newspapers handed out at MTR exits cost zero dollars — yet the paper, ink, printing and distribution could all have produced something else, and some mornings the stack runs out before you reach it. The saloon "free lunch" all over again. The economist ignores the price tag and asks one question only: <b>is the quantity available enough to satisfy all wants?</b></p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 DEFINITION</span><span>Exam-grade precision</span><span class="chev">▶</span></button>
+      <div class="body">
+        <p><span class="term">Free good (免費物品)</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">quantity available is <b>sufficient to satisfy all wants</b>; no sacrifice needed for more; <b>no opportunity cost</b>. More of it is <b>not preferred</b> — no one will pay or give up resources for more.</span></span></p>
+        <p><span class="term">Economic good (經濟物品)</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">quantity available is <b>insufficient</b> to satisfy all wants; obtaining more involves sacrifice → opportunity cost exists; people <b>compete</b> for it.</span></span></p>
+        <ul>
+          <li>The classification is <b>situational</b>: air is free on land, economic under the sea; river water free to the villager, scarce in the desert.</li>
+          <li><b>Free of charge ≠ free good.</b> Full-mark template (2012 Q1 / 2020 Q1 / 2015 Q1a / 2023 Q1c): <b>Producer view</b> — the resources used have alternative uses, so something is forgone → O.C. exists. <b>Consumer view</b> — supply insufficient relative to demand; one person's possession deprives another.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">✍️ TEST</span><span>Self-test</span><span class="chev">▶</span></button>
+      <div class="body">
+        <div class="quiz">
+          <p><strong>DSE 2016 Q1:</strong> Which statement about economic goods is correct?</p>
+          <button class="opt" data-c="0" onclick="answer(this)">A. Economic goods may not be scarce.</button>
+          <button class="opt" data-c="1" onclick="answer(this)">B. People compete for economic goods.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">C. People prefer economic goods to free goods.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">D. People compete for both economic and free goods.</button>
+          <div class="explain">💡 B — insufficiency ⇒ competition. No one competes for what is sufficient for everyone (D), and the classification says nothing about preference (C).</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="voice">🎙️ <b>過場</b> — 「免費 ≠ free good,睇夠唔夠」。最後兩個細位:circular flow / income vs wealth,同埋 positive vs normative。</div>
+
+  <!-- ============ 8. CIRCULAR FLOW ============ -->
+  <section class="concept">
+    <h2>8 · Economic Units, the Circular Flow, Income & Wealth</h2>
+    <p class="pos">Syllabus: basic economic units and circular flow; flow vs stock.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag story">🎬 STORY</span><span>The king's doctor, 1758</span><span class="chev">▶</span></button>
+      <div class="body"><p><strong>François Quesnay</strong> was physician at the court of Louis XV at Versailles. Steeped in the discovery of blood circulation, he asked: does wealth <em>circulate</em> through an economy like blood through a body? His <em>Tableau économique</em> (1758) — a zigzag of payments between farmers, landlords and artisans — was the first circular-flow model, the direct ancestor of the diagram below.</p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 DEFINITION + DIAGRAM</span><span>Exam-grade precision</span><span class="chev">▶</span></button>
+      <div class="body">
+        <ul>
+          <li><b>Firm (廠商)</b> — basic unit of <b>production</b>; decides what to produce and how to use resources.</li>
+          <li><b>Household (住戶)</b> — basic unit of <b>consumption</b>; supplies resources (e.g. labour) to firms for income to finance consumption.</li>
+        </ul>
+        <figure>
+        <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="14">
+          <defs><marker id="m1" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#0f766e"/></marker>
+          <marker id="m2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#2563eb"/></marker></defs>
+          <rect x="40" y="130" width="160" height="60" rx="12" fill="#eef3ff" stroke="#2563eb"/>
+          <text x="120" y="156" text-anchor="middle" font-weight="700">Households</text>
+          <text x="120" y="175" text-anchor="middle" fill="#6b7280" font-size="12">unit of consumption</text>
+          <rect x="500" y="130" width="160" height="60" rx="12" fill="#eef3ff" stroke="#2563eb"/>
+          <text x="580" y="156" text-anchor="middle" font-weight="700">Firms</text>
+          <text x="580" y="175" text-anchor="middle" fill="#6b7280" font-size="12">unit of production</text>
+          <path d="M200,120 C300,40 400,40 500,120" fill="none" stroke="#0f766e" stroke-width="2.5" marker-end="url(#m1)"/>
+          <text x="350" y="55" text-anchor="middle" fill="#0f766e" font-weight="600">Factor services (labour…)</text>
+          <text x="350" y="72" text-anchor="middle" fill="#0f766e" font-size="12">real flow →</text>
+          <path d="M500,200 C400,280 300,280 200,200" fill="none" stroke="#0f766e" stroke-width="2.5" marker-end="url(#m1)"/>
+          <text x="350" y="278" text-anchor="middle" fill="#0f766e" font-weight="600">Goods and services</text>
+          <text x="350" y="295" text-anchor="middle" fill="#0f766e" font-size="12">← real flow</text>
+          <path d="M497,142 C420,100 280,100 203,142" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#m2)"/>
+          <text x="350" y="112" text-anchor="middle" fill="#2563eb" font-size="12">Factor income (wages, rent, interest, profit) — money flow</text>
+          <path d="M203,178 C280,220 420,220 497,178" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#m2)"/>
+          <text x="350" y="228" text-anchor="middle" fill="#2563eb" font-size="12">Consumption expenditure — money flow</text>
+        </svg>
+        <figcaption>The circular flow: real flows (solid) run opposite to money flows (dashed).</figcaption>
+        </figure>
+        <ul>
+          <li><b>Income (收入)</b> — total money and non-money return received <b>over a period of time</b> — a <b>flow</b> (salary $5,000 <em>per month</em>).</li>
+          <li><b>Wealth (財富)</b> — total <b>stock of assets owned at a point of time</b> (on 31 Dec: savings $50,000 + car $80,000 = wealth $130,000).</li>
+        </ul>
+        <div class="checklist">Giveaway words: "per month / during the year" → flow → income · "on that day / at that moment" → stock → wealth.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 9. POSITIVE/NORMATIVE ============ -->
+  <section class="concept">
+    <h2>9 · Positive vs Normative Statements</h2>
+    <p class="pos">Syllabus: distinction between positive and normative statements — an MC every 2–3 years.</p>
+
+    <div class="sec open">
+      <button class="head" onclick="toggle(this)"><span class="tag story">🎬 STORY</span><span>Hume's small, enormous observation (1739)</span><span class="chev">▶</span></button>
+      <div class="body"><p>The Scottish philosopher <strong>David Hume</strong> noticed that writers slide mid-argument from what <b>is</b> to what <b>ought to be</b> — as if facts alone could tell you what to do. They can't; the leap needs a value judgement. A century and a half later, <strong>John Neville Keynes</strong> (father of Maynard) built the point into economics (<em>The Scope and Method of Political Economy</em>, 1891): keep positive economics (testable) apart from normative economics (value-laden).</p></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">📖 DEFINITION</span><span>Exam-grade precision</span><span class="chev">▶</span></button>
+      <div class="body">
+        <p><span class="term">Positive statement (實證性陳述)</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">a statement that <b>can be tested against facts</b> (refutable by fact). It may be wrong — wrongness is testable too.</span></span></p>
+        <p><span class="term">Normative statement (規範性陳述)</span> — <span class="reveal" onclick="this.classList.add('shown')"><span class="prompt">tap to reveal</span><span class="hidden-def">a statement involving <b>value judgements</b> that <b>cannot be tested against facts</b>; about what <b>should be / ought to be</b>.</span></span></p>
+        <div class="checklist">The test: "can facts reject it?" Yes → positive. Contains <b>should / ought / better / too high / most appropriate</b> → normative.</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag warn">⚠️ TRAP</span><span>Misconceptions from real MC</span><span class="chev">▶</span></button>
+      <div class="body"><ul>
+        <li>A <b>false</b> statement can still be positive — "unemployment is 40%" is testably wrong.</li>
+        <li>"Most people agree" is irrelevant (DSE 2021 Q1 distractor).</li>
+        <li>Predictions are positive: "the project <em>can improve</em> exam results" is refutable (DSE 2019 Q2a).</li>
+      </ul></div>
+    </div>
+
+    <div class="sec">
+      <button class="head" onclick="toggle(this)"><span class="tag exam">✍️ TEST</span><span>Self-test</span><span class="chev">▶</span></button>
+      <div class="body">
+        <div class="quiz">
+          <p><strong>DSE 2021 Q1:</strong> Peter: "As a developed economy, Hong Kong's Gini coefficient is too high." Mary: "Hong Kong's Gini coefficient is the largest in Asia." Which is correct?</p>
+          <button class="opt" data-c="0" onclick="answer(this)">A. Peter's is positive because most people agree with it.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">B. Peter's is normative because it is inconsistent with real-world data.</button>
+          <button class="opt" data-c="1" onclick="answer(this)">C. Mary's is positive because it can be rejected by fact.</button>
+          <button class="opt" data-c="0" onclick="answer(this)">D. Mary's is normative because a value judgment is involved.</button>
+          <div class="explain">💡 C. "Too high" is a value standard (normative); "largest in Asia" is checkable against data (positive). Agreement (A) and factual accuracy (B) are both irrelevant to the classification.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="voice">🎙️ <b>老師收爐</b> — 成章一條鏈:缺乏 → 選擇 → 機會成本 (HVOF) → EE+HVOF 判斷變唔變 → full cost = 錢 + 時間,sunk cost 唔計 → 競爭 → 歧視 → 利息係時間嘅價錢 → free/economic 睇夠唔夠 → is 同 ought 分開。背條鏈,唔好背 model answer。</div>
+
+  <p class="flag">⚠️ Self-revision aid — cross-check answers against the latest HKEAA syllabus and official marking schemes.</p>
+  <footer>Generated from your Chapter 1 teaching notes + Aristo summary · Ch.1 Basic Economic Concepts</footer>
+</div>
+<script>
+  function toggle(b){b.parentElement.classList.toggle('open');}
+  function setAll(o){document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('open',o));}
+  function answer(btn){
+    var q=btn.closest('.quiz');
+    if(q.classList.contains('answered'))return;
+    q.classList.add('answered');
+    var correct=btn.getAttribute('data-c')==='1';
+    btn.classList.add(correct?'correct':'wrong');
+    if(!correct){q.querySelectorAll('.opt').forEach(function(o){if(o.getAttribute('data-c')==='1')o.classList.add('correct');});}
+  }
+</script>
+</body>
+</html>
