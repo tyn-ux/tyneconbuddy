@@ -3877,13 +3877,19 @@ function xpBarC(x,y,w,p,col){R(ctx,x-1,y-1,w+2,4,'#33474f');R(ctx,x,y,w,2,'#dfe5
 function statRow(x,y,st,compact){ctx.font='6px "Press Start 2P",monospace';const items=[['ATK',st.atk,'#e0503c'],['DEF',st.def,'#2f7fd0'],['HP',st.hp,'#2f8a5a']];let cx=x;items.forEach(([k,v,c])=>{if(compact&&k==='HP')return;ctx.fillStyle=c;ctx.fillText(k,cx,y);cx+=ctx.measureText(k).width+2;ctx.fillStyle='#1f2b33';ctx.fillText(String(v),cx,y);cx+=ctx.measureText(String(v)).width+6;});}
 const SKYS={pvpz:['#ffd8a0','#f0c8b8','#c8a8c0'],taio:['#ffe9c0','#cfe8ee','#9fd0e0'],ssp:['#f3e2c6','#dfe3e8','#b8c2c8'],kt:['#f6d9a8','#d9dde0','#a8b6be'],mk:['#ffd9b8','#f0dcd8','#c8b8c8'],ymt:['#ffe4b0','#f4dcc8','#d0c0a8'],skm:['#f8e0c8','#e0dce8','#b8b8c8'],hh:['#ffe0c0','#d8e8f0','#a8c8e0'],cen:['#f0d8f0','#d8e0f0','#b0c0e0']};
 const BOSSPLAT={pvpz:['#c8a060','#f0d898'],taio:['#c9b98f','#e0d2aa'],ssp:['#b8a88c','#d8ccb0'],kt:['#9aa4aa','#c4ccd0'],mk:['#c89aa0','#ecc8c8'],ymt:['#a8804a','#d8b888'],skm:['#a8a0b8','#d8d0e0'],hh:['#8aa8bc','#c8dce8'],cen:['#a898c0','#dcd4ec'],pp1:['#b8c4c8','#dde4e6'],pp2:['#b8c4c8','#dde4e6'],pp3:['#b8c4c8','#dde4e6']};
-function battleBG(X){const ell=(a,b,rx,ry,col)=>{ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(a,b,rx,ry,0,0,7);ctx.fill();};const hz=X.offY+92*X.s;
- ctx.globalAlpha=.4;for(let i=0;i<6;i++){const cx=((G.tick*.18+i*97)%(VW+140))-70;ell(cx,16+((i%3)*12),28,8,'#ffffff');ell(cx+18,12+((i%3)*12),16,7,'#ffffff');}ctx.globalAlpha=1;
- if(PC()==='ssp'||PC()==='kt'||PC()==='mk'||PC()==='ymt'||PC()==='skm'||PC()==='hh'||PC()==='cen'){const n=Math.ceil(VW/34)+1;for(let i=0;i<n;i++){const w=18+((i*13)%16),h=(PC()==='kt'?40:30)+((i*23)%(PC()==='mk'?60:40));const x0=i*34-6;R(ctx,x0,hz-h,w,h,'rgba(110,122,134,.45)');for(let wy=4;wy<h-4;wy+=7)for(let wx=3;wx<w-3;wx+=5)R(ctx,x0+wx,hz-h+wy,2.5,3,((i+wy+wx)%5)?'rgba(255,245,210,.55)':'rgba(255,210,120,.8)');
-   if(PC()==='mk'&&i%2===0){const fl=((G.tick>>3)+i)%11!==0;const c=['#ff4a7a','#48e0ff','#ffd24a','#8aff6a'][i%4];ctx.globalAlpha=fl?.85:.25;R(ctx,x0+w-3,hz-h+6,5,Math.min(26,h-10),c);ctx.globalAlpha=1;}}}
- else{ctx.fillStyle='rgba(110,150,140,.4)';ctx.beginPath();ctx.moveTo(0,hz);let x=0,i=0;while(x<VW+40){ctx.lineTo(x,hz-18-((i*37)%28));x+=44;i++;ctx.lineTo(x,hz-4-((i*19)%10));x+=40;}ctx.lineTo(VW+40,hz+6);ctx.lineTo(0,hz+6);ctx.fill();}
- const gg=ctx.createLinearGradient(0,hz,0,VH);gg.addColorStop(0,'rgba(255,255,255,.18)');gg.addColorStop(1,'rgba(0,0,0,.10)');ctx.fillStyle=gg;ctx.fillRect(0,hz,VW,VH-hz);
- if(G.B&&G.B.boss){const t=G.tick/40;ctx.save();ctx.globalAlpha=.16;ctx.translate(VW*.7,hz-20);for(let k=0;k<12;k++){ctx.rotate(Math.PI/6);ctx.fillStyle=k%2?'#ffd24a':'#ff7a50';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(t)*4+VW,-30);ctx.lineTo(VW,30);ctx.fill();}ctx.restore();}}
+function battleBG(X){const ell=(a,b,rx,ry,col)=>{ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(a,b,rx,ry,0,0,7);ctx.fill();};const hz=X.offY+92*X.s;const W=X.side?X.W:VW;const s=Math.max(.6,X.s);
+ ctx.globalAlpha=.45;for(let i=0;i<5;i++){const cx=((G.tick*.15+i*113)%(W+140))-70;ell(cx,14+((i%3)*10),26,7,'#ffffff');ell(cx+16,10+((i%3)*10),15,6,'#ffffff');}ctx.globalAlpha=1;
+ const bh=70*s,by=hz-bh,bx=W*.06,bw=W*.88;
+ for(const tx of [W*.02,W*.95])for(let k=0;k<2;k++){R(ctx,tx-2*s,hz-24*s,4*s,24*s,'#7a5030');ell(tx,hz-30*s-k*8*s,14*s-k*3*s,11*s-k*2*s,k?'#5cc14f':'#2f9a4a');}
+ R(ctx,bx,by,bw,bh,'#f6d36a');R(ctx,bx,by,bw,6*s,'#e0503c');R(ctx,bx,by+6*s,bw,2*s,'#b8382a');R(ctx,bx,hz-6*s,bw,6*s,'#d8a848');
+ const nf=3,fh=(bh-14*s)/nf;for(let f=0;f<nf;f++){for(let x=bx+8*s;x<bx+bw-14*s;x+=18*s){if(Math.abs(x+6*s-(bx+bw/2))<20*s&&f===nf-1)continue;R(ctx,x,by+10*s+f*fh,12*s,fh-6*s,'#3d6280');R(ctx,x+1*s,by+11*s+f*fh,5*s,fh-8*s,'#9fd0f0');R(ctx,x,by+10*s+f*fh+fh-7*s,12*s,1.5*s,'#ffffff');}}
+ R(ctx,bx+bw/2-12*s,hz-22*s,24*s,22*s,'#6a4a2a');R(ctx,bx+bw/2-1*s,hz-22*s,2*s,22*s,'#3a2a1a');
+ const ckx=bx+bw*.78;ell(ckx,by+4*s,9*s,9*s,'#ffffff');ctx.strokeStyle='#33474f';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(ckx,by+4*s,9*s,0,7);ctx.stroke();R(ctx,ckx-.5,by-1*s,1.2,5*s,'#33474f');R(ctx,ckx,by+3.5*s,4*s,1.2,'#33474f');
+ const sw=Math.min(bw*.42,100*s),scx=bx+sw/2+6*s,sgy=hz-21*s;R(ctx,scx-sw/2,sgy,sw,11*s,'#2f7f86');R(ctx,scx-sw/2,sgy,sw,1.5*s,'#bfe8ea');ctx.fillStyle='#ffffff';ctx.font=`900 ${Math.round(7*s)}px "Noto Sans HK",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('EconMon 中學 · 經濟室',scx,sgy+6*s);ctx.textAlign='left';ctx.textBaseline='top';
+ ctx.strokeStyle='#7a5030';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,by-22*s);ctx.quadraticCurveTo(W/2,by-6*s,W,by-22*s);ctx.stroke();const cols=['#e0503c','#f6c94a','#3a86d9','#3f9d4a','#c05fc4','#ff8a3a'];for(let i=0;i<18;i++){const t=(i+.5)/18,x=t*W,y=(1-t)*(1-t)*(by-22*s)+2*(1-t)*t*(by-6*s)+t*t*(by-22*s);const sw2=Math.sin(G.tick/18+i)*1.2;ctx.fillStyle=cols[i%6];ctx.beginPath();ctx.moveTo(x-4*s,y);ctx.lineTo(x+4*s,y);ctx.lineTo(x+sw2,y+9*s);ctx.fill();}
+ const gg=ctx.createLinearGradient(0,hz,0,VH);gg.addColorStop(0,'#f08a4a');gg.addColorStop(1,'#d86a34');ctx.fillStyle=gg;ctx.fillRect(0,hz,W,VH-hz);R(ctx,0,hz,W,3*s,'#8cc860');
+ ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=2;ctx.strokeRect(W*.08,hz+10*s,W*.84,VH-hz-6*s);ctx.beginPath();ctx.moveTo(W/2,hz+10*s);ctx.lineTo(W/2,VH);ctx.stroke();ctx.beginPath();ctx.ellipse(W/2,hz+10*s+(VH-hz)*.45,22*s,12*s,0,0,7);ctx.stroke();
+ if(G.B&&G.B.boss){const t=G.tick/40;ctx.save();ctx.globalAlpha=.14;ctx.translate(W*.7,hz-20);for(let k=0;k<12;k++){ctx.rotate(Math.PI/6);ctx.fillStyle=k%2?'#ffd24a':'#ff7a50';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(t)*4+W,-30);ctx.lineTo(W,30);ctx.fill();}ctx.restore();}}
 const SIDEF=.475;function battleSide(){return VW/VH>1.15;}
 function battleXf(){if(battleSide()){const W=VW*(1-SIDEF),s=Math.min(W/200,VH/222,1.6);return {side:1,s,offX:(W-200*s)/2,offY:Math.max(0,(VH-222*s)/2),sp:0,W};}
  if(VH>VW){const stH=VH*(1-BOXF),s=Math.min(VW/200,stH/222,1.8);return {side:0,compact:1,s,offX:(VW-200*s)/2,offY:4,sp:0,W:VW};}
@@ -3919,6 +3925,7 @@ function drawBattle(){const B=G.B;const sky=SKYS[PC()]||SKYS.taio;const g=ctx.cr
   if(S.caught[B.enemy]){R(ctx,138,22,10,10,'#2f7f86');R(ctx,141,25,4,4,'#bfe8ea');}
   {const n=bankOf(B.enemy).length,d=bankDone(B.enemy);ctx.font='5px "Press Start 2P",monospace';ctx.fillStyle='#5d6c75';const s2='Q'+d+'/'+n;ctx.fillText(s2,134-ctx.measureText(s2).width,24);}}
  
+ if(B.intent&&!B.pvp&&!(B.boss&&B.hard!==undefined&&B.steps&&!B.ins&&B.ins!==0)){R(ctx,6,B.boss?52:60,150,11,'rgba(31,43,51,.82)');ctx.fillStyle=B.intent==='atk'?'#ff8a70':B.intent==='chg'?'#ffb03a':'#9ad0ff';ctx.font='700 8px "Noto Sans HK",sans-serif';ctx.textBaseline='top';ctx.fillText('下一步：'+INTENT_TXT[B.intent]+(B.power>1?'　⚠ 蓄力中':''),10,B.boss?53:61);}
  ctx.restore();
  /* ---- player card ---- */
  ctx.save();ctx.translate(O.PC[0],O.PC[1]);
@@ -4267,11 +4274,16 @@ async function trainerFlow(tid){const t=TRAINERS[tid];
  else for(const l of t.intro)await say(l);
  const pool=MLIST.filter(m=>t.chs.includes(m.ch)&&(QB[m.id]||[]).length).map(m=>m.id);
  await startBattle({boss:true,bossName:t.name,bossImg:bossSprite(t.look),steps:t.n,done:0});
- await say(`${t.name}出題！答啱 ${t.n} 題就贏；答錯你會受 ${dmgToMe(t.atk)} HP 傷害。`);
- const asked=new Set();let got=0;
- while(got<t.n){if(await ultMenu()){await castUlt(t.name,mul=>{const k=mul>=1.5?2:1;got=Math.min(t.n,got+k);G.B.done=got;G.B.eShake=16;return `完成 ${k} 題進度`;});await flushMsgs();if(got>=t.n)break;}const q=pickQ(pool[Math.floor(Math.random()*pool.length)],asked);if(!q)break;const r=await askQ(q);
-  if(r==='right'){got++;G.B.done=got;G.B.eShake=12;{const sp0=spellOf(S.lead);castFx(sp0.n,false);applyFx(sp0.fx.nx);gainIns(q);}delete S.wrong[q.id];onRight(q.mon,q.id);}
-  else{S.wrong[q.id]=1;G.streak=0;if(guarded()){G.msgs.push('🛡 DEF 擋住咗！今次冇受傷。');fl('GUARD',60,88,'#58d070');}else{const dd=incoming(dmgToMe(t.atk));if(dd>0)hurtM(dd);}await wait(16);if(curHP()<=0&&!(await fainted()))return;}
+ await say(`${t.name}有 ${t.n} 格耐力！⚡CHARGE 答題儲 💡，再用 ✨SPELL 打走佢嘅耐力。答錯會受 ${dmgToMe(t.atk)} HP 傷害。`);
+ const asked=new Set();let got=0;G.B.ins=0;G.B.cd=0;G.B.power=1;G.B.intent=rollIntent();
+ while(got<t.n){const act=await battleMenu({foe:t.name});
+  if(act==='swap'){if(await swapFlow())await enemyTurn(t.name,t.atk);}
+  else if(act==='charge'){const q=pickQ(pool[Math.floor(Math.random()*pool.length)],asked);if(!q)break;const r=await askQ(q);
+   if(r==='right'){delete S.wrong[q.id];onRight(q.mon,q.id);const g=gainIns2(q);fl('+'+g+'💡',60,96,'#f6e03a');G.msgs.unshift(`💡 答啱！Insight +${g}（而家 ${G.B.ins}）。`);}
+   else{S.wrong[q.id]=1;G.streak=0;await enemyTurn(t.name,t.atk,true);}}
+  else if(act==='spell'){const sp=spellOf(S.lead);G.B.ins-=1;castFx(sp.n,false);await wait(18);got++;G.B.done=got;G.B.eShake=12;const fx=applyFx(sp.fx.nx);await say(`✨ ${nmS(S.lead)} 用 ${sp.n}！${t.name} 耐力 −1（${got}/${t.n}）${fx?'；'+fx:''}`);if(got<t.n)await enemyTurn(t.name,t.atk);}
+  else if(act==='ult'){await castUlt(t.name,mul=>{const k=mul>=1.5?2:1;got=Math.min(t.n,got+k);G.B.done=got;G.B.eShake=16;return `耐力 −${k}`;});if(got<t.n)await enemyTurn(t.name,t.atk);}
+  if(curHP()<=0&&!(await fainted()))return;
   save(true);await flushMsgs();}
  const first=!S.beat[tid];S.beat[tid]=Date.now();
  if(first){addCoins(t.coins);S.items[t.item]=(S.items[t.item]||0)+1;for(const l of t.win)await say(l);await say(`你贏咗！得到 💰$${t.coins} 同 ${ITEMS[t.item].ic}${ITEMS[t.item].zh}×1。`);}
@@ -4396,6 +4408,24 @@ async function castUlt(targetName,onHit){const sp=spellOf(S.lead);const r=await 
  const fxT=applyFx(sp.fx.ux);const res=onHit(r.ok?sp.fx.u:sp.fx.u/2);if(r.ok){S.stats.kw=(S.stats.kw||0)+1;}
  await say(`🌟 ${nmS(S.lead)} 施放 ${sp.u}！\n${r.ok?'Keyword 啱晒，全力命中':`Keyword 係「${r.ans}」，今次威力減半`}：${targetName} ${res}${fxT?'；'+fxT:''}。`);}
 async function ultMenu(){if(!ultReady())return false;const sp=spellOf(S.lead);const c=await choose(`💡 Insight ${G.B.ins}/5・Ultimate「${sp.u}」準備好！`,['❓ 繼續答題充能','🌟 施放 Ultimate（用 3💡，要打 keyword）'],{cancel:true});return c===1;}
+
+/* ---- v0.18b turn-based command battle ---- */
+const INTENT_TXT={atk:'⚔ 攻擊',chg:'🔥 蓄力（下次 ×1.5）',rest:'💤 喘氣（唔攻擊）'};
+function rollIntent(){const B=G.B;if(B&&B.intent==='chg')return 'atk';const r=Math.random();return r<.5?'atk':r<.75?'chg':'rest';}
+function gainIns2(q){const B=G.B;let n=1+((q&&['diag','dse','sort','order'].includes(q.type))?1:0);if(G.streak>=3&&G.streak%3===0)n++;B.ins=Math.min(5,(B.ins||0)+n);if(B.cd>0)B.cd--;return n;}
+async function battleMenu(o){const B=G.B;while(true){const sp=spellOf(S.lead),ins=B.ins||0;
+ const opts=[['charge','⚡ CHARGE 答題'],['spell','✨ SPELL 1💡'],['ult',`🌟 ULTIMATE 3💡${B.cd>0?'（冷卻 '+B.cd+'）':''}`],['swap','🔄 SWAP 換夥伴']];if(o&&o.run)opts.push(['run','🏃 RUN 走佬']);
+ const c=await choose(`💡 Insight ${ins}/5｜${o&&o.foe?o.foe:'敵人'}下一步：${INTENT_TXT[B.intent]||''}\n✨ ${sp.n}\n🌟 ${sp.u}`,opts.map(x=>x[1]),{cols:2});const k=(opts[c]||opts[0])[0];
+ if(k==='spell'&&ins<1){await say('💡 Insight 唔夠！先揀 ⚡CHARGE 答題充能。');continue;}
+ if(k==='ult'&&(ins<3||B.cd>0)){await say(B.cd>0?`🌟 Ultimate 冷卻緊，要再答啱 ${B.cd} 題。`:`🌟 Ultimate 要 3💡，你而家得 ${ins}💡。`);continue;}
+ if(k==='swap'&&!Object.keys(S.caught).some(i=>i!==S.lead&&curHP(i)>0)){await say('冇其他可以出場嘅 EconMon。');continue;}
+ return k;}}
+async function swapFlow(){const alive=Object.keys(S.caught).filter(i=>i!==S.lead&&curHP(i)>0);const i=await choose('換邊隻 EconMon 出場？',alive.map(i=>`${nmS(i)}　HP ${curHP(i)}/${maxHP(i)}`).concat(['取消']),{cancel:true});if(i<0||i>=alive.length)return false;S.lead=alive[i];G.B.mHpD=curHP();G.B.shield=0;save(true);await say(`去啦，${nmS(S.lead)}！`);return true;}
+async function enemyTurn(name,atk,forced){const B=G.B;const it=forced?'atk':B.intent;
+ if(it==='atk'){const pw=B.power||1;B.power=1;B.eShake=6;await wait(6);if(guarded()){G.msgs.push(`🛡 ${nmS(S.lead)} 嘅 DEF 擋住咗 ${name} 嘅攻擊！`);fl('GUARD',60,88,'#58d070');}else{const dd=incoming(Math.round(dmgToMe(atk)*pw));if(dd>0){hurtM(dd);G.msgs.push(`⚔ ${name} 攻擊！${nmS(S.lead)} −${dd} HP${pw>1?'（蓄力 ×1.5）':''}`);}}}
+ else if(it==='chg'){B.power=1.5;G.msgs.push(`🔥 ${name} 蓄力中……下一下攻擊 ×1.5！快啲答題閃避。`);}
+ else G.msgs.push(`💤 ${name} 喘緊氣，今回合冇攻擊。`);
+ B.intent=rollIntent();await wait(14);}
 async function startBattle(opt){G.flash=28;MUSIC.mode(opt&&opt.boss?'boss':'battle');await wait(30);G.mode='battle';G.floats=[];G.B=Object.assign({mHpD:curHP(),eHP:0,eMax:1,eHPD:0,eShake:0,mShake:0,eDrop:0,hideE:false,net:null,plat:['#8cbf74','#aad690']},opt);G.B.eHPD=G.B.eHP;}
 async function endBattle(){for(let i=0;i<10;i++){G.fade=i/10;await wait(2);}G.mode='world';G.B=null;G.floats=[];MUSIC.mode(townSong());clearQ();for(let i=10;i>=0;i--){G.fade=i/10;await wait(2);}G.fade=0;save(true);}
 function fl(t,x,y,c){G.floats.push({t,x,y,c,life:48});}
@@ -4422,13 +4452,20 @@ async function wildFlow(id){const m=MONS[id];S.seen[id]=true;const es=statOf(id,
   G.B.duel=null;await flushMsgs();}
  else await say(`野生嘅 ${nm(id)} 出現！【${tt.zh} ${tt.en}】`);
  const again=!!S.caught[id];const me=statOf(S.lead);
- const c=await choose(`${again?'溫習':'捉'} ${nm(id)}：答啱就攻擊，將佢 HP 打到 0。\n佢：ATK ${es.atk}・DEF ${es.def}・HP ${es.hp}（總 ${es.atk+es.def+es.hp}/300）\n你嘅 ${nmS(S.lead)}：ATK ${me.atk}・DEF ${me.def}・HP ${curHP()}/${me.hp}\n每次命中約 −${dmgToWild(id)} HP；答錯你會受 ${dmgToMe(m.atk)} HP 傷害。`,[again?'溫習':'挑戰','走佬']);
+ const c=await choose(`${again?'溫習':'捉'} ${nm(id)}：答啱就攻擊，將佢 HP 打到 0。\n佢：ATK ${es.atk}・DEF ${es.def}・HP ${es.hp}（總 ${es.atk+es.def+es.hp}/300）\n你嘅 ${nmS(S.lead)}：ATK ${me.atk}・DEF ${me.def}・HP ${curHP()}/${me.hp}\n玩法：⚡CHARGE 答題（答啱 +💡 兼閃開攻擊）→ ✨SPELL 用 1💡 攻擊（約 −${Math.round(dmgToWild(id)*spellOf(S.lead).fx.n)} HP）→ 🌟ULTIMATE 用 3💡＋打 keyword。\n答錯或者唔閃，敵人會攻擊（約 ${dmgToMe(m.atk)} HP）。`,[again?'溫習':'挑戰','走佬']);
  if(c!==0){await say('你成功走甩咗。');await endBattle();return;}
- const asked=new Set();
- while(G.B.eHP>0){if(await ultMenu()){await castUlt(nm(id),mul=>{const d=Math.max(1,Math.round(dmgToWild(id)*mul));hitE(d);return `−${d} HP`;});await flushMsgs();if(G.B.eHP<=0)break;}const q=pickQ(id,asked);if(!q){await say('呢隻 EconMon 未有題目。');break;}
-  const r=await askQ(q);
-  if(r==='right'){const fa=G.lastFast;const {d:d0,crit}=dmgToWild(id,fa);const sp0=spellOf(S.lead);const d=Math.max(1,Math.round(d0*sp0.fx.n));hitE(d);castFx(sp0.n,false);applyFx(sp0.fx.nx);gainIns(q);if(crit){G.flash=10;G.msgs.push(`⚡ 快答暴擊！${nmS(S.lead)} ATK ${statOf(S.lead).atk} 打出 1.5 倍傷害（−${d} HP）。`);}else if(synergy(id)>1)G.msgs.push(`🔗 同章加成：${nmS(S.lead)} 同 ${nm(id)} 都係 Ch.${MONS[id].ch}，傷害 +20%。`);delete S.wrong[q.id];onRight(id,q.id);await wait(10);}
-  else{S.wrong[q.id]=1;G.streak=0;await wait(6);G.B.eShake=6;if(guarded()){G.msgs.push(`🛡 ${nmS(S.lead)} 嘅 DEF ${statOf(S.lead).def} 擋住咗今次攻擊，冇受傷！`);fl('GUARD',60,88,'#58d070');}else{const dd=incoming(dmgToMe(m.atk));if(dd>0)hurtM(dd);}await wait(16);if(curHP()<=0&&!(await fainted()))return;}
+ const asked=new Set();G.B.ins=0;G.B.cd=0;G.B.power=1;G.B.intent=rollIntent();const foe=nm(id);
+ while(G.B.eHP>0){const act=await battleMenu({run:true,foe});
+  if(act==='run'){await say('你成功走甩咗。');await endBattle();return;}
+  if(act==='swap'){if(await swapFlow())await enemyTurn(foe,m.atk);}
+  else if(act==='charge'){const q=pickQ(id,asked);if(!q){await say('呢隻 EconMon 未有題目。');break;}
+   const r=await askQ(q);
+   if(r==='right'){G.B.fast=G.lastFast;delete S.wrong[q.id];onRight(id,q.id);const g=gainIns2(q);fl('+'+g+'💡',60,96,'#f6e03a');G.msgs.unshift(`💡 答啱！Insight +${g}（而家 ${G.B.ins}）。你閃開咗 ${foe} 嘅行動。`);}
+   else{S.wrong[q.id]=1;G.streak=0;await enemyTurn(foe,m.atk,true);}}
+  else if(act==='spell'){const sp=spellOf(S.lead);G.B.ins-=1;const {d:d0,crit}=dmgToWild(id,!!G.B.fast);G.B.fast=false;const d=Math.max(1,Math.round(d0*sp.fx.n));castFx(sp.n,false);await wait(18);hitE(d);const fx=applyFx(sp.fx.nx);
+   await say(`✨ ${nmS(S.lead)} 用 ${sp.n}！\n${foe} −${d} HP${crit?'（⚡快答暴擊 ×1.5）':''}${synergy(id)>1?'（🔗同章 +20%）':''}${fx?'；'+fx:''}`);if(G.B.eHP>0)await enemyTurn(foe,m.atk);}
+  else if(act==='ult'){await castUlt(foe,mul=>{const d=Math.max(1,Math.round(dmgToWild(id)*mul));hitE(d);return `−${d} HP`;});if(G.B.eHP>0)await enemyTurn(foe,m.atk);}
+  if(curHP()<=0&&!(await fainted()))return;
   save(true);await flushMsgs();}
  if(G.B.eHP<=0){if(!again){await say(`${nm(id)} 冇晒 HP！拋 Idea Net！`);G.B.net={t:0};for(let k=0;k<22;k++){G.B.net.t++;await wait(1);}G.B.hideE=true;for(let k=0;k<50;k++){G.B.net.t++;await wait(1);}S.caught[id]=true;S.hpm[id]=maxHP(id);S.rev[id]={n:0,last:Date.now()};gainXP(S.lead,2);const cc={basic:10,rare:15,epic:25,legendary:40}[m.tier];addCoins(cc);save(true);toast(`💰+$${cc}`);
    await say(`捉到 ${nm(id)}！【${tt.zh} ${tt.en}】`);await say(`原型：${m.proto}　概念：${m.concept}\nATK ${es.atk}・DEF ${es.def}・HP ${es.hp}　總能力 ${es.atk+es.def+es.hp}/300\n已經登記入 Econ-dex（${Object.keys(S.caught).length}/${MLIST.length}）。撳 START 可以揀佢做夥伴。`);
