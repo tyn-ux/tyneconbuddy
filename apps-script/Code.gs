@@ -1,4 +1,4 @@
-var BUILD = '2026-09-21b';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-09a';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -984,7 +984,11 @@ function tidy_(txt) {
 
 function askModel_(q, chose) {
   var key = PropertiesService.getScriptProperties().getProperty('GEMINI_KEY');
-  if (!key) return '';
+  if (!key) {
+    try { PropertiesService.getScriptProperties().setProperty('AI_LAST_ERROR',
+      new Date().toISOString() + '  no GEMINI_KEY script property'); } catch (e) {}
+    return '';
+  }
   var L = ['A','B','C','D','E'];
   var user = 'Question: ' + (q.q || '(the question is a diagram)') + '\n'
     + (q.opts && q.opts.length ? 'Options: ' + q.opts.map(function (o, i) {
@@ -993,44 +997,69 @@ function askModel_(q, chose) {
     + 'Student picked: ' + L[Number(chose)] + '\n'
     + 'Standard explanation the student already read: ' + (q.why || '(none)');
 
-   var res, models = [aiModel_(), PropertiesService.getScriptProperties().getProperty('AI_FALLBACK')].filter(String);
-  outer:
+  var props = PropertiesService.getScriptProperties();
+  // filter(Boolean), not filter(String): String(null) is "null", which is
+  // truthy, so the old code called a model literally named "null" whenever
+  // AI_FALLBACK was unset — and that 404 overwrote the real error.
+  var models = [aiModel_(), props.getProperty('AI_FALLBACK')].filter(Boolean);
+  var firstErr = '';
   for (var m = 0; m < models.length; m++) {
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + models[m]
-            + ':generateContent?key=' + encodeURIComponent(key);
-    for (var attempt = 0; attempt < 3; attempt++) {
-      try {
-        res = UrlFetchApp.fetch(url, {
-          method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-          payload: JSON.stringify({
-            system_instruction: { parts: [{ text: AI_SYSTEM }] },
-            contents: [{ role: 'user', parts: [{ text: user }] }],
-            generationConfig: aiGenConfig_()
-          })
-        });
-      } catch (e) { res = null; }
-      var code = res ? res.getResponseCode() : 0;
-      if (code === 200) break outer;
-      if (code !== 503 && code !== 429 && code !== 0) break;   // other errors: don't retry this model
-      Utilities.sleep(1000 * Math.pow(2, attempt));             // 1s, 2s, 4s
-    }
+    var r = callModel_(models[m], key, user);
+    if (r.text) return r.text;
+    if (!firstErr) firstErr = models[m] + ': ' + r.err;
   }
-  if (!res) return '';
-  if (res.getResponseCode() !== 200) {
-    // Keep the last failure where you can read it: Apps Script editor ->
-    // Project Settings -> Script Properties -> AI_LAST_ERROR.
+  // Keep the FIRST model's failure, which is the one that matters. Read it in
+  // Project Settings -> Script Properties -> AI_LAST_ERROR, or open ?ping=1.
+  try { props.setProperty('AI_LAST_ERROR', new Date().toISOString() + '  ' + firstErr.slice(0, 450)); } catch (e) {}
+  return '';
+}
+
+/* One model, with retries on 429/503. Returns {text} or {err}. */
+function callModel_(model, key, user) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model
+          + ':generateContent?key=' + encodeURIComponent(key);
+  var cfg = aiGenConfig_(), res = null, code = 0, droppedThinking = false;
+  for (var attempt = 0; attempt < 3; attempt++) {
     try {
-      PropertiesService.getScriptProperties().setProperty('AI_LAST_ERROR',
-        res.getResponseCode() + ' ' + res.getContentText().slice(0, 400));
-    } catch (e) {}
-    return '';
+      res = UrlFetchApp.fetch(url, {
+        method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+        payload: JSON.stringify({
+          system_instruction: { parts: [{ text: AI_SYSTEM }] },
+          contents: [{ role: 'user', parts: [{ text: user }] }],
+          generationConfig: cfg
+        })
+      });
+      code = res.getResponseCode();
+    } catch (e) {
+      res = null; code = 0;
+      // Not a network blip: the script was never authorised to call out.
+      // Running diagnose() once in the editor fixes this.
+      if (String(e).indexOf('permission') >= 0) return { err: 'UrlFetchApp not authorised — run diagnose() in the editor. ' + e };
+    }
+    if (code === 200) break;
+    var body = res ? res.getContentText() : '';
+    // A model that does not accept this thinking setting answers 400. Try once
+    // more without it rather than giving up on the model.
+    if (code === 400 && !droppedThinking && /thinking/i.test(body)) {
+      delete cfg.thinkingConfig; droppedThinking = true; attempt--; continue;
+    }
+    if (code !== 503 && code !== 429 && code !== 0) break;      // other errors: don't retry
+    if (attempt < 2) Utilities.sleep(1000 * Math.pow(2, attempt));   // 1s, 2s
+  }
+  if (code !== 200) {
+    return { err: (code || 'no response') + ' ' + (res ? res.getContentText().slice(0, 350) : '') };
   }
   try {
     var j = JSON.parse(res.getContentText());
-    var parts = (j.candidates[0].content.parts || []);
-    var txt = parts.map(function (p) { return p.text || ''; }).join(' ');
-    return tidy_(txt);
-  } catch (e) { return ''; }
+    var c = (j.candidates || [])[0];
+    if (!c) return { err: '200 but no candidates. promptFeedback: ' + JSON.stringify(j.promptFeedback || {}).slice(0, 200) };
+    var parts = (c.content && c.content.parts) || [];
+    var txt = parts.filter(function (p) { return !p.thought; })
+                   .map(function (p) { return p.text || ''; }).join(' ');
+    txt = tidy_(txt);
+    if (!txt) return { err: '200 but empty text. finishReason: ' + c.finishReason };
+    return { text: txt };
+  } catch (e) { return { err: '200 but unreadable: ' + e }; }
 }
 
 function explain_(sess, key, chose) {
@@ -1099,6 +1128,54 @@ function testAI() {
     + PropertiesService.getScriptProperties().getProperty('AI_LAST_ERROR')));
 }
 
+/*
+ * RUN THIS FIRST after pasting a new version. Running it is also what asks
+ * Google for every permission the web app needs (Sheets, outside calls,
+ * triggers); until you click Allow once, sign-in and the AI fail on the live
+ * site with no visible error. It checks each piece and logs one line each.
+ */
+function diagnose() {
+  var props = PropertiesService.getScriptProperties(), out = ['BUILD ' + BUILD];
+  try { out.push('Sheet OK: "' + ss_().getName() + '", bank rows ' + (bankSheet_().getLastRow() - 1)); }
+  catch (e) { out.push('SHEET FAIL: ' + e); }
+  try {
+    var r = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=x', { muteHttpExceptions: true });
+    out.push('Google token check reachable (HTTP ' + r.getResponseCode() + ', 400 is expected here)');
+  } catch (e) { out.push('OUTSIDE CALLS FAIL (sign-in cannot work): ' + e); }
+  try { sessionSheet_(); blockedSet_(); out.push('Sessions + Blocklist tabs OK'); }
+  catch (e) { out.push('SESSIONS FAIL: ' + e); }
+  out.push('CLIENT_ID ' + (CLIENT_ID ? CLIENT_ID.slice(0, 12) + '…' : 'EMPTY'));
+  out.push('AUTH_LAST_ERROR: ' + (props.getProperty('AUTH_LAST_ERROR') || '(none)'));
+  out.push('GEMINI_KEY ' + (props.getProperty('GEMINI_KEY') ? 'set' : 'MISSING') + ', model ' + aiModel_()
+           + (props.getProperty('AI_FALLBACK') ? ', fallback ' + props.getProperty('AI_FALLBACK') : ''));
+  if (props.getProperty('GEMINI_KEY')) {
+    var t = askModel_({
+      q: 'Which of the following is an economic good?',
+      opts: ['Air in the countryside', 'Sea water at a beach', 'Bottled water in a shop', 'Sunlight'],
+      ans: 2, why: 'An economic good is scarce, so it commands a price.'
+    }, 0);
+    out.push(t ? 'AI OK: ' + t.slice(0, 120) : 'AI FAIL: ' + props.getProperty('AI_LAST_ERROR'));
+  }
+  var msg = out.join('\n');
+  Logger.log(msg);
+  return msg;
+}
+
+/* If AI_LAST_ERROR says the model is not found, run this: it lists the Gemini
+   models your key can actually call. Put one of them in Script Property
+   AI_MODEL (no code change needed). */
+function listModels() {
+  var key = PropertiesService.getScriptProperties().getProperty('GEMINI_KEY');
+  if (!key) { Logger.log('No GEMINI_KEY script property.'); return; }
+  var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='
+                              + encodeURIComponent(key), { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) { Logger.log(res.getResponseCode() + ' ' + res.getContentText().slice(0, 400)); return; }
+  var names = (JSON.parse(res.getContentText()).models || []).filter(function (m) {
+    return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && /flash/.test(m.name);
+  }).map(function (m) { return m.name.replace('models/', ''); });
+  Logger.log('Flash models this key can use:\n' + names.join('\n'));
+}
+
 /* ------------------------------------------------------------------ POST -- */
 function doPost(e) {
   var body = {};
@@ -1162,10 +1239,38 @@ function doGet(e) {
   var p = (e && e.parameter) || {};
   var cb = p.callback;
   var out;
+  // A throw here used to reach the page as Google's HTML error page, which the
+  // page cannot parse, so it just waited and then said "never confirmed".
+  // Now the reason comes back as JSON and is kept in AUTH_LAST_ERROR.
+  try { out = route_(p); }
+  catch (err) {
+    authErr_('doGet ' + Object.keys(p).join(',') + ' threw: ' + err);
+    out = { error: 'server', detail: String(err).slice(0, 200) };
+  }
 
+  var json = JSON.stringify(out);
+  if (cb && /^[A-Za-z_$][\w$]*$/.test(cb)) {
+    return ContentService.createTextOutput(cb + '(' + json + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* Emails and API keys never leave in ?ping=1, which anyone can open. */
+function redact_(s) {
+  return String(s || '').replace(/[\w.+-]+@[\w.-]+/g, '<email>')
+    .replace(/AIza[\w-]{20,}/g, '<key>').replace(/key=[^&\s"]+/g, 'key=<key>');
+}
+
+function route_(p) {
+  var out;
   if (p.ping) {
+    var props = PropertiesService.getScriptProperties();
     out = { ok: true, build: BUILD, client: CLIENT_ID.slice(0, 12) + '…',
-             bank: (function () { try { return bankSheet_().getLastRow() - 1; } catch (e) { return -1; } })() };
+            bank: (function () { try { return bankSheet_().getLastRow() - 1; } catch (e) { return -1; } })(),
+            ai_key: !!props.getProperty('GEMINI_KEY'), ai_model: aiModel_(),
+            auth_last_error: redact_(props.getProperty('AUTH_LAST_ERROR')),
+            ai_last_error: redact_(props.getProperty('AI_LAST_ERROR')) };
   } else if (p.claim) {
     out = claimSession_(p.claim);
 
@@ -1210,13 +1315,7 @@ function doGet(e) {
     var status = String(configGet_('status', 'OPEN')).toUpperCase();
     out = { open: status !== 'CLOSED', closed_message: configGet_('closed_message', 'This drill is not open right now.') };
   }
-
-  var json = JSON.stringify(out);
-  if (cb) {
-    return ContentService.createTextOutput(cb + '(' + json + ');')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+  return out;
 }
 
 /*
