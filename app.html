@@ -97,12 +97,12 @@ h3{font-family:var(--f-sans); font-size:15px; margin:0 0 6px; font-weight:600}
 .grow{flex:1}
 .meta{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
 
-button.btn{font-family:var(--f-sans); font-size:13px; font-weight:600; cursor:pointer;
+button.btn,label.btn{font-family:var(--f-sans); font-size:13px; font-weight:600; cursor:pointer;
   padding:8px 14px; border:1px solid var(--line); border-radius:var(--r-sm);
   background:var(--surface); color:var(--ink)}
-button.btn:hover{border-color:var(--ink)}
+button.btn:hover,label.btn:hover{border-color:var(--ink)}
 button.btn.primary{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
-button.btn.sm{padding:5px 11px; font-size:12px}
+button.btn.sm,label.btn.sm{padding:5px 11px; font-size:12px}
 input[type=text],input[type=number],select{font-family:var(--f-sans); font-size:14px; padding:8px 10px;
   border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); color:var(--ink)}
 
@@ -1509,17 +1509,27 @@ $('allqSec').addEventListener('change',renderAllq);
 $('allqFind').addEventListener('input',()=>{ clearTimeout(window._af); window._af=setTimeout(renderAllq,300); });
 
 /* ---------------------------------------------------------- long questions
- * A long question is no longer "read the answer". The student writes first,
- * can ask for a point-chain hint (how many points, then the opening link of
- * each chain with the middle blanked), and only then compares with the
- * marking points, ticking each one they really made. Words they share with a
- * point are highlighted as a prompt to check, never as the mark: the same idea
- * in their own words scores, the same words without the reason do not.
- * Questions whose scheme is not split into points (q.structure empty) fall
- * back to the full scheme text and a single self-given mark.
- * Everything here stays on the student's machine (localStorage).
+ * A long question is no longer "read the answer". The student writes (or
+ * photographs) an answer first, can ask for a point-chain hint (how many
+ * points, then the opening link of each chain with the middle blanked), can
+ * ask the AI to mark it, and only then compares with the marking points,
+ * ticking each one they really made. AI feedback names the missing link but
+ * never shows the model answer, and the points stay hidden until they ask.
+ *
+ * Marking points come from q.structure; questions whose bank entry only has
+ * scheme text use lq_points.json (split from that text, marks as the scheme
+ * gives them). Both become groups: {l: label, p: [[text, marks|null]],
+ * max, pmax (cap for the whole part), alt (an OR path: best one counts),
+ * n: [scheme notes]}. A null mark is a context line, never tickable.
+ * Drafts and ticks stay on the student's machine (localStorage); photos are
+ * kept in memory only and sent once, to be marked.
  * -------------------------------------------------------------------------- */
-let LQ_ITEMS=[];
+let LQ_ITEMS=[], LQ_POINTS=null, LQ_PHOTO={};
+function lqLoadPoints(cb){
+  if(LQ_POINTS) return cb();
+  fetch('lq_points.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).catch(()=>({}))
+    .then(j=>{ LQ_POINTS=(j&&j.points)||{}; cb(); });
+}
 /* key, not id: some ids repeat across parts (a) and (b) of one paper question. */
 const lqKey=q=>'tjx2:lq:'+(EMAIL||'anon')+':'+(q.key||q.id);
 function lqGet(q){ try{ return JSON.parse(localStorage.getItem(lqKey(q)))||{}; }catch(e){ return {}; } }
@@ -1528,6 +1538,26 @@ const LQ_STOP=new Set(('that this with from will they their there them then than
   +'have been also into more less does such only over each both because while what where were your some most '
   +'very much make made thus hence therefore however other these those being under same given e.g. i.e.').split(' '));
 function lqWords(t){ return (String(t).toLowerCase().match(/[a-z][a-z'-]{3,}/g)||[]).filter(w=>!LQ_STOP.has(w)); }
+function lqGroups(q){
+  if(Array.isArray(q.structure)&&q.structure.length) return [{l:'',p:q.structure.filter(p=>p&&p[0])}];
+  return (LQ_POINTS&&LQ_POINTS[q.key||q.id])||null;
+}
+const lqPartOf=g=>/^\(/.test(g.l)?g.l.split(' ')[0]:'';
+/* Mirrors the scheme: group max, OR paths (best path counts), part caps,
+   then the question's own marks. award(id) gives the marks for one point. */
+function lqScore(q,gs,award){
+  const parts={}; let prev=0;
+  gs.forEach((g,gi)=>{
+    let s=0; g.p.forEach((p,pi)=>{ if(p[1]!=null) s+=Math.min(Number(p[1]),award(gi+'.'+pi)||0); });
+    const v=g.max?Math.min(s,g.max):s, k=lqPartOf(g);
+    if(!parts[k]) parts[k]={v:0,cap:null};
+    if(g.pmax) parts[k].cap=g.pmax;
+    if(g.alt){ if(v>prev){ parts[k].v+=v-prev; prev=v; } } else { parts[k].v+=v; prev=v; }
+  });
+  let t=0; for(const k in parts) t+=parts[k].cap?Math.min(parts[k].v,parts[k].cap):parts[k].v;
+  return Number(q.marks)>0?Math.min(t,Number(q.marks)):t;
+}
+function lqMarked(gs){ const out=[]; gs.forEach((g,gi)=>g.p.forEach((p,pi)=>{ if(p[1]!=null) out.push([gi+'.'+pi,p,g]); })); return out; }
 /* The opening link of a point, with the rest left for the student to supply.
    Scheme text carries part labels and examiner headings ("(b) Indicate in the
    diagram: - AD shifts…"); the label is kept, the headings are dropped. Never
@@ -1539,59 +1569,87 @@ function lqStarter(t){
   if(pm){ part='<b>'+esc(pm[0].trim())+'</b> '; t=t.slice(pm[0].length); }
   t=t.replace(/^(indicate (in|on) the diagram|illustrate (in|on) the diagram|verbal elaboration)\s*:\s*/i,'').replace(/^[-–•]\s*/,'').trim();
   if(/[⇒→]/.test(t)){
-    const links=t.split(/\s*[⇒→]\s*/);
+    const links=t.split(/\s*(?:[⇒→]|=>)\s*/);
     return part+esc(links[0])+links.slice(1).map(()=>' ⇒ <b>___</b>').join('');
   }
-  const w=t.split(/\s+/), m=t.match(/^(.{3,70}?)(\s[—–-]\s|:\s)/);
+  const w=t.split(/\s+/);
+  if(w.length<=3) return part+'<b>___</b>';
+  const m=t.match(/^(.{3,70}?)(\s[—–-]\s|:\s)/);
   if(m&&m[1].split(/\s+/).length<=w.length*0.6)
     return part+esc(m[1])+' — <b>___</b> <span class="muted">(why? / so what?)</span>';
   return part+esc(w.slice(0,Math.max(1,Math.min(5,Math.floor(w.length*0.4)))).join(' '))+' … <b>___</b>';
 }
-function lqPts(q){ return Array.isArray(q.structure)?q.structure.filter(p=>p&&p[0]):[]; }
-function lqTotal(q,st){
-  const pts=lqPts(q);
-  if(!pts.length) return st.self==null?null:Number(st.self);
-  return (st.c||[]).reduce((a,i)=>a+Number((pts[i]||[])[1]||0),0);
+/* Scheme rules the AI needs beyond the points themselves. */
+function lqRules(gs){
+  const r=[];
+  gs.forEach((g,gi)=>{
+    const ids=g.p.map((p,pi)=>p[1]!=null?gi+'.'+pi:null).filter(Boolean).join(', ');
+    if(!ids) return;
+    if(g.max) r.push('points '+ids+': at most '+g.max+' marks in total');
+    if(g.alt) r.push('points '+ids+' are another accepted answer to the group before: count only the better one');
+    if(g.pmax) r.push('part '+(lqPartOf(g)||'(whole question)')+': at most '+g.pmax+' marks');
+    (g.n||[]).forEach(n=>r.push((g.l?g.l.replace(/:$/,'')+': ':'')+n));
+  });
+  return r.join('; ');
 }
+const LQ_BOX='background:var(--surface-2);padding:12px 14px;margin-top:12px;border-left:3px solid ';
 function lqCard(q,i){
-  const st=lqGet(q), pts=lqPts(q), h=st.h||0;
+  const st=lqGet(q), gs=lqGroups(q), pts=gs?lqMarked(gs):[], h=st.h||0, ai=st.ai, photo=LQ_PHOTO[q.key||q.id];
+  const tickTot=gs&&pts.length?lqScore(q,gs,id=>(st.c||[]).indexOf(id)>=0?99:0):(st.self==null?null:Number(st.self));
   let html='<div class="item" data-i="'+i+'"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
     +(q.cmd?'<span class="pill">'+esc(q.cmd)+'</span>':'')
     +(q.marks?'<span class="pill">'+esc(q.marks)+' marks</span>':'')
-    +(st.open&&lqTotal(q,st)!=null?'<span class="pill partly lq-pill">self-marked '+lqTotal(q,st)+'/'+esc(q.marks||'?')+'</span>':'')+'</div>'
+    +(ai?'<span class="pill understood">AI '+ai.t+'/'+esc(q.marks||'?')+'</span>':'')
+    +(st.open&&tickTot!=null?'<span class="pill partly lq-pill">self-marked '+tickTot+'/'+esc(q.marks||'?')+'</span>':'')+'</div>'
     +'<div class="stem" style="font-size:15px">'+esc(q.q||'')+'</div>'
     +(q.fig?'<img src="'+esc(q.fig)+'" style="max-width:100%">':'')
     +'<textarea class="lq-ans" placeholder="Write your answer in your own words first. 先用自己的說法寫，再對 marking points。">'+esc(st.a||'')+'</textarea>'
+    +(photo?'<div class="row" style="margin-top:6px"><img src="data:image/jpeg;base64,'+photo+'" style="max-height:120px;border:1px solid var(--line)">'
+      +'<button class="btn sm" data-act="unphoto">Remove photo</button></div>':'')
     +'<div class="statusrow">'
     +(pts.length&&h<2?'<button class="btn sm" data-act="hint">'+(h?'Show chain starters':'Hint: how many points?')+'</button>':'')
+    +(pts.length?'<label class="btn sm" style="cursor:pointer">📷 Photo of my answer<input type="file" accept="image/*" capture="environment" class="lq-photo" hidden></label>'
+      +'<button class="btn sm" data-act="ai">AI mark my answer</button>':'')
     +(st.open?'<button class="btn sm" data-act="close">Hide marking points</button>'
              :'<button class="btn sm primary" data-act="open">Compare with marking points</button>')
-    +'</div>';
+    +'</div><p class="lq-msg muted" style="margin:6px 0 0"></p>';
   if(h>=1&&pts.length){
-    html+='<div style="background:var(--surface-2);border-left:3px solid var(--star);padding:12px 14px;margin-top:12px">'
-      +'<b>Point chain</b> <span class="muted">· '+pts.length+' point'+(pts.length>1?'s':'')+' for '+esc(q.marks)+' marks</span><ol style="margin:6px 0 0;padding-left:20px">'
-      +pts.map(p=>'<li>'+(h>=2?lqStarter(p[0]):'<span class="muted">a point worth</span>')+' <span class="mono">('+esc(p[1])+')</span></li>').join('')
+    html+='<div style="'+LQ_BOX+'var(--star)"><b>Point chain</b> <span class="muted">· '+pts.length+' point'+(pts.length>1?'s':'')+' for '+esc(q.marks)+' marks</span><ol style="margin:6px 0 0;padding-left:20px">'
+      +pts.map(x=>'<li>'+(h>=2?lqStarter(x[1][0]):'<span class="muted">a point worth</span>')+' <span class="mono">('+esc(x[1][1])+')</span></li>').join('')
       +'</ol>'+(h>=2?'<p class="muted" style="margin:6px 0 0">Fill each ___ with the link that explains <i>why</i>. 每個 ___ 都要講出「點解」。</p>':'')+'</div>';
+  }
+  if(ai){
+    html+='<div style="'+LQ_BOX+'var(--teal)"><b>AI marking</b> <span class="muted">· '+ai.t+' / '+esc(q.marks||'?')+(ai.mode==='photo'?' · from your photo':'')+'</span>'
+      +(ai.ill?'<p>The AI could not read most of the photo. Try a clearer, closer photo, or type your answer.</p>':'')
+      +'<p style="margin:6px 0 0">'+esc(ai.fb||'')+'</p>'
+      +(ai.read?'<details style="margin-top:6px"><summary class="muted">What the AI read from your photo</summary><div style="white-space:pre-wrap">'+esc(ai.read)+'</div>'
+        +'<button class="btn sm" data-act="useread" style="margin-top:6px">Put this in my answer box</button></details>':'')
+      +'<p class="muted" style="margin:6px 0 0">The AI can be wrong. Fix the weak link in your own words and mark again, or compare with the marking points. AI 都會錯，最後以你同老師判斷為準。</p></div>';
   }
   if(st.open){
     const have=new Set(lqWords(st.a||''));
     const mark=t=>esc(t).replace(/(?<![&\w])[A-Za-z][A-Za-z'-]{3,}/g,w=>have.has(w.toLowerCase())&&!LQ_STOP.has(w.toLowerCase())?'<mark>'+w+'</mark>':w);
-    html+='<div style="background:var(--surface-2);border-left:3px solid var(--brand);padding:12px 14px;margin-top:12px">'
-      +'<b>Marking points</b><p class="muted" style="margin:4px 0 8px">Tick a point only if your answer makes the same link, in any words. '
+    html+='<div style="'+LQ_BOX+'var(--brand)"><b>Marking points</b><p class="muted" style="margin:4px 0 8px">Tick a point only if your answer makes the same link, in any words. '
       +'Highlighted words also appear in your answer, so check those first, but sharing a word is not the mark. 意思對就有分，字眼一樣但冇因果就冇分。</p>';
     if(pts.length){
       const c=new Set(st.c||[]);
-      html+=pts.map((p,j)=>'<label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;cursor:pointer">'
-        +'<input type="checkbox" data-pt="'+j+'"'+(c.has(j)?' checked':'')+' style="margin-top:4px">'
-        +'<span>'+mark(p[0])+' <span class="mono">('+esc(p[1])+')</span></span></label>').join('');
+      html+=gs.map((g,gi)=>(g.l?'<div style="margin-top:8px"><b>'+esc(g.l)+'</b>'+(g.max?' <span class="mono">(max '+g.max+')</span>':'')+'</div>':'')
+        +(g.n||[]).map(n=>'<div class="muted" style="font-style:italic">'+esc(n)+'</div>').join('')
+        +g.p.map((p,pi)=>{ const id=gi+'.'+pi, aw=ai&&ai.aw&&ai.aw[id];
+          if(p[1]==null) return '<div class="muted" style="margin:4px 0 4px 26px">'+mark(p[0])+'</div>';
+          return '<label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;cursor:pointer">'
+            +'<input type="checkbox" data-pt="'+id+'"'+(c.has(id)?' checked':'')+' style="margin-top:4px">'
+            +'<span>'+mark(p[0])+' <span class="mono">('+esc(p[1])+')</span>'
+            +(aw?' <span class="pill '+(aw.m>=Number(p[1])?'understood':aw.m>0?'partly':'not')+'" title="'+esc(aw.why||'')+'">AI '+aw.m+'/'+esc(p[1])+'</span>'
+              +(aw.why?'<br><span class="muted" style="font-size:13px">'+esc(aw.why)+'</span>':''):'')
+            +'</span></label>'; }).join('')).join('');
     }else{
       html+='<div style="white-space:pre-wrap">'+mark(q.scheme||'')+'</div>'
         +'<div class="row" style="margin-top:8px"><span class="muted">This scheme is not split into points yet. My mark:</span>'
         +'<input type="number" class="lq-self" min="0" max="'+esc(q.marks||0)+'" value="'+(st.self==null?'':esc(st.self))+'" style="width:70px">'
         +'<span class="muted">/ '+esc(q.marks||'?')+'</span></div>';
     }
-    const tot=lqTotal(q,st);
-    html+='<p class="score" style="margin:8px 0 0">Self-marked: <b class="lq-tot">'+(tot==null?'–':tot)+'</b> / '+esc(q.marks||'?')
+    html+='<p class="score" style="margin:8px 0 0">Self-marked: <b class="lq-tot">'+(tickTot==null?'–':tickTot)+'</b> / '+esc(q.marks||'?')
       +(h?' · used hint'+(h>1?'s':''):'')+'</p>'
       +'<p class="muted" style="margin:6px 0 0">Missed a point? Rewrite that part in the box above without looking, then tick it next time.</p></div>';
   }
@@ -1602,45 +1660,94 @@ function renderLq(){
   if(!v){ $('lqList').innerHTML='<p class="muted">Pick a section.</p>'; return; }
   const parts=v.split('|');
   $('lqList').innerHTML='<p class="muted">Loading…</p>';
-  section(parts[0],parts[1],parts[2],items=>{
+  lqLoadPoints(()=>section(parts[0],parts[1],parts[2],items=>{
     LQ_ITEMS=items.slice().sort(byYearDesc);
     $('lqList').innerHTML=LQ_ITEMS.map(lqCard).join('')||'<p class="muted">No long questions here.</p>';
-  });
+  }));
 }
-function lqRedraw(el){
-  const i=Number(el.dataset.i); el.outerHTML=lqCard(LQ_ITEMS[i],i);
+function lqRedraw(el){ const i=Number(el.dataset.i); el.outerHTML=lqCard(LQ_ITEMS[i],i); }
+function lqItem(t){ const el=t.closest('.item'); return el?{el:el,q:LQ_ITEMS[Number(el.dataset.i)]}:null; }
+/* Phone photos are 3–12 MB; the marker needs ~1600px of readable handwriting. */
+function lqShrink(file,cb){
+  const url=URL.createObjectURL(file), img=new Image();
+  img.onload=()=>{
+    const k=Math.min(1,1600/Math.max(img.width,img.height)), c=document.createElement('canvas');
+    c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+    cb(c.toDataURL('image/jpeg',0.75).split(',')[1]);
+  };
+  img.onerror=()=>{ URL.revokeObjectURL(url); cb(null); };
+  img.src=url;
+}
+/* A readable POST (the other writes are fire-and-forget no-cors). Apps Script
+   answers via a redirect that allows any origin, so the reply can be read. */
+function lqAiMark(it,btn){
+  const q=it.q, st=lqGet(q), gs=lqGroups(q), photo=LQ_PHOTO[q.key||q.id], msg=it.el.querySelector('.lq-msg');
+  st.a=it.el.querySelector('.lq-ans').value; lqPut(q,st);
+  if(!st.a.trim()&&!photo){ msg.textContent='Write your answer or add a photo first. 先寫答案或者影相。'; return; }
+  if(!SESS){ msg.textContent='Sign in first to use AI marking.'; return; }
+  btn.disabled=true; msg.textContent=photo?'Reading your photo and marking… (up to a minute)':'Marking… (about 20 seconds)';
+  const points=lqMarked(gs).map(x=>[x[0],x[1][0],x[1][1],x[2].l||'']);
+  fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({event:'lqmark',t:SESS,key:q.key||q.id,points:points,answer:st.a,image:photo||'',rules:lqRules(gs)})})
+    .then(r=>r.text()).then(txt=>{
+      let r; try{ r=JSON.parse(txt); }catch(e){ r={error:txt==='auth'?'Your sign-in has expired. Sign in again.':'AI marking is not set up on the server yet. Ask your teacher.'}; }
+      if(r.error){ btn.disabled=false; msg.textContent=r.error; return; }
+      const s2=lqGet(q);
+      s2.ai={aw:r.awards||{},fb:r.feedback||'',read:r.read||'',ill:!!r.illegible,mode:photo?'photo':'typed',
+             t:lqScore(q,gs,id=>(r.awards&&r.awards[id]&&r.awards[id].m)||0)};
+      lqPut(q,s2); delete LQ_PHOTO[q.key||q.id]; lqRedraw(it.el);
+      const m2=document.querySelector('.item[data-i="'+it.el.dataset.i+'"] .lq-msg');
+      if(m2&&r.left!=null) m2.textContent=r.left+' AI marking'+(r.left===1?'':'s')+' left today.';
+    }).catch(()=>{ btn.disabled=false; msg.textContent='Could not reach the marker. Check your connection and try again.'; });
 }
 $('lqList').addEventListener('click',e=>{
   const b=e.target.closest('button[data-act]'); if(!b) return;
-  const el=b.closest('.item'), q=LQ_ITEMS[Number(el.dataset.i)], st=lqGet(q);
-  st.a=el.querySelector('.lq-ans').value;
+  const it=lqItem(b), q=it.q, st=lqGet(q);
+  st.a=it.el.querySelector('.lq-ans').value;
+  if(b.dataset.act==='ai'){ lqPut(q,st); return lqAiMark(it,b); }
   if(b.dataset.act==='hint') st.h=Math.min(2,(st.h||0)+1);
+  if(b.dataset.act==='unphoto') delete LQ_PHOTO[q.key||q.id];
+  if(b.dataset.act==='useread'&&st.ai&&st.ai.read) st.a=(st.a.trim()?st.a.trim()+'\n\n':'')+st.ai.read;
   if(b.dataset.act==='open'){
-    if(!st.a.trim()&&!confirm('You have not written anything yet. Look at the marking points anyway?\n未寫答案，照睇 marking points？')) return;
+    if(!st.a.trim()&&!st.ai&&!confirm('You have not written anything yet. Look at the marking points anyway?\n未寫答案，照睇 marking points？')) return;
     st.open=1;
   }
   if(b.dataset.act==='close') st.open=0;
-  lqPut(q,st); lqRedraw(el);
+  lqPut(q,st); lqRedraw(it.el);
 });
 $('lqList').addEventListener('change',e=>{
-  const el=e.target.closest('.item'); if(!el) return;
-  const q=LQ_ITEMS[Number(el.dataset.i)], st=lqGet(q);
+  const it=lqItem(e.target); if(!it) return;
+  const q=it.q, st=lqGet(q);
+  if(e.target.classList.contains('lq-photo')){
+    const f=e.target.files&&e.target.files[0]; if(!f) return;
+    const msg=it.el.querySelector('.lq-msg'); msg.textContent='Preparing photo…';
+    st.a=it.el.querySelector('.lq-ans').value; lqPut(q,st);
+    return lqShrink(f,b64=>{
+      if(!b64){ msg.textContent='That file could not be opened as a photo.'; return; }
+      LQ_PHOTO[q.key||q.id]=b64; lqRedraw(it.el);
+      const m2=document.querySelector('.item[data-i="'+it.el.dataset.i+'"] .lq-msg');
+      if(m2) m2.textContent='Photo ready. Press "AI mark my answer". Only photograph your answer, not your name or student number. 唔好影到姓名同學號。';
+    });
+  }
   if(e.target.dataset.pt!=null){
-    const c=new Set(st.c||[]), j=Number(e.target.dataset.pt);
+    const c=new Set(st.c||[]), j=e.target.dataset.pt;
     e.target.checked?c.add(j):c.delete(j); st.c=[...c];
   }else if(e.target.classList.contains('lq-self')){
     const n=Math.max(0,Math.min(Number(q.marks)||0,Math.round(Number(e.target.value))));
     st.self=e.target.value===''||isNaN(n)?null:n;
   }else return;
   lqPut(q,st);
-  const t=lqTotal(q,st); el.querySelector('.lq-tot').textContent=t==null?'–':t;
-  const pill=el.querySelector('.lq-pill'); if(pill) pill.textContent='self-marked '+(t==null?'–':t)+'/'+(q.marks||'?');
+  const gs=lqGroups(q);
+  const t=gs&&lqMarked(gs).length?lqScore(q,gs,id=>(st.c||[]).indexOf(id)>=0?99:0):st.self;
+  it.el.querySelector('.lq-tot').textContent=t==null?'–':t;
+  const pill=it.el.querySelector('.lq-pill'); if(pill) pill.textContent='self-marked '+(t==null?'–':t)+'/'+(q.marks||'?');
 });
 /* Keep the draft as they type, so leaving the tab does not lose it. */
 $('lqList').addEventListener('input',e=>{
   if(!e.target.classList.contains('lq-ans')) return;
-  const el=e.target.closest('.item'), q=LQ_ITEMS[Number(el.dataset.i)];
-  clearTimeout(el._t); el._t=setTimeout(()=>{ const st=lqGet(q); st.a=e.target.value; lqPut(q,st); },400);
+  const it=lqItem(e.target);
+  clearTimeout(it.el._t); it.el._t=setTimeout(()=>{ const st=lqGet(it.q); st.a=e.target.value; lqPut(it.q,st); },400);
 });
 $('lqSec').addEventListener('change',renderLq);
 
