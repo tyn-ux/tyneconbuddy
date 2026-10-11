@@ -30,7 +30,7 @@
 html,body{margin:0}
 body{background:var(--bg); color:var(--ink); font-family:var(--f-serif);
      line-height:1.6; -webkit-font-smoothing:antialiased}
-.wrap{max-width:880px; margin:0 auto; padding:0 16px 90px}
+.wrap{max-width:1060px; margin:0 auto; padding:0 16px 90px}
 
 /* --- header: the sheet's letterhead --- */
 header{display:flex; gap:14px; align-items:center; padding:22px 0 10px}
@@ -66,6 +66,67 @@ nav button[aria-selected="true"]{background:var(--surface-2); color:var(--ink);
     padding:9px 11px}
   nav button[aria-selected="true"]{border-left:none; border-bottom-color:var(--tabc,var(--brand))}
 }
+/* --- Study Desk layout: the rail groups the four question modes under
+       Practise; phones get a five-tab bar at the bottom and the four modes
+       as a row of chips at the top of the page. --- */
+nav .navhd{font-family:var(--f-sans); font-size:11px; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--muted); padding:10px 10px 2px}
+nav button.sub{padding-left:24px; min-height:36px; font-weight:500}
+nav button.sub::before{width:6px; height:6px; flex-basis:6px}
+#tabbar{display:none}
+#subnav{display:none}
+@media (max-width:899px){
+  #nav{display:none}
+  #tabbar{display:grid; grid-template-columns:repeat(5,1fr); position:fixed; left:0; right:0; bottom:0; z-index:40;
+    background:var(--surface); border-top:1px solid var(--line);
+    padding:0 2px env(safe-area-inset-bottom,0px)}
+  #tabbar.hide{display:none}
+  #tabbar button{position:relative; display:grid; justify-items:center; gap:1px; padding:7px 0 6px; cursor:pointer;
+    background:none; border:0; border-top:3px solid transparent; font-family:var(--f-sans); font-size:11px;
+    font-weight:600; color:var(--muted)}
+  #tabbar svg{width:22px; height:22px}
+  #tabbar button[aria-selected="true"]{color:var(--ink); border-top-color:var(--tabc)}
+  #tabbar button[aria-selected="true"] svg{color:var(--tabc)}
+  #tabbar .pip{position:absolute; top:3px; left:calc(50% + 6px); margin:0}
+  #subnav{display:flex; gap:6px; overflow-x:auto; margin:0 0 14px; padding-bottom:2px}
+  #subnav.hide{display:none}
+  #subnav button{flex:0 0 auto; cursor:pointer; font-family:var(--f-sans); font-size:13px; font-weight:600;
+    padding:7px 13px; border:1px solid var(--line); border-bottom:3px solid var(--line); border-radius:var(--r-sm);
+    background:var(--surface); color:var(--muted)}
+  #subnav button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--tabc)}
+}
+#tabbar button[data-tab="overview"],#subnav button[data-tab="overview"]{--tabc:var(--gold)}
+#tabbar button[data-group="practise"],#subnav button[data-tab="drill"]{--tabc:var(--ch-ch4)}
+#subnav button[data-tab="exam"]{--tabc:var(--ch-u11)}
+#subnav button[data-tab="lq"]{--tabc:var(--violet)}
+#subnav button[data-tab="allq"]{--tabc:var(--ch-ch2)}
+#tabbar button[data-tab="miss"]{--tabc:var(--pink)}
+#tabbar button[data-tab="rev"],#tabbar button[data-tab="acct"]{--tabc:var(--teal)}
+
+/* --- Home: two columns on wide screens --- */
+.ovgrid{display:grid; gap:0 16px}
+.ovgrid > div{min-width:0}
+@media (min-width:900px){ .ovgrid{grid-template-columns:1.1fr 1fr; align-items:start} }
+/* phones: one column, the cheer wall drops to the end, after the route */
+@media (max-width:899px){ .ovgrid{display:flex; flex-direction:column} .ovgrid > div{display:contents} #ovCheer{order:9} }
+.nextcard h3{font-family:var(--f-serif); font-size:20px; margin:2px 0 4px; font-weight:600}
+
+/* --- Home: the chapters as a route. Each ring fills with the share cleared,
+       in the chapter's own ink; the two-colour bar underneath keeps the
+       right / wrong / left split from the old chapter list. --- */
+.route{display:grid; gap:6px}
+.stop{display:grid; grid-template-columns:60px 1fr; gap:12px; align-items:center; width:100%;
+  background:none; border:0; padding:4px 0; cursor:pointer; text-align:left; color:var(--ink); font-family:var(--f-sans)}
+.stop:nth-child(even){padding-left:26px}
+.node{width:60px; height:60px; border-radius:50%; position:relative; display:grid; place-items:center;
+  background:conic-gradient(var(--chc) calc(var(--p)*1%), var(--surface-2) 0); box-shadow:var(--shadow-1)}
+.node::before{content:''; position:absolute; inset:7px; border-radius:50%; background:var(--surface)}
+.node b{position:relative; font-size:14px; color:var(--chc)}
+.stop.cur .node{outline:3px solid var(--gold); outline-offset:3px}
+.stop .t{font-family:var(--f-serif); font-weight:600; font-size:15px; line-height:1.3}
+.stop .s{display:block; font-size:11.5px; color:var(--muted); margin:1px 0 4px}
+.stop .tbar{height:6px}
+
 nav button[data-tab="overview"]{--tabc:var(--gold)}
 nav button[data-tab="drill"]{--tabc:var(--ch-ch4)}
 nav button[data-tab="exam"]{--tabc:var(--ch-u11)}
@@ -287,16 +348,23 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 </header>
 <div class="shell">
 <nav id="nav" class="hide">
-  <button data-tab="overview" aria-selected="true">Overview</button>
-  <button data-tab="drill">Drill</button>
-  <button data-tab="exam">Exam</button>
+  <button data-tab="overview" aria-selected="true">Home</button>
+  <div class="navhd">Practise</div>
+  <button data-tab="drill" class="sub">Drill</button>
+  <button data-tab="exam" class="sub">Exam</button>
+  <button data-tab="lq" class="sub">Long Qs</button>
+  <button data-tab="allq" class="sub">All Questions</button>
   <button data-tab="miss">Correction Album</button>
-  <button data-tab="allq">All Questions</button>
-  <button data-tab="lq">Long Qs</button>
   <button data-tab="rev">Revision</button>
   <button data-tab="acct">Account</button>
 </nav>
 <div class="content">
+<div id="subnav" class="hide" role="navigation" aria-label="Practise">
+  <button data-tab="drill">Drill</button>
+  <button data-tab="exam">Exam</button>
+  <button data-tab="lq">Long Qs</button>
+  <button data-tab="allq">All Questions</button>
+</div>
 
   <div id="gate" class="card">
     <h2>Sign in</h2>
@@ -321,15 +389,26 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 
   <div id="tab-overview" class="hide">
     <div class="card" id="ovHello"></div>
+    <div class="ovgrid"><div>
+    <div class="card ac ac-blue nextcard" id="ovNext"></div>
     <div class="card ac ac-gold">
       <div class="lvl"><b id="ovLvlN">Lv.1</b><span id="ovLvlName" class="muted"></span>
         <span class="grow"></span><span class="mono" id="ovPct">0%</span></div>
       <div class="bar"><i id="ovBar" style="width:0%"></i></div>
       <p class="mono" id="ovLine" style="margin:10px 0 0"></p>
     </div>
+    <div class="card ac ac-pink" id="ovCheer">
+      <h2>Cheer up kashinger</h2>
+      <p class="muted">Leave a line to cheer your classmates on. The whole class can see it.</p>
+      <div id="cheerList"><p class="muted">Loading…</p></div>
+      <textarea id="cheerBox" maxlength="200" placeholder="One line is enough — encourage each other…"></textarea>
+      <div class="meta" style="margin-top:6px"><span class="mono" id="cheerMsg"></span>
+        <button class="btn sm" id="cheerSend">Post</button></div>
+    </div>
+    </div><div>
     <div class="card ac ac-blue">
-      <h2>Progress by chapter</h2>
-      <div id="ovChaps"></div>
+      <h2>Your route · progress by chapter</h2>
+      <div id="ovChaps" class="route"></div>
     </div>
     <div class="card ac ac-green">
       <h2>Top 20 most-cleared in class</h2>
@@ -340,14 +419,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
       <h2>Class leaderboard</h2>
       <div id="ovLb"><p class="muted">Loading…</p></div>
     </div>
-    <div class="card ac ac-pink">
-      <h2>Cheer up kashinger</h2>
-      <p class="muted">Leave a line to cheer your classmates on. The whole class can see it.</p>
-      <div id="cheerList"><p class="muted">Loading…</p></div>
-      <textarea id="cheerBox" maxlength="200" placeholder="One line is enough — encourage each other…"></textarea>
-      <div class="meta" style="margin-top:6px"><span class="mono" id="cheerMsg"></span>
-        <button class="btn sm" id="cheerSend">Post</button></div>
-    </div>
+    </div></div>
   </div>
 
   <div id="tab-drill" class="hide">
@@ -475,6 +547,13 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 <div class="foot">Study tool &middot; built from HKDSE past-paper MCQs</div>
 </div><!-- /.content -->
 </div><!-- /.shell -->
+</div>
+<div id="tabbar" class="hide" role="navigation" aria-label="Sections">
+  <button data-tab="overview" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
+  <button data-tab="drill" data-group="practise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg><span>Practise</span></button>
+  <button data-tab="miss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg><span>Album</span></button>
+  <button data-tab="rev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h10M7 14h6"/></svg><span>Revision</span></button>
+  <button data-tab="acct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Me</span></button>
 </div>
 
 <script>
@@ -758,7 +837,7 @@ function afterAuth(){
 
 function enterApp(){
   $('setup').classList.add('hide');
-  $('nav').classList.remove('hide');
+  $('nav').classList.remove('hide'); $('tabbar').classList.remove('hide');
   $('who').textContent=ME.nick+'  ·  '+ME.cls+'-'+ME.num;
   $('acctSeat').textContent='Class '+ME.cls+'  ·  No. '+ME.num;
   $('aCls').value=ME.cls; $('aNum').value=ME.num; $('nick').value=ME.nick;
@@ -791,7 +870,7 @@ $('pSave').addEventListener('click',()=>{
 
 function lockOut(){
   SESS=null; dropSess();
-  $('nav').classList.add('hide');
+  $('nav').classList.add('hide'); $('tabbar').classList.add('hide'); $('subnav').classList.add('hide');
   document.querySelectorAll('[id^=tab-]').forEach(e=>e.classList.add('hide'));
   $('gate').classList.remove('hide'); $('who').textContent='';
   msg('Your session has ended. Sign in again, or speak to your teacher.');
@@ -799,20 +878,24 @@ function lockOut(){
 
 /* -------------------------------------------------------------------- nav */
 const TABS=['overview','drill','exam','miss','allq','lq','rev','acct'];
+const PRACTISE=['drill','exam','lq','allq'];
+let LASTP='drill';                 // the Practise tab reopens the last mode used
 function show(tab){
-  TABS.forEach(t=>{
-    $('tab-'+t).classList.toggle('hide',t!==tab);
-    const b=document.querySelector('[data-tab="'+t+'"]');
-    if(b) b.setAttribute('aria-selected',String(t===tab));
-  });
+  if(PRACTISE.indexOf(tab)>=0) LASTP=tab;
+  TABS.forEach(t=>$('tab-'+t).classList.toggle('hide',t!==tab));
+  document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',
+    String(b.dataset.tab===tab||(b.dataset.group==='practise'&&PRACTISE.indexOf(tab)>=0))));
+  $('subnav').classList.toggle('hide',PRACTISE.indexOf(tab)<0);
+  window.scrollTo(0,0);
   if(tab==='overview'){ drawGreeting(); drawOverview(); loadBoard('ovLb'); loadTop20(); loadCheer(); }
   if(tab==='miss')     loadBook();
   if(tab==='rev')      drawRevision();
   if(tab==='acct')     loadBoard('lb');
 }
-$('nav').addEventListener('click',e=>{
-  const b=e.target.closest('[data-tab]'); if(b) show(b.dataset.tab);
-});
+['nav','subnav','tabbar'].forEach(id=>$(id).addEventListener('click',e=>{
+  const b=e.target.closest('[data-tab]'); if(!b) return;
+  show(b.dataset.group==='practise'?LASTP:b.dataset.tab);
+}));
 
 /* --------------------------------------------------------------- overview */
 function drawOverview(){
@@ -841,17 +924,52 @@ function drawOverview(){
     a.ok+=(t.per[tp]?t.per[tp].cleared:0);
     a.bad+=(wrongPer[tp]||0);
   });
+  const last=lastSec(), lastCh=last?chapOf(last.page,last.topic):null;
+  let n=0;
   $('ovChaps').innerHTML=CHAPTERS.map(c=>{
     const a=agg[c[0]]; if(!a||!a.tot) return '';
-    const left=a.tot-a.ok-a.bad;
-    return '<div style="margin-bottom:12px"><div class="meta" style="margin-bottom:4px">'
-      +'<span><span class="badge b-'+a.cls+'">'+esc(a.lab)+'</span>'
-      +'<span class="score">'+a.tot+' Q</span></span>'
-      +'<span class="score">'+a.ok+' right &middot; '+a.bad+' wrong &middot; '+left+' left</span></div>'
-      +'<div class="tbar"><span style="width:'+(a.ok/a.tot*100)+'%;background:var(--pos)"></span>'
-      +'<span style="width:'+(a.bad/a.tot*100)+'%;background:var(--neg)"></span></div></div>';
+    const left=a.tot-a.ok-a.bad, p=Math.round(a.ok/a.tot*100);
+    const parts=a.lab.split(' · '), name=parts.length>1?parts.slice(1).join(' · '):a.lab;
+    n++;
+    return '<button class="stop'+(lastCh&&lastCh[0]===c[0]?' cur':'')+'" data-ch="'+c[0]+'" '
+      +'style="--chc:var(--ch-'+c[0]+')"><span class="node" style="--p:'+p+'"><b>'+n+'</b></span>'
+      +'<span><span class="t">'+esc(name)+'</span>'
+      +'<span class="s">'+(parts.length>1?esc(parts[0])+' · ':'')+a.tot+' Q · '+a.ok+' right &middot; '+a.bad+' wrong &middot; '+left+' left</span>'
+      +'<span class="tbar"><span style="width:'+(a.ok/a.tot*100)+'%;background:var(--pos)"></span>'
+      +'<span style="width:'+(a.bad/a.tot*100)+'%;background:var(--neg)"></span></span></span></button>';
   }).join('')||'<p class="muted">No sections.</p>';
+  drawNext(t,last,lastCh);
 }
+
+/* "Pick up where you left off": the last section opened on this device. */
+function lastSec(){ try{ return JSON.parse(localStorage.getItem('tjx2:last:'+(EMAIL||'anon'))); }catch(e){ return null; } }
+function drawNext(t,last,ch){
+  if(!last){
+    $('ovNext').innerHTML='<h2>Start here</h2><h3>Ch 1 · Basic Economic Concepts</h3>'
+      +'<p class="mono" style="margin:0 0 10px">Pick any section. Ten questions a day is enough.</p>'
+      +'<button class="btn primary" data-go="drill">Choose a section</button>';
+    return;
+  }
+  const per=(t.per[last.topic]||{cleared:0,total:0});
+  const left=Object.keys(P.wrong).filter(k=>!P.cleared[k]).length;
+  $('ovNext').innerHTML='<h2>Pick up where you left off</h2>'
+    +'<h3>'+(ch?'<span style="color:var(--ch-'+ch[0]+')">'+esc(ch[1].split(' · ')[0])+'</span> · ':'')+esc(last.label||lbl(last.topic))+'</h3>'
+    +'<p class="mono" style="margin:0 0 10px">'+per.cleared+' / '+per.total+' cleared in this section</p>'
+    +'<div class="row"><button class="btn primary" data-go="continue">Continue</button>'
+    +(left?'<button class="btn" data-go="miss">Fix '+left+' mistake'+(left>1?'s':'')+'</button>':'')+'</div>';
+}
+$('ovNext').addEventListener('click',e=>{
+  const b=e.target.closest('[data-go]'); if(!b) return;
+  if(b.dataset.go==='continue'){ const l=lastSec(); show('drill'); if(l) startSection(l.page,l.topic,l.label); }
+  else show(b.dataset.go);
+});
+$('ovChaps').addEventListener('click',e=>{
+  const b=e.target.closest('.stop'); if(!b) return;
+  show('drill');
+  if(!$('qcard').classList.contains('hide')) $('quit').click();
+  const c=document.querySelector('#secgrid .chap[data-ch="'+b.dataset.ch+'"]');
+  if(c) c.scrollIntoView({block:'start'});
+});
 
 function drawGreeting(){
   const t=totals();
@@ -926,7 +1044,7 @@ function buildSections(){
     const secs=by[c[0]]; if(!secs||!secs.length) return '';
     secs.sort((a,b)=>c[3].indexOf(a.tp)-c[3].indexOf(b.tp));   // book order, not size
     const tot=secs.reduce((x,y)=>x+y.n,0);
-    return '<div class="chap"><div class="chap-hd"><span>'+esc(c[1])+'</span>'
+    return '<div class="chap" data-ch="'+c[0]+'"><div class="chap-hd"><span>'+esc(c[1])+'</span>'
       +'<span class="score">'+tot+' Q</span></div><div class="chap-secs">'
       +secs.map(x=>'<button class="sec" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'">'
         +esc(lbl(x.tp))+'<small>'+x.n+' Q</small></button>').join('')
@@ -959,6 +1077,7 @@ $('secgrid').addEventListener('click',e=>{
 });
 function startSection(page,topic,label,focusKey){
   SECTION={page,topic,label};
+  try{ localStorage.setItem('tjx2:last:'+(EMAIL||'anon'),JSON.stringify(SECTION)); }catch(e){}
   $('picker').classList.add('hide'); $('qcard').classList.remove('hide');
   $('stem').textContent='Loading…'; $('opts').innerHTML='';
   section('mcq',page,topic,items=>{
