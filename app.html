@@ -694,8 +694,10 @@ function onCredential(resp){
     PROFILE=p.name||p.email; EMAIL=p.email;
   }catch(e){ PROFILE='student'; EMAIL='anon'; }
 
+  let postFailed=false;
   fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({event:'auth', idToken:resp.credential, nonce:nonce})});
+    body:JSON.stringify({event:'auth', idToken:resp.credential, nonce:nonce})})
+    .catch(()=>{ postFailed=true; });
 
   let tries=0;
   (function claim(){
@@ -707,10 +709,12 @@ function onCredential(resp){
               domain:'Please sign in with your school account.',
               roster:'Your account is not on the class list. Ask your teacher to add you.',
               expired:'That sign-in timed out. Please try again.',
-              verify:'Google did not accept this sign-in for this site. (Teacher: see AUTH_LAST_ERROR in Script Properties.)'})[r.error]
+              verify:'Google did not accept this sign-in for this site. (Teacher: see AUTH_LAST_ERROR in Script Properties.)',
+              server:'The server hit an error: '+(r.detail||'unknown')+' (Teacher: open SYNC_URL?ping=1.)'})[r.error]
             || ('Sign-in refused: '+r.error));
         return;
       }
+      if(postFailed){ msg('Could not send your sign-in to the server. Check your internet connection and try again.'); return; }
       if(tries<15){ msg('Checking with Google\u2026 ('+tries+')'); return setTimeout(claim,2000); }
       /* Tell apart "server unreachable" from "server up but silent", because
          they have completely different fixes. */
@@ -720,7 +724,9 @@ function onCredential(resp){
             +'deployment is not set to "Anyone". (Teacher: open SYNC_URL?ping=1 in a browser.)');
         }else{
           msg('Server is up (build '+(pg.build||'old — no build tag')+', '+pg.bank+' questions) '
-            +'but never confirmed this sign-in. Teacher: check AUTH_LAST_ERROR in Script Properties.');
+            +'but never confirmed this sign-in. '
+            +(pg.auth_last_error?'Last server error: '+pg.auth_last_error
+              :'Teacher: run diagnose() in the Apps Script editor, then redeploy.'));
         }
       }, 8000);
     }, 20000);
@@ -1088,7 +1094,7 @@ $('why').addEventListener('click',e=>{
         ||'Not available right now. Ask your teacher about this one.')+'</p>';
       b.disabled=false;
     }
-  }, 30000);
+  }, 60000);   // a cold model call with retries can take 20s+; 30s cut real answers off
 });
 $('next').addEventListener('click',()=>{
   /* Skip forward to the next question not yet cleared, so "Next" keeps meaning
