@@ -1508,25 +1508,140 @@ function renderAllq(){
 $('allqSec').addEventListener('change',renderAllq);
 $('allqFind').addEventListener('input',()=>{ clearTimeout(window._af); window._af=setTimeout(renderAllq,300); });
 
-/* ---------------------------------------------------------- long questions */
+/* ---------------------------------------------------------- long questions
+ * A long question is no longer "read the answer". The student writes first,
+ * can ask for a point-chain hint (how many points, then the opening link of
+ * each chain with the middle blanked), and only then compares with the
+ * marking points, ticking each one they really made. Words they share with a
+ * point are highlighted as a prompt to check, never as the mark: the same idea
+ * in their own words scores, the same words without the reason do not.
+ * Questions whose scheme is not split into points (q.structure empty) fall
+ * back to the full scheme text and a single self-given mark.
+ * Everything here stays on the student's machine (localStorage).
+ * -------------------------------------------------------------------------- */
+let LQ_ITEMS=[];
+/* key, not id: some ids repeat across parts (a) and (b) of one paper question. */
+const lqKey=q=>'tjx2:lq:'+(EMAIL||'anon')+':'+(q.key||q.id);
+function lqGet(q){ try{ return JSON.parse(localStorage.getItem(lqKey(q)))||{}; }catch(e){ return {}; } }
+function lqPut(q,v){ try{ localStorage.setItem(lqKey(q),JSON.stringify(v)); }catch(e){} }
+const LQ_STOP=new Set(('that this with from will they their there them then than when which would could should '
+  +'have been also into more less does such only over each both because while what where were your some most '
+  +'very much make made thus hence therefore however other these those being under same given e.g. i.e.').split(' '));
+function lqWords(t){ return (String(t).toLowerCase().match(/[a-z][a-z'-]{3,}/g)||[]).filter(w=>!LQ_STOP.has(w)); }
+/* The opening link of a point, with the rest left for the student to supply.
+   Scheme text carries part labels and examiner headings ("(b) Indicate in the
+   diagram: - AD shifts…"); the label is kept, the headings are dropped. Never
+   more than ~40% of the words show, so the hint opens the chain, not the answer. */
+function lqStarter(t){
+  t=String(t).replace(/\((other|alternative)[^)]*\)\s*/ig,'').trim();
+  let part='';
+  const pm=t.match(/^\(([a-z])\)(\s*\([ivx]+\))?\s*/i);
+  if(pm){ part='<b>'+esc(pm[0].trim())+'</b> '; t=t.slice(pm[0].length); }
+  t=t.replace(/^(indicate (in|on) the diagram|illustrate (in|on) the diagram|verbal elaboration)\s*:\s*/i,'').replace(/^[-–•]\s*/,'').trim();
+  if(/[⇒→]/.test(t)){
+    const links=t.split(/\s*[⇒→]\s*/);
+    return part+esc(links[0])+links.slice(1).map(()=>' ⇒ <b>___</b>').join('');
+  }
+  const w=t.split(/\s+/), m=t.match(/^(.{3,70}?)(\s[—–-]\s|:\s)/);
+  if(m&&m[1].split(/\s+/).length<=w.length*0.6)
+    return part+esc(m[1])+' — <b>___</b> <span class="muted">(why? / so what?)</span>';
+  return part+esc(w.slice(0,Math.max(1,Math.min(5,Math.floor(w.length*0.4)))).join(' '))+' … <b>___</b>';
+}
+function lqPts(q){ return Array.isArray(q.structure)?q.structure.filter(p=>p&&p[0]):[]; }
+function lqTotal(q,st){
+  const pts=lqPts(q);
+  if(!pts.length) return st.self==null?null:Number(st.self);
+  return (st.c||[]).reduce((a,i)=>a+Number((pts[i]||[])[1]||0),0);
+}
+function lqCard(q,i){
+  const st=lqGet(q), pts=lqPts(q), h=st.h||0;
+  let html='<div class="item" data-i="'+i+'"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
+    +(q.cmd?'<span class="pill">'+esc(q.cmd)+'</span>':'')
+    +(q.marks?'<span class="pill">'+esc(q.marks)+' marks</span>':'')
+    +(st.open&&lqTotal(q,st)!=null?'<span class="pill partly lq-pill">self-marked '+lqTotal(q,st)+'/'+esc(q.marks||'?')+'</span>':'')+'</div>'
+    +'<div class="stem" style="font-size:15px">'+esc(q.q||'')+'</div>'
+    +(q.fig?'<img src="'+esc(q.fig)+'" style="max-width:100%">':'')
+    +'<textarea class="lq-ans" placeholder="Write your answer in your own words first. 先用自己的說法寫，再對 marking points。">'+esc(st.a||'')+'</textarea>'
+    +'<div class="statusrow">'
+    +(pts.length&&h<2?'<button class="btn sm" data-act="hint">'+(h?'Show chain starters':'Hint: how many points?')+'</button>':'')
+    +(st.open?'<button class="btn sm" data-act="close">Hide marking points</button>'
+             :'<button class="btn sm primary" data-act="open">Compare with marking points</button>')
+    +'</div>';
+  if(h>=1&&pts.length){
+    html+='<div style="background:var(--surface-2);border-left:3px solid var(--star);padding:12px 14px;margin-top:12px">'
+      +'<b>Point chain</b> <span class="muted">· '+pts.length+' point'+(pts.length>1?'s':'')+' for '+esc(q.marks)+' marks</span><ol style="margin:6px 0 0;padding-left:20px">'
+      +pts.map(p=>'<li>'+(h>=2?lqStarter(p[0]):'<span class="muted">a point worth</span>')+' <span class="mono">('+esc(p[1])+')</span></li>').join('')
+      +'</ol>'+(h>=2?'<p class="muted" style="margin:6px 0 0">Fill each ___ with the link that explains <i>why</i>. 每個 ___ 都要講出「點解」。</p>':'')+'</div>';
+  }
+  if(st.open){
+    const have=new Set(lqWords(st.a||''));
+    const mark=t=>esc(t).replace(/(?<![&\w])[A-Za-z][A-Za-z'-]{3,}/g,w=>have.has(w.toLowerCase())&&!LQ_STOP.has(w.toLowerCase())?'<mark>'+w+'</mark>':w);
+    html+='<div style="background:var(--surface-2);border-left:3px solid var(--brand);padding:12px 14px;margin-top:12px">'
+      +'<b>Marking points</b><p class="muted" style="margin:4px 0 8px">Tick a point only if your answer makes the same link, in any words. '
+      +'Highlighted words also appear in your answer, so check those first, but sharing a word is not the mark. 意思對就有分，字眼一樣但冇因果就冇分。</p>';
+    if(pts.length){
+      const c=new Set(st.c||[]);
+      html+=pts.map((p,j)=>'<label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;cursor:pointer">'
+        +'<input type="checkbox" data-pt="'+j+'"'+(c.has(j)?' checked':'')+' style="margin-top:4px">'
+        +'<span>'+mark(p[0])+' <span class="mono">('+esc(p[1])+')</span></span></label>').join('');
+    }else{
+      html+='<div style="white-space:pre-wrap">'+mark(q.scheme||'')+'</div>'
+        +'<div class="row" style="margin-top:8px"><span class="muted">This scheme is not split into points yet. My mark:</span>'
+        +'<input type="number" class="lq-self" min="0" max="'+esc(q.marks||0)+'" value="'+(st.self==null?'':esc(st.self))+'" style="width:70px">'
+        +'<span class="muted">/ '+esc(q.marks||'?')+'</span></div>';
+    }
+    const tot=lqTotal(q,st);
+    html+='<p class="score" style="margin:8px 0 0">Self-marked: <b class="lq-tot">'+(tot==null?'–':tot)+'</b> / '+esc(q.marks||'?')
+      +(h?' · used hint'+(h>1?'s':''):'')+'</p>'
+      +'<p class="muted" style="margin:6px 0 0">Missed a point? Rewrite that part in the box above without looking, then tick it next time.</p></div>';
+  }
+  return html+(q.concept?'<p class="mono">Concept: '+esc(q.concept)+'</p>':'')+'</div>';
+}
 function renderLq(){
   const v=$('lqSec').value;
   if(!v){ $('lqList').innerHTML='<p class="muted">Pick a section.</p>'; return; }
   const parts=v.split('|');
   $('lqList').innerHTML='<p class="muted">Loading…</p>';
   section(parts[0],parts[1],parts[2],items=>{
-    $('lqList').innerHTML=items.slice().sort(byYearDesc).map(q=>
-      '<div class="item"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
-      +(q.cmd?'<span class="pill">'+esc(q.cmd)+'</span>':'')
-      +(q.marks?'<span class="pill">'+esc(q.marks)+' marks</span>':'')+'</div>'
-      +'<div class="stem" style="font-size:15px">'+esc(q.q||'')+'</div>'
-      +(q.fig?'<img src="'+esc(q.fig)+'" style="max-width:100%">':'')
-      +(q.structure?'<div style="background:var(--surface-2);border-left:3px solid var(--star);padding:12px 14px;margin-top:12px"><b>Structure</b><br>'+esc(q.structure)+'</div>':'')
-      +(q.scheme?'<div style="background:var(--surface-2);border-left:3px solid var(--brand);padding:12px 14px;margin-top:12px"><b>Marking points</b><br>'+esc(q.scheme)+'</div>':'')
-      +(q.concept?'<p class="mono">Concept: '+esc(q.concept)+'</p>':'')+'</div>'
-    ).join('')||'<p class="muted">No long questions here.</p>';
+    LQ_ITEMS=items.slice().sort(byYearDesc);
+    $('lqList').innerHTML=LQ_ITEMS.map(lqCard).join('')||'<p class="muted">No long questions here.</p>';
   });
 }
+function lqRedraw(el){
+  const i=Number(el.dataset.i); el.outerHTML=lqCard(LQ_ITEMS[i],i);
+}
+$('lqList').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]'); if(!b) return;
+  const el=b.closest('.item'), q=LQ_ITEMS[Number(el.dataset.i)], st=lqGet(q);
+  st.a=el.querySelector('.lq-ans').value;
+  if(b.dataset.act==='hint') st.h=Math.min(2,(st.h||0)+1);
+  if(b.dataset.act==='open'){
+    if(!st.a.trim()&&!confirm('You have not written anything yet. Look at the marking points anyway?\n未寫答案，照睇 marking points？')) return;
+    st.open=1;
+  }
+  if(b.dataset.act==='close') st.open=0;
+  lqPut(q,st); lqRedraw(el);
+});
+$('lqList').addEventListener('change',e=>{
+  const el=e.target.closest('.item'); if(!el) return;
+  const q=LQ_ITEMS[Number(el.dataset.i)], st=lqGet(q);
+  if(e.target.dataset.pt!=null){
+    const c=new Set(st.c||[]), j=Number(e.target.dataset.pt);
+    e.target.checked?c.add(j):c.delete(j); st.c=[...c];
+  }else if(e.target.classList.contains('lq-self')){
+    const n=Math.max(0,Math.min(Number(q.marks)||0,Math.round(Number(e.target.value))));
+    st.self=e.target.value===''||isNaN(n)?null:n;
+  }else return;
+  lqPut(q,st);
+  const t=lqTotal(q,st); el.querySelector('.lq-tot').textContent=t==null?'–':t;
+  const pill=el.querySelector('.lq-pill'); if(pill) pill.textContent='self-marked '+(t==null?'–':t)+'/'+(q.marks||'?');
+});
+/* Keep the draft as they type, so leaving the tab does not lose it. */
+$('lqList').addEventListener('input',e=>{
+  if(!e.target.classList.contains('lq-ans')) return;
+  const el=e.target.closest('.item'), q=LQ_ITEMS[Number(el.dataset.i)];
+  clearTimeout(el._t); el._t=setTimeout(()=>{ const st=lqGet(q); st.a=e.target.value; lqPut(q,st); },400);
+});
 $('lqSec').addEventListener('change',renderLq);
 
 /* ----------------------------------------------------------------- account */
