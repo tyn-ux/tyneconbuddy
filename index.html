@@ -362,13 +362,37 @@ details.earn summary{font-weight:800;color:var(--ink);cursor:pointer}
 .mbtn.on{background:var(--shell,#2f7f86);color:#fff;border-color:var(--shell,#2f7f86)}
 .sellb{font:700 11px var(--txt);border:1px solid #c3d2d6;background:#fff;border-radius:8px;padding:2px 6px;cursor:pointer;color:#8a3b2a}
 .cbar{height:8px;background:#e4eaec;border-radius:99px;overflow:hidden}.cbar i{display:block;height:100%;background:linear-gradient(90deg,#f2c230,#e07a3a)}
+.opt em.dm{display:block;font-style:normal;font-weight:900;font-size:.88em;line-height:1.25;color:#a86a00;white-space:nowrap}
+.opt.ult em.dm{color:#ff9d8e}
+body.bmode:not(.bport) #pchoices .opt.ult{font-size:calc(var(--fs,16px)*.76)}
+.pcard{background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.pcard.lead{border-color:var(--shell);box-shadow:0 0 0 2px rgba(47,127,134,.25)}
+.pc-h{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:center}
+.pc-n{font:800 16px/1.3 var(--txt)}
+.pc-chips{display:flex;flex-wrap:wrap;gap:4px 5px;align-items:center;margin-top:3px}
+.pc-chip{font:700 11px var(--txt);color:#35606e;background:#e9f1f2;border-radius:999px;padding:1px 8px}
+.pc-lead{font:800 12px var(--txt);color:#fff;background:var(--shell,#2f7f86);border-radius:999px;padding:2px 10px;align-self:start}
+.pc-cap{font:800 11px var(--txt);color:var(--muted);letter-spacing:.04em;margin-top:5px;border-top:1px solid #e4eaec;padding-top:6px}
+.pc-con{font-size:13.5px;line-height:1.5;color:var(--ink)}
+.pc-mv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start}
+.pc-mi{font:800 13px var(--txt);background:#f4f8f8;border-radius:8px;padding:3px 8px;white-space:nowrap}
+.pc-mn{font:800 13.5px/1.35 var(--txt)}.pc-me{font-size:12px;line-height:1.45;color:var(--muted)}
+.pc-set{align-self:flex-start;margin-top:6px}
+.pc-sum{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:13.5px;background:#fff;border:2px solid var(--line);border-radius:10px;padding:8px 12px}
+.pguide{background:#fff;border:1px dashed #c3d2d6;border-radius:10px;padding:6px 12px;font-size:13px}
+.pguide summary{cursor:pointer;font-weight:800;color:#35606e;padding:3px 0}
+.pg-l{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;padding:6px 0 4px;line-height:1.5}.pg-l b{white-space:nowrap}.pg-l span{color:var(--muted)}
+.psort{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:800 12px var(--txt);color:var(--muted)}.psort .mbtn{font-size:12.5px;padding:4px 10px}
+.plist{display:flex;flex-direction:column;gap:10px}
+@media(max-width:760px) and (orientation:landscape){body.bmode:not(.bport) #pchoices .opt,body.bmode:not(.bport) #pchoices .opt.ult{padding:4px 2px 4px 10px;font-size:calc(var(--fs,16px)*.66);font-weight:800;letter-spacing:-.02em}body.bmode:not(.bport) #pchoices .opt.sel::before{left:3px;font-size:8px}body.bmode:not(.bport) #pchoices .opt em.dm{font-size:.92em}}
+@media(min-width:760px){.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}}
 </style>
 </head>
 <body style="margin:0">
 
 
 <div class="wrap">
-  <div class="top"><div class="logo">EconMon</div><span class="adminbadge" id="adminbadge" hidden>🔑 管理員</span><div class="sub">大澳・深水埗・觀塘・旺角・油麻地・石硤尾・紅磡・中環 · Ch.1–20 · 模擬試場 I–III · PVP · 0.22</div>
+  <div class="top"><div class="logo">EconMon</div><span class="adminbadge" id="adminbadge" hidden>🔑 管理員</span><div class="sub">大澳・深水埗・觀塘・旺角・油麻地・石硤尾・紅磡・中環 · Ch.1–20 · 模擬試場 I–III · PVP · 0.23</div>
     <button class="musicbtn" id="musicbtn" type="button" aria-label="背景音樂">♪ BGM</button></div>
   <div class="console" id="console">
     <div class="padL">
@@ -2552,7 +2576,7 @@ function ratioKey(){return isTabletLand()?'ipad':'fill';}
 function layout(){const k=ratioKey();const bw=document.getElementById('bwrap');if(!bw)return;const pad=12;const aw=Math.max(80,bw.clientWidth-pad),ah=Math.max(60,bw.clientHeight-pad);
  if(k==='fill'){const r=clamp(aw/ah,.45,2.1);if(r>=1){VH=216;VW=Math.round(216*r);}else{VW=240;VH=Math.round(240/r);}}else [VW,VH]=LAYOUTS[k];let w=aw,h=w*VH/VW;if(h>ah){h=ah;w=h*VW/VH;}w=Math.floor(w);h=Math.floor(h);
  $scr.style.width=w+'px';$scr.style.height=h+'px';const dpr=window.devicePixelRatio||1;SC=clamp(Math.ceil(w*dpr/VW),2,6);if(cv.width!==VW*SC||cv.height!==VH*SC){cv.width=VW*SC;cv.height=VH*SC;}ctx.setTransform(SC,0,0,SC,0,0);ctx.imageSmoothingEnabled=false;
- const fs=clamp(Math.round(Math.min(h*.066,w*.046)),13,20);$scr.style.setProperty('--fs',fs+'px');BOXF=clamp(fs*4.6/h+.05,.16,.4);{const pt=VH>VW;const bb=Math.round(pt?fs*4.6+60:Math.max(fs*2.7+44,fs*2.25+38));$scr.style.setProperty('--bbar',bb+'px');BBARF=(bb+h*.015+4)/h;$scr.style.setProperty('--bqtop',Math.round(58*h/VH)+'px');}
+ const fs=clamp(Math.round(Math.min(h*.066,w*.046)),13,20);$scr.style.setProperty('--fs',fs+'px');BOXF=clamp(fs*4.6/h+.05,.16,.4);{const pt=VH>VW;const bb=Math.round(pt?fs*4.6+60:Math.max(fs*2.7+44,fs*2.25+38)+Math.round(fs*.95));$scr.style.setProperty('--bbar',bb+'px');BBARF=(bb+h*.015+4)/h;$scr.style.setProperty('--bqtop',Math.round(58*h/VH)+'px');}
  const con=document.getElementById('console').getBoundingClientRect(),sr=$scr.getBoundingClientRect();const ext=Math.max(0,con.bottom-sr.bottom-10);
  const port=innerHeight>innerWidth;$scr.style.setProperty('--qbot',(port&&ext>40?-ext:Math.round(h*.035))+'px');$scr.style.setProperty('--qtop',(port?(ext>40?Math.round(h*.42):Math.round(h*.2)):Math.round(h*.14))+'px');
  document.body.classList.toggle('tabland',isTabletLand());}
@@ -3792,7 +3816,7 @@ function say1(txt,spk,src,i,n){return new Promise(res=>{clearQ();$t.hidden=false
 function say(text){const P=prepText(i18(tr(text)));const pages=paginate(P.body,/\n[・✔☐•]/.test(P.body)&&G.mode!=='battle'?pageGeom().maxL+1:0);return (async()=>{for(let i=0;i<pages.length;i++)await say1(pages[i],P.spk,P.src,i,pages.length);})();}
 function finishUI(v){const r=UI.resolve;UI.kind=null;UI.spk=null;UI.resolve=null;UI.onSel=null;$c.innerHTML='';if(r)r(v);}
 function choose(prompt,opts,o={}){const P=prepText(i18(tr(prompt||'')));const pages=P.body.trim()?paginate(P.body,G.mode==='battle'?1:3):[''];return (async()=>{for(let i=0;i<pages.length-1;i++)await say1(pages[i],P.spk,P.src,i,pages.length);return choose1(pages[pages.length-1],P.spk,opts,o);})();}
-function choose1(prompt,spk,opts,o){return new Promise(res=>{clearQ();UI.kind='choose';UI.spk=spk;UI.resolve=res;UI.sel=0;const bm=G.mode==='battle';UI.cols=o.cols||(bm?Math.min(opts.length,VH>VW?2:4):1);UI.cancel=!!o.cancel;UI.n=opts.length;UI.onSel=o.onSel||null;$t.innerHTML='';$t.hidden=!prompt.trim();if(spk&&bm)$t.appendChild(el('b',{class:'ninl',text:spk+'　'}));richInto($t,prompt);$c.className='pchoices'+(UI.cols===2?' g2':UI.cols>2?' brow':'');$c.style.setProperty('--bc',UI.cols);$c.innerHTML='';opts.forEach((t,i)=>{const pr=String(i18(t)).split('\n');const b=el('button',{class:'opt'+(o.cls&&o.cls[i]?' '+o.cls[i]:'')+(pr.length>1?' two':''),type:'button',text:pr[0]});if(pr.length>1)b.appendChild(el('small',{text:pr.slice(1).join(' ')}));b.addEventListener('click',()=>{if(UI.kind==='choose')finishUI(i);});b.addEventListener('mouseenter',()=>{UI.sel=i;hl();});$c.appendChild(b);});hl();});}
+function choose1(prompt,spk,opts,o){return new Promise(res=>{clearQ();UI.kind='choose';UI.spk=spk;UI.resolve=res;UI.sel=0;const bm=G.mode==='battle';UI.cols=o.cols||(bm?Math.min(opts.length,VH>VW?2:4):1);UI.cancel=!!o.cancel;UI.n=opts.length;UI.onSel=o.onSel||null;$t.innerHTML='';$t.hidden=!prompt.trim();if(spk&&bm)$t.appendChild(el('b',{class:'ninl',text:spk+'　'}));richInto($t,prompt);$c.className='pchoices'+(UI.cols===2?' g2':UI.cols>2?' brow':'');$c.style.setProperty('--bc',UI.cols);$c.innerHTML='';opts.forEach((t,i)=>{const pr=String(i18(t)).split('\n');const b=el('button',{class:'opt'+(o.cls&&o.cls[i]?' '+o.cls[i]:'')+(pr.length>1?' two':''),type:'button',text:pr[0]});if(pr.length>1){const dm=pr[pr.length-1].startsWith('≈')?pr.pop():null;if(pr.length>1)b.appendChild(el('small',{text:pr.slice(1).join(' ')}));if(dm)b.appendChild(el('em',{class:'dm',text:dm}));}b.addEventListener('click',()=>{if(UI.kind==='choose')finishUI(i);});b.addEventListener('mouseenter',()=>{UI.sel=i;hl();});$c.appendChild(b);});hl();});}
 function hl(){[...$c.children].forEach((b,i)=>{b.classList.toggle('sel',i===UI.sel);if(i===UI.sel&&b.scrollIntoView&&G.mode==='battle')b.scrollIntoView({block:'nearest'});});if(UI.onSel)UI.onSel(UI.sel);}
 function showPoints(title,items){return new Promise(res=>{clearQ();$t.hidden=false;UI.kind='points';UI.resolve=res;$t.textContent=title;$c.className='pchoices';$c.innerHTML='';const ul=el('ul',{class:'points'});items.forEach(t=>ul.appendChild(el('li',null,el('b',{text:'[1]'}),biEl(t))));$c.appendChild(ul);$c.appendChild(el('button',{class:'opt sel',type:'button',text:'Continue 繼續',onclick:()=>finishUI()}));});}
 function updateUI(){
@@ -4132,7 +4156,7 @@ function drawBattle(){const B=G.B;const sky=SKYS[PC()]||SKYS.taio;const g=ctx.cr
   const nmTxt=m.en,fs=fitText(nmTxt,90,[9,8,7,6],'"Press Start 2P",monospace');ctx.fillStyle=t.col;ctx.font=`${fs}px "Press Start 2P",monospace`;ctx.fillText(nmTxt,12,12);
   ctx.fillStyle='#1f2b33';ctx.font=`700 ${fitText(m.zh,96,[11,10,9],'"Noto Sans HK",sans-serif')}px "Noto Sans HK",sans-serif`;ctx.fillText(m.zh,12,22);
   ctx.font='5px "Press Start 2P",monospace';const tw=Math.ceil(ctx.measureText(t.en).width);R(ctx,150-tw-8,11,tw+4,8,t.col);ctx.fillStyle='#fff';ctx.fillText(t.en,150-tw-6,12.5);
-  ctx.fillStyle='#e0503c';ctx.font='6px "Press Start 2P",monospace';ctx.fillText('HP',12,36);hpBar(26,35,88,B.eHPD,B.eMax);
+  ctx.fillStyle='#e0503c';ctx.font='6px "Press Start 2P",monospace';ctx.fillText('HP',12,36);hpBar(26,35,88,B.eHPD,B.eMax);{const pv=B.pv;if(pv&&pv.unit==='hp'){const mx=Math.max(1,B.eMax),cur=Math.max(0,B.eHPD),w=88,a=Math.min(cur,pv.nv),x0=26+Math.round(w*(cur-a)/mx),ww=Math.max(1,Math.round(w*a/mx)),pl=.5+.5*Math.sin(G.tick/6);R(ctx,x0,35,ww,5,`rgba(255,196,20,${.55+.4*pl})`);const xu=26+Math.round(w*Math.max(0,cur-pv.uv)/mx);R(ctx,xu,33,1,9,'#e0503c');R(ctx,xu-1,33,3,1,'#e0503c');R(ctx,xu-1,41,3,1,'#e0503c');}}
   ctx.fillStyle='#1f2b33';ctx.font='6px "Press Start 2P",monospace';const hs=Math.ceil(Math.max(0,B.eHPD))+'/'+B.eMax;ctx.fillText(hs,150-6-ctx.measureText(hs).width,36);
   statRow(12,45,es);
   if(S.caught[B.enemy]){R(ctx,138,22,10,10,'#2f7f86');R(ctx,141,25,4,4,'#bfe8ea');}
@@ -4492,7 +4516,7 @@ async function trainerFlow(tid){const t=TRAINERS[tid];
  await startBattle({boss:true,bossName:t.name,bossImg:bossSprite(t.look),steps:t.n,done:0});
  await say(`${t.name}有 ${t.n} 格耐力！⚡CHARGE 答題儲 💡，再用 ✨SPELL 打走佢嘅耐力。答錯會受 ${dmgToMe(t.atk)} HP 傷害。`);
  const asked=new Set();let got=0;G.B.ins=0;G.B.cd=0;G.B.power=1;G.B.intent=rollIntent();
- while(got<t.n){const act=await battleMenu({foe:t.name});
+ while(got<t.n){const act=await battleMenu({foe:t.name,pv:()=>({unit:'st',nv:1,uv:2})});
   if(act==='swap'){if(await swapFlow())await enemyTurn(t.name,t.atk);}
   else if(act==='charge'){const q=pickQ(pool[Math.floor(Math.random()*pool.length)],asked);if(!q)break;const r=await askQ(q);
    if(r==='right'){delete S.wrong[q.id];onRight(q.mon,q.id);const g=gainIns2(q);fl('+'+g+'💡',60,96,'#f6e03a');G.msgs.unshift(`💡 答啱！Insight +${g}（而家 ${G.B.ins}）。`);}
@@ -4630,10 +4654,11 @@ async function ultMenu(){if(!ultReady())return false;const sp=spellOf(S.lead);co
 const INTENT_TXT={atk:'⚔ 攻擊',chg:'🔥 蓄力（下次 ×1.5）',rest:'💤 喘氣（唔攻擊）'};
 function rollIntent(){const B=G.B;if(B&&B.intent==='chg')return 'atk';const r=Math.random();return r<.5?'atk':r<.75?'chg':'rest';}
 function gainIns2(q){const B=G.B;let n=1+((q&&['diag','dse','sort','order'].includes(q.type))?1:0);if(G.streak>=3&&G.streak%3===0)n++;B.ins=Math.min(5,(B.ins||0)+n);if(B.cd>0)B.cd--;return n;}
-async function battleMenu(o){const B=G.B;while(true){const sp=spellOf(S.lead),ins=B.ins||0;
- const opts=[['charge','⚡ CHARGE\n答題充能 +💡'],['spell',`✨ SPELL\n1💡 ${sp.nz}`],['ult',`${VH>VW?'🌟 ULT':'🌟 ULTIMATE'}\n${B.cd>0?'冷卻 '+B.cd+' 題':'3💡 '+sp.uz}`],['swap','🔄 SWAP\n換夥伴']];if(o&&o.run)opts.push(['run','🏃 RUN\n走佬']);
+const dmTxt=(pv,k)=>pv.unit==='st'?LT(`耐力 −${pv[k]}`,`Stamina −${pv[k]}`):`−${pv[k]} HP`;
+async function battleMenu(o){const B=G.B;while(true){const sp=spellOf(S.lead),ins=B.ins||0;const pv=o&&o.pv?o.pv():null;const dN=pv?'\n≈ '+dmTxt(pv,'nv'):'',dU=pv?'\n≈ '+dmTxt(pv,'uv'):'';
+ const opts=[['charge','⚡ CHARGE\n答題充能 +💡'],['spell',`✨ SPELL\n1💡 ${SL(sp.nz,sp.ne)}${dN}`],['ult',`${VH>VW?'🌟 ULT':'🌟 ULTIMATE'}\n${B.cd>0?LT('冷卻 '+B.cd+' 題','Cooldown '+B.cd):'3💡 '+SL(sp.uz,sp.ue)}${dU}`],['swap','🔄 SWAP\n換夥伴']];if(o&&o.run)opts.push(['run','🏃 RUN\n走佬']);
  const cls=opts.map(x=>x[0]==='ult'?('ult'+(ultReady()?'':' dis')):(x[0]==='spell'&&ins<1?'dis':''));
- const c=await choose('',opts.map(x=>x[1]),{cols:VH>VW?Math.min(3,opts.length):opts.length,cls});const k=(opts[c]||opts[0])[0];
+ B.pv=pv;const c=await choose('',opts.map(x=>x[1]),{cols:VH>VW?Math.min(3,opts.length):opts.length,cls});B.pv=null;const k=(opts[c]||opts[0])[0];
  if(k==='spell'&&ins<1){await say('💡 Insight 唔夠！先揀 ⚡CHARGE 答題充能。');continue;}
  if(k==='ult'&&(ins<3||B.cd>0)){await say(B.cd>0?`🌟 Ultimate 冷卻緊，要再答啱 ${B.cd} 題。`:`🌟 Ultimate 要 3💡，你而家得 ${ins}💡。`);continue;}
  if(k==='swap'&&!Object.keys(S.caught).some(i=>i!==S.lead&&curHP(i)>0)){await say('冇其他可以出場嘅 EconMon。');continue;}
@@ -4670,10 +4695,10 @@ async function wildFlow(id){const m=MONS[id];S.seen[id]=true;const es=statOf(id,
   G.B.duel=null;await flushMsgs();}
  else await say(`野生嘅 ${nm(id)} 出現！【${tt.zh} ${tt.en}】`);
  const again=!!S.caught[id];const me=statOf(S.lead);
- const c=await choose(`${again?'溫習':'捉'} ${nm(id)}：答啱就攻擊，將佢 HP 打到 0。\n・⚡ CHARGE：答題，答啱 +💡，仲閃開攻擊\n・✨ SPELL：用 1💡 攻擊（約 −${Math.round(dmgToWild(id)*spellOf(S.lead).fx.n)} HP）\n・🌟 ULTIMATE：用 3💡，再打 keyword\n答錯或者唔閃，敵人會攻擊（約 ${dmgToMe(m.atk)} HP）。`,[again?'溫習':'挑戰','走佬']);
+ const c=await choose(`${again?'溫習':'捉'} ${nm(id)}：答啱就攻擊，將佢 HP 打到 0。\n・⚡ CHARGE：答題，答啱 +💡，仲閃開攻擊\n・✨ SPELL：用 1💡 攻擊（約 −${Math.round(dmgToWild(id)*spellOf(S.lead).fx.n)} HP）\n・🌟 ULTIMATE：用 3💡，再打 keyword（約 −${Math.round(dmgToWild(id)*spellOf(S.lead).fx.u)} HP）\n・揀指令時，掣上面有傷害數字；敵人 HP 條上面金色係 SPELL、紅線係 ULTIMATE 嘅位置。\n答錯或者唔閃，敵人會攻擊（約 ${dmgToMe(m.atk)} HP）。`,[again?'溫習':'挑戰','走佬']);
  if(c!==0){await say('你成功走甩咗。');await endBattle();return;}
  const asked=new Set();G.B.ins=0;G.B.cd=0;G.B.power=1;G.B.intent=rollIntent();const foe=nm(id);
- while(G.B.eHP>0){const act=await battleMenu({run:true,foe});
+ while(G.B.eHP>0){const act=await battleMenu({run:true,foe,pv:()=>{const b0=dmgToWild(id),f=spellOf(S.lead).fx;return {unit:'hp',nv:Math.max(1,Math.round(b0*f.n)),uv:Math.max(1,Math.round(b0*f.u))};}});
   if(act==='run'){await say('你成功走甩咗。');await endBattle();return;}
   if(act==='swap'){if(await swapFlow())await enemyTurn(foe,m.atk);}
   else if(act==='charge'){const q=pickQ(id,asked);if(!q){await say('呢隻 EconMon 未有題目。');break;}
@@ -5002,14 +5027,41 @@ function dexTab(b,focus){let ch=focus?MONS[focus].ch:(PC()==='cen'?18:PC()==='hh
    row.appendChild(el('button',{class:'mbtn',type:'button',text:'◀ 上一隻',onclick:()=>go(-1)}));row.appendChild(el('button',{class:'mbtn',type:'button',text:'下一隻 ▶',onclick:()=>go(1)}));}
   card.appendChild(row);list.appendChild(card);};
  b.appendChild(tabs);b.appendChild(list);drawTabs();if(focus&&S.caught[focus])detail(MONS[focus]);else drawList();}
-function partyTab(b){const ids=Object.keys(S.caught).sort((a,c)=>{const sa=statOf(a),sc=statOf(c);return (sc.atk+sc.def+sc.hp)-(sa.atk+sa.def+sa.hp);});
- b.appendChild(el('div',{class:'note',text:'揀一隻做夥伴出戰。能力點做咩用：\n・ATK：每 10 點攻擊 +10%；仲有「快答暴擊」——喺時限首 40% 內答啱，有 ATK÷2 %（最多 50%）機會打出 1.5 倍傷害。\n・DEF：每 10 點受傷 −10%（最多 −70%）；另有 DEF÷2.5 %（最多 40%）機會完全擋住一次傷害。\n・HP：真實血量（最多 100），HP 高＝容錯多。\n・同章加成：夥伴同野生 EconMon 同一章（例如都係 Ch.3），傷害 +20%。\n・升級有訓練獎金（Lv×$30），Lv.5 進化仲有 $300＋及第粥，HP 回滿。'}));
- const list=el('div',{style:'display:flex;flex-direction:column;gap:8px'});
- ids.forEach(id=>{const st=statOf(id);const r=el('div',{class:'prow'+(S.lead===id?' lead':'')});r.appendChild(thumb(id,true,false,isEvo(id)));const right=el('div',{style:'display:flex;flex-direction:column;gap:4px'});
-  right.appendChild(el('div',{class:'pname'},nmS(id)+' ',tierChip(id),revDue(id)?el('span',{class:'tired',text:' 💤 要溫習 Review due（ATK −10%）'}):null));right.appendChild(el('div',{class:'pmeta',text:`Lv.${lvOf(id)}${isEvo(id)?' Prime':''} · HP ${curHP(id)}/${st.hp}`}));right.appendChild(statsEl(st));right.appendChild(progressEls(id));
-  if(S.lead===id)right.appendChild(el('span',{class:'tier basic',text:'而家嘅夥伴 Partner',style:'align-self:flex-start'}));else if(!G.B)right.appendChild(el('button',{class:'mbtn',type:'button',text:'設為夥伴 Set as partner',style:'align-self:flex-start',onclick:()=>{S.lead=id;save(true);toast('夥伴：'+nmS(id));openMenu('party');}}));
-  r.appendChild(right);list.appendChild(r);});
- b.appendChild(list);}
+let PSORT='power';
+const ARCH_INFO={Striker:['輸出型','Striker'],Glass:['玻璃大炮','Glass cannon'],Balanced:['平衡型','Balanced'],Bruiser:['重拳型','Bruiser'],Guardian:['守護型','Guardian'],Stamina:['耐戰型','Endurance']};
+function fxTxt(fx){fx=fx||{};const P=v=>Math.round(v*100),t=[];if(fx.heal)t.push(LT(`回復 ${P(fx.heal)}% HP`,`heal ${P(fx.heal)}% HP`));if(fx.shield)t.push(LT(`護盾 ${P(fx.shield)}% HP`,`shield ${P(fx.shield)}% HP`));if(fx.reflect)t.push(LT(`反彈 ${P(fx.reflect)}%`,`reflect ${P(fx.reflect)}%`));if(fx.vuln)t.push(LT(`自己下一下受傷 +${P(fx.vuln)}%`,`you take +${P(fx.vuln)}% on the next hit`));return t.join(' ・ ')||LT('純攻擊','plain attack');}
+function partyCard(id){const st=statOf(id),m=MONS[id],sp=spellOf(id),ev=isEvo(id),lead=S.lead===id,hp=curHP(id),a=ARCH_INFO[archKey(id)]||ARCH_INFO.Balanced;
+ const card=el('div',{class:'pcard'+(lead?' lead':'')});
+ const head=el('div',{class:'pc-h'});head.appendChild(thumb(id,true,false,ev));
+ const t=el('div',{class:'pc-t'});t.appendChild(el('div',{class:'pc-n',text:nmS(id)}));
+ const chips=el('div',{class:'pc-chips'});chips.appendChild(tierChip(id));[`Lv.${lvOf(id)}${ev?' Prime':''}`,`Ch.${m.ch}`,LT(a[0],a[1])].forEach(x=>chips.appendChild(el('span',{class:'pc-chip',text:x})));
+ if(revDue(id))chips.appendChild(el('span',{class:'tired',text:LT('💤 要溫習（ATK −10%）','💤 Review due (ATK −10%)')}));
+ t.appendChild(chips);head.appendChild(t);if(lead)head.appendChild(el('span',{class:'pc-lead',text:'★ '+LT('夥伴','Partner')}));card.appendChild(head);
+ card.appendChild(el('div',{class:'pc-cap',text:'📖 '+LT('概念','Concept')}));card.appendChild(el('div',{class:'pc-con',text:m.concept}));
+ card.appendChild(el('div',{class:'pc-cap',text:LT('現時血量','Current HP')}));card.appendChild(barEl(st.hp?hp/st.hp:0,hp/st.hp>.5?'#2f8a5a':hp/st.hp>.25?'#e0a526':'#e0503c',`HP ${hp}/${st.hp}`));
+ card.appendChild(el('div',{class:'pc-cap',text:LT('能力','Stats')}));card.appendChild(statsEl(st));
+ card.appendChild(el('div',{class:'pc-cap',text:LT('招式','Moves')}));
+ const mv=el('div',{class:'pc-mv'});
+ [['✨','1💡',LT(sp.nz,sp.ne),`×${sp.fx.n}`,fxTxt(sp.fx.nx)],['🌟','3💡',LT(sp.uz,sp.ue),`×${sp.fx.u}`,fxTxt(sp.fx.ux)]].forEach(r=>{mv.appendChild(el('div',{class:'pc-mi',text:`${r[0]} ${r[1]}`}));const d=el('div',{class:'pc-md'});d.appendChild(el('div',{class:'pc-mn',text:r[2]}));d.appendChild(el('div',{class:'pc-me',text:LT('傷害','Damage')+` ${r[3]} ・ ${r[4]}`}));mv.appendChild(d);});
+ card.appendChild(mv);
+ card.appendChild(el('div',{class:'pc-cap',text:LT('進度','Progress')}));card.appendChild(progressEls(id));
+ if(!lead&&!G.B)card.appendChild(el('button',{class:'mbtn pc-set',type:'button',text:LT('設為夥伴','Set as partner'),onclick:()=>{S.lead=id;save(true);toast(LT('夥伴：','Partner: ')+nmS(id));openMenu('party');}}));
+ return card;}
+function partyTab(b){const all=Object.keys(S.caught);const pw=i=>{const x=statOf(i);return x.atk+x.def+x.hp;};
+ const cmp={power:(x,y)=>pw(y)-pw(x),lv:(x,y)=>lvOf(y)-lvOf(x)||pw(y)-pw(x),ch:(x,y)=>MONS[x].ch-MONS[y].ch||MONS[x].no-MONS[y].no,due:(x,y)=>(revDue(y)?1:0)-(revDue(x)?1:0)||pw(y)-pw(x)};
+ const ids=all.sort(cmp[PSORT]||cmp.power);if(S.lead&&ids.includes(S.lead)){ids.splice(ids.indexOf(S.lead),1);ids.unshift(S.lead);}
+ const due=all.filter(revDue).length;
+ b.appendChild(el('div',{class:'pc-sum'},el('b',{text:LT('隊伍','Party')}),el('span',{text:`${LT('已捉','Caught')} ${all.length}/${MLIST.length}`}),el('span',{text:`${LT('夥伴','Partner')}：${S.lead?nmS(S.lead):'—'}`}),due?el('span',{class:'tired',text:`💤 ${due} ${LT('隻要溫習','to review')}`}):null));
+ const g=el('details',{class:'pguide'});g.appendChild(el('summary',{text:LT('ℹ 能力點做咩用？','ℹ How stats work')}));
+ const L=[[LT('攻擊','ATK'),LT('每 10 點 +10% 傷害。快答（時限首 40% 內答啱）有 ATK÷2 %（最多 50%）機會暴擊 ×1.5。','Every 10 points = +10% damage. A fast correct answer (first 40% of the timer) has an ATK÷2 % chance (max 50%) to crit for ×1.5.')],
+ [LT('防禦','DEF'),LT('每 10 點受傷 −10%（最多 −70%）；另有 DEF÷2.5 %（最多 40%）機會完全擋住一次攻擊。','Every 10 points = −10% damage taken (max −70%). Plus a DEF÷2.5 % chance (max 40%) to block a hit completely.')],
+ [LT('血量','HP'),LT('真實血量（最多 100）。高＝容錯多。','Real hit points (max 100). More HP = more room for mistakes.')],
+ [LT('同章加成','Same chapter'),LT('夥伴同野生 EconMon 同一章（例如都係 Ch.3），傷害 +20%。','If your partner and the wild EconMon are from the same chapter (e.g. both Ch.3), damage +20%.')],
+ [LT('打幾多下','Hits to win'),LT('每隻野生 EconMon 都有傷害上下限：普通約 3–4 下、稀有 4–5 下、史詩 5–6 下、傳說 5–7 下 SPELL 打得倒；ATK 越高越快，但有封頂。','Damage has a floor and a ceiling: roughly 3–4 SPELLs for Basic, 4–5 for Rare, 5–6 for Epic and 5–7 for Legendary. Higher ATK helps, but it caps out.')],
+ [LT('升級','Levelling'),LT('升級有訓練獎金（Lv×$30）；Lv.5 進化仲有 $300＋及第粥，HP 回滿。','Level-ups pay a training bonus (Lv×$30); evolving at Lv.5 gives $300 + a Congee potion and refills HP.')]];
+ const ul=el('div',{class:'pg-l'});L.forEach(r=>{ul.appendChild(el('b',{text:r[0]}));ul.appendChild(el('span',{text:r[1]}));});g.appendChild(ul);b.appendChild(g);
+ const sb=el('div',{class:'psort'});sb.appendChild(el('span',{text:LT('排序','Sort')}));[['power',LT('總能力','Power')],['lv',LT('等級','Level')],['ch',LT('章節','Chapter')],['due',LT('要溫習先','Review first')]].forEach(([k,t])=>sb.appendChild(el('button',{type:'button',class:'mbtn'+(PSORT===k?' on':''),text:t,onclick:()=>{PSORT=k;openMenu('party');}})));b.appendChild(sb);
+ const list=el('div',{class:'plist'});ids.forEach(id=>list.appendChild(partyCard(id)));b.appendChild(list);}
 
 /* ---- v0.21 language helpers, district buffs ---- */
 const LT=(zh,en)=>LANG==='en'?en:LANG==='zh'?zh:`${zh} ${en}`;

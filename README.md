@@ -27,3 +27,10 @@ Every fixed line the characters say. Columns: id, where, original, text. Write y
 Stats and rarity of every EconMon. Columns: id, name, chapter, tier, atk, def, hp. Change `tier` (`basic` / `rare` / `epic` / `legendary`) or `atk` / `def` / `hp` (1–100) to rebalance an EconMon; do not change `id`. Blank or invalid cells keep the built-in value. In class mode the Mons sheet does the same (see GUIDE.md §F).
 
 Keep every field on one line and do not use `|` inside a text.
+
+
+## v0.23
+- SPELL / ULTIMATE buttons now show expected damage (`≈ −N HP`; trainers show stamina bars). Gold marker on the enemy HP bar = SPELL, red tick = ULTIMATE.
+- Party tab redesigned: summary line, collapsible “How stats work”, sort buttons, one card per EconMon (concept, HP, stats, moves with multipliers/effects, progress).
+- Small-landscape battle buttons tightened.
+- See `ECONMON_AUDIT.md` for the roster audit and design advice.
