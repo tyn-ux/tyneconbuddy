@@ -72,6 +72,7 @@ nav button[data-tab="exam"]{--tabc:var(--ch-u11)}
 nav button[data-tab="miss"]{--tabc:var(--pink)}
 nav button[data-tab="allq"]{--tabc:var(--ch-ch2)}
 nav button[data-tab="lq"]{--tabc:var(--violet)}
+nav button[data-tab="rev"]{--tabc:var(--teal)}
 nav button[data-tab="acct"]{--tabc:var(--teal)}
 .trial{font-family:var(--f-mono); font-size:11px; padding:2px 8px; border-radius:var(--r-pill);
   background:var(--warn-bg); border:1px solid #dcc78a; color:var(--star)}
@@ -291,6 +292,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <button data-tab="miss">Correction Album</button>
   <button data-tab="allq">All Questions</button>
   <button data-tab="lq">Long Qs</button>
+  <button data-tab="rev">Revision</button>
   <button data-tab="acct">Account</button>
 </nav>
 <div class="content">
@@ -440,6 +442,13 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <div id="tab-lq" class="hide">
     <div class="card"><h2>Long questions</h2><div class="row"><select id="lqSec"></select></div></div>
     <div class="card" id="lqList"><p class="muted">Pick a section.</p></div>
+  </div>
+
+  <div id="tab-rev" class="hide">
+    <div class="card"><h2>Revision corner</h2>
+      <p class="muted">A quick recap per chapter, then three questions at random from that chapter. Read the question, pick a letter in your head, then reveal the answer.</p>
+      <p class="muted" style="margin:0">一章一張卡：先講重點，再答三條隨機題，撳「睇答案」先對返。</p></div>
+    <div id="revList"></div>
   </div>
 
   <div id="tab-acct" class="hide">
@@ -788,7 +797,7 @@ function lockOut(){
 }
 
 /* -------------------------------------------------------------------- nav */
-const TABS=['overview','drill','exam','miss','allq','lq','acct'];
+const TABS=['overview','drill','exam','miss','allq','lq','rev','acct'];
 function show(tab){
   TABS.forEach(t=>{
     $('tab-'+t).classList.toggle('hide',t!==tab);
@@ -797,6 +806,7 @@ function show(tab){
   });
   if(tab==='overview'){ drawGreeting(); drawOverview(); loadBoard('ovLb'); loadTop20(); loadCheer(); }
   if(tab==='miss')     loadBook();
+  if(tab==='rev')      drawRevision();
   if(tab==='acct')     loadBoard('lb');
 }
 $('nav').addEventListener('click',e=>{
@@ -1757,6 +1767,59 @@ $('lqList').addEventListener('input',e=>{
 });
 $('lqSec').addEventListener('change',renderLq);
 
+/* ---------------------------------------------------------- revision corner
+ * One card per chapter. keys = the recap points, written by the teacher and
+ * shown only when filled in, so no point is ever invented here. Questions are
+ * drawn at random from the chapter's own MCQ sections (served by the Bank,
+ * same cache as the other tabs). Nothing is saved; each visit draws again.
+ * -------------------------------------------------------------------------- */
+const REV_KEYS = {
+  /* ch1: ['…', '…'],  — teacher fills in the recap points per chapter */
+};
+function revQuestions(c,cb){
+  const pool=[]; let left=c[3].length;
+  if(!left) return cb([]);
+  c[3].forEach(tp=>section('mcq',c[2],tp,items=>{
+    items.forEach(q=>pool.push(q));
+    if(--left===0) cb(pool);
+  }));
+}
+function revPick(pool,n){
+  const a=pool.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a.slice(0,n);
+}
+function revRender(c,qs){
+  return qs.map((q,i)=>'<div class="item" data-q="'+i+'"><span class="qid">'+esc(q.id)+'</span>'
+    +'<div class="stem" style="font-size:15px">'+stemHtml(q)+'</div>'
+    +(q.opts&&q.opts.length?q.opts.map((o,j)=>'<div class="mono" style="margin:3px 0">'+LAB[j]+'. '+esc(o)+'</div>').join(''):'')
+    +'<button class="btn sm" data-rev="reveal">睇答案</button>'
+    +'<div class="why" style="margin-top:8px">'
+      +'<b>Answer: '+LAB[Number(q.ans)]+'</b>'+(q.why?'<div style="margin-top:6px">'+esc(q.why)+'</div>':'')+'</div></div>'
+  ).join('');
+}
+function drawRevision(){
+  const box=$('revList');
+  box.innerHTML=CHAPTERS.map(c=>'<div class="card ac" style="--ac:var(--teal)" data-ch="'+c[0]+'">'
+    +'<div class="row" style="justify-content:space-between"><h3 style="margin:0">'+esc(c[1])+'</h3>'
+    +'<button class="btn sm primary" data-rev="draw">Three questions</button></div>'
+    +((REV_KEYS[c[0]]&&REV_KEYS[c[0]].length)
+      ?'<ul style="margin:10px 0 0;padding-left:20px">'+REV_KEYS[c[0]].map(k=>'<li>'+esc(k)+'</li>').join('')+'</ul>'
+      :'')
+    +'<div class="rev-qs" style="margin-top:8px"></div></div>'
+  ).join('');
+}
+$('revList').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-rev]'); if(!b) return;
+  if(b.dataset.rev==='reveal'){ b.nextElementSibling.classList.add('show','r'); b.remove(); return; }
+  const card=b.closest('[data-ch]'), c=CHAPTERS.find(x=>x[0]===card.dataset.ch), out=card.querySelector('.rev-qs');
+  out.innerHTML='<p class="muted">Loading…</p>';
+  revQuestions(c,pool=>{
+    const seen=pool.filter(q=>q&&q.q);
+    if(!seen.length){ out.innerHTML='<p class="muted">No questions in this chapter yet.</p>'; return; }
+    out.innerHTML=revRender(c,revPick(seen,3));
+  });
+});
 /* ----------------------------------------------------------------- account */
 $('saveNick').addEventListener('click',()=>{
   submitProfile($('aCls').value,$('aNum').value,$('nick').value,$('nickMsg'),()=>{
