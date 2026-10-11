@@ -1774,7 +1774,24 @@ $('lqSec').addEventListener('change',renderLq);
  * same cache as the other tabs). Nothing is saved; each visit draws again.
  * -------------------------------------------------------------------------- */
 const REV_KEYS = {
-  /* ch1: ['…', '…'],  — teacher fills in the recap points per chapter */
+  /* Ch1 recap points are the exam-grade definitions from the teacher's Ch1 notes,
+     with the historical stories left out until they are verified [待查證].
+     The other chapters are still empty: the teacher fills them in the same way. */
+  ch1: [
+    'Economics: the study of how people allocate scarce resources to satisfy unlimited wants. (經濟學：研究如何分配稀缺資源以滿足無限慾望)',
+    'Scarcity is relative: resources are not enough to satisfy all wants. Limited alone does not mean scarce. (稀缺是相對概念)',
+    'Choice follows from scarcity: wants must be ranked, and something is always given up. (有取捨，必有代價)',
+    'Competition decides who gets a scarce good: price, or non-price rules (queuing, lottery, exam results). (競爭：價格或非價格準則)',
+    'Discrimination is always implied under competition: any rule favours some and excludes others. (競爭必然帶來歧視)',
+    'Opportunity cost = the value of the highest-valued option forgone. Only ONE option, never the sum. Money is just a unit. (機會成本 = 被放棄的最高價值選擇)',
+    'No alternatives, or unlimited resources, means no opportunity cost. (冇選擇就冇機會成本)',
+    'Will the cost change? Use EE + HVOF: does the event change the order of options, or the value of the HVOF? (EE + HVOF)',
+    'Full cost = money cost + time cost. Sunk cost (already paid, unrecoverable) is never a cost. (全部成本 = 金錢成本 + 時間成本；沉沒成本不計)',
+    'Interest is the cost of earlier availability: paid by the borrower, compensation for deferring consumption to the lender. (利息 = 提早取得資源的代價)',
+    'Free good: enough for all wants, zero opportunity cost. Free of charge does not mean free good. (免費物品 ≠ 免費之物)',
+    'Firm = unit of production. Household = unit of consumption. Flow (income, per period) vs stock (wealth, at a point in time). (流量 vs 存量)',
+    'Positive statement: testable against facts, may be wrong. Normative statement: value judgement, about what should be. (實證 vs 規範)'
+  ],
 };
 function revQuestions(c,cb){
   const pool=[]; let left=c[3].length;
