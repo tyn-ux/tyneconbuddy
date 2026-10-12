@@ -369,10 +369,10 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 .steppanel:empty,.steppanel.hide{display:none}
 .steppanel.s4{--sc:var(--violet)} .steppanel.s5{--sc:var(--teal)}
 #next{padding:12px 26px; font-size:15px; box-shadow:4px 4px 0 var(--line)}
-/* --- Drill picker: one chapter at a time. A "continue" box and a strip of
-       the three concepts with the most open mistakes sit on top, then a row of
-       chapter tabs, then the chosen chapter's concepts as cards that say what
-       to do next. --- */
+/* --- Drill picker: every chapter at once. A "continue" box and a strip of
+       the three concepts with the most open mistakes sit on top, then a shelf
+       of chapter cards (two columns on wide screens), each listing all its
+       concepts with a cleared / wrong bar and the next thing to do. --- */
 .plead{border:1px solid var(--line); border-top:4px solid var(--ch-ch4); border-radius:var(--r-sm); padding:12px; margin:0 0 12px;
   display:flex; gap:12px; align-items:center; flex-wrap:wrap}
 .plead h3{font-family:var(--f-serif); font-size:17px; margin:0}
@@ -381,20 +381,29 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   font-family:var(--f-sans); font-size:13px}
 .weak .row{margin-top:6px}
 .weak button{border-color:var(--neg-line)}
-.ctabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin:0 0 12px}
-.ctabs button{flex:0 0 auto; cursor:pointer; font-family:var(--f-sans); font-size:13px; font-weight:600; padding:8px 12px;
-  border:1px solid var(--line); border-bottom:4px solid var(--chc); border-radius:var(--r-sm); background:var(--surface); color:var(--muted)}
-.ctabs button[aria-selected="true"]{background:var(--chc); color:#fff; border-color:var(--chc)}
-.chname{font-family:var(--f-serif); font-size:18px; margin:0 0 10px; color:var(--chc)}
-.board{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px}
-.ccard{display:grid; gap:6px; cursor:pointer; text-align:left; padding:12px; background:var(--surface); border:1px solid var(--line);
-  border-top:4px solid var(--chc); border-radius:var(--r-sm); font-family:var(--f-sans); color:var(--ink); box-shadow:var(--shadow-1)}
-.ccard:hover{border-color:var(--chc)}
-.ccard .nm{font-size:15px; font-weight:700}
-.ccard .ct{font-family:var(--f-mono); font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
-.ccard .st{font-size:12px; font-weight:600}
-.ccard .st.go{color:var(--chc)} .ccard .st.ok{color:var(--pos)} .ccard .st.no{color:var(--neg)}
-@media (max-width:520px){ .board{grid-template-columns:1fr 1fr} .ccard{padding:10px} .ccard .nm{font-size:14px} }
+.ptop{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:0 12px}
+.shelf{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-items:start}
+@media (max-width:899px){ .shelf{grid-template-columns:1fr} }
+.book{border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface); box-shadow:var(--shadow-1); overflow:hidden; scroll-margin-top:70px}
+.book .hdr{display:grid; grid-template-columns:44px 1fr; gap:10px; align-items:center; padding:10px 12px; border-bottom:3px solid var(--chc);
+  background:color-mix(in srgb,var(--chc) 9%,var(--surface))}
+.book .hdr h3{font-family:var(--f-serif); font-size:15.5px; margin:0; line-height:1.25; font-weight:600}
+.book .hdr small{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
+.book.flash{outline:3px solid var(--gold); outline-offset:2px}
+.bring{width:44px; height:44px; border-radius:50%; display:grid; place-items:center; position:relative;
+  background:conic-gradient(var(--chc) calc(var(--p)*1%),var(--surface-2) 0)}
+.bring::before{content:''; position:absolute; inset:5px; border-radius:50%; background:var(--surface)}
+.bring b{position:relative; font-family:var(--f-sans); font-size:11px; color:var(--chc)}
+.cpt{display:grid; grid-template-columns:minmax(0,1fr) 64px 100px; gap:10px; align-items:center; width:100%; cursor:pointer;
+  background:none; border:0; border-top:1px solid var(--line); padding:8px 12px; text-align:left; font-family:var(--f-sans); color:var(--ink)}
+.cpt:first-child{border-top:0}
+.cpt:hover{background:var(--surface-2)}
+.cpt .nm{font-size:13.5px; font-weight:600}
+.cpt .nm small{display:block; font-family:var(--f-mono); font-size:10.5px; color:var(--muted); font-weight:400}
+.cpt .tbar{height:7px}
+.cpt .act{font-size:12px; font-weight:600; text-align:right; white-space:nowrap}
+.cpt .act.go{color:var(--chc)} .cpt .act.ok{color:var(--pos)} .cpt .act.no{color:var(--neg)}
+@media (max-width:520px){ .cpt{grid-template-columns:minmax(0,1fr) 48px 88px; gap:8px; padding:8px 10px} }
 @media (prefers-reduced-motion:reduce){ .stepcard{animation:none} .bigstep{transition:none} }
 .hide{display:none}
 /* --- Correction Album: type / chapter / concept filters, Long Q entries --- */
@@ -1263,11 +1272,11 @@ function eachSection(type,fn){
   const m=(IDX&&IDX[type])||{};
   Object.keys(m).forEach(pg=>Object.keys(m[pg]).forEach(tp=>{ if(m[pg][tp]) fn(pg,tp,m[pg][tp]); }));
 }
-/* The picker shows one chapter at a time. Each concept card says what to do
-   next there: start, keep going, fix the ones still wrong, or all cleared.
+/* The picker shows every chapter at once, as a shelf of cards. Each concept
+   row says what to do next there: start, keep going, fix the ones still
+   wrong, or all cleared.
    It is redrawn whenever the picker comes back into view, so the numbers
    follow the drill. */
-let PICKCH=null;
 function buildSections(){ drawPicker(); }
 function drawPicker(){
   const t=totals(), wrongPer={}, by={};
@@ -1279,37 +1288,45 @@ function drawPicker(){
   const chs=CHAPTERS.filter(c=>by[c[0]]&&by[c[0]].length);
   if(!chs.length){ $('secgrid').innerHTML='<p class="muted">The bank is empty. Run install() in Apps Script.</p>'; drawKept(); return; }
   const last=lastSec(), lastCh=last?chapOf(last.page,last.topic):null;
-  if(!PICKCH||!by[PICKCH]) PICKCH=lastCh&&by[lastCh[0]]?lastCh[0]:chs[0][0];
-  let h='';
+  let h='<div class="ptop">';
   if(last&&last.topic){
     h+='<div class="plead"><div class="grow"><p class="score" style="margin:0">Pick up where you left off</p>'
       +'<h3>'+(lastCh?'<span style="color:var(--ch-'+lastCh[0]+')">'+esc(lastCh[1].split(' · ')[0])+'</span> · ':'')+esc(last.label||lbl(last.topic))+'</h3></div>'
       +'<button class="btn primary" data-page="'+esc(last.page)+'" data-topic="'+esc(last.topic)+'">Continue</button></div>';
   }
-  const all=[]; chs.forEach(c=>by[c[0]].forEach(x=>all.push(x)));
+  /* A topic key can sit in two chapters (Tax is in Unit 11 and in Tax &
+     Fiscal), so the strip names the chapter too. */
+  const all=[]; chs.forEach(c=>by[c[0]].forEach(x=>all.push(Object.assign({ch:c},x))));
   const weak=all.filter(x=>x.bad>0).sort((a,b)=>b.bad-a.bad).slice(0,3);
   if(weak.length) h+='<div class="weak"><b>Most wrong right now</b><div class="row">'
-    +weak.map(x=>'<button class="btn sm" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'">'+esc(lbl(x.tp))+' · '+x.bad+' wrong</button>').join('')+'</div></div>';
-  h+='<div class="ctabs" role="tablist">'+chs.map(c=>{
-    const s=by[c[0]], tot=s.reduce((a,x)=>a+x.n,0), ok=s.reduce((a,x)=>a+x.ok,0);
-    return '<button role="tab" data-chap="'+c[0]+'" aria-selected="'+(c[0]===PICKCH)+'" style="--chc:var(--ch-'+c[0]+')">'
-      +esc(c[1].split(' · ')[0])+' · '+Math.round(ok/tot*100)+'%</button>';
+    +weak.map(x=>'<button class="btn sm" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'">'
+      +esc(x.ch[1].split(' · ')[0])+' '+esc(lbl(x.tp))+' · '+x.bad+' wrong</button>').join('')+'</div></div>';
+  h+='</div><div class="shelf">'+chs.map(c=>{
+    const secs=by[c[0]].slice();
+    secs.sort((a,b)=>c[3].indexOf(a.tp)-c[3].indexOf(b.tp));   // book order, not size
+    const tot=secs.reduce((a,x)=>a+x.n,0), ok=secs.reduce((a,x)=>a+x.ok,0), p=Math.round(ok/tot*100);
+    return '<div class="book" id="book-'+c[0]+'" style="--chc:var(--ch-'+c[0]+')"><div class="hdr">'
+      +'<span class="bring" style="--p:'+p+'"><b>'+p+'%</b></span><div><h3>'+esc(c[1])+'</h3>'
+      +'<small>'+secs.length+' concept'+(secs.length>1?'s':'')+' · '+tot+' Q</small></div></div><div>'
+      +secs.map(x=>{
+        const st=x.ok>=x.n?['ok','✓ All cleared']:x.bad?['no','Fix '+x.bad+' wrong →']:x.ok?['go','Keep going →']:['go','Start →'];
+        return '<button class="cpt" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'">'
+          +'<span class="nm">'+esc(lbl(x.tp))+'<small>'+x.ok+' / '+x.n+' cleared</small></span>'
+          +'<span class="tbar"><span style="width:'+(x.ok/x.n*100)+'%;background:var(--pos)"></span>'
+          +'<span style="width:'+(Math.min(x.bad,x.n-x.ok)/x.n*100)+'%;background:var(--neg)"></span></span>'
+          +'<span class="act '+st[0]+'">'+st[1]+'</span></button>';
+      }).join('')+'</div></div>';
   }).join('')+'</div>';
-  const c=chs.find(x=>x[0]===PICKCH), secs=by[PICKCH].slice();
-  secs.sort((a,b)=>c[3].indexOf(a.tp)-c[3].indexOf(b.tp));   // book order, not size
-  const tot=secs.reduce((a,x)=>a+x.n,0);
-  h+='<div style="--chc:var(--ch-'+c[0]+')"><h3 class="chname">'+esc(c[1])+' <span class="score">· '+tot+' Q</span></h3><div class="board">'
-    +secs.map(x=>{
-      const st=x.ok>=x.n?['ok','✓ All cleared']:x.bad?['no','Fix '+x.bad+' wrong →']:x.ok?['go','Keep going →']:['go','Start →'];
-      return '<button class="ccard" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'"><span class="nm">'+esc(lbl(x.tp))+'</span>'
-        +'<span class="tbar"><span style="width:'+(x.ok/x.n*100)+'%;background:var(--pos)"></span>'
-        +'<span style="width:'+(Math.min(x.bad,x.n-x.ok)/x.n*100)+'%;background:var(--neg)"></span></span>'
-        +'<span class="ct">'+x.ok+' / '+x.n+' cleared</span><span class="st '+st[0]+'">'+st[1]+'</span></button>';
-    }).join('')+'</div></div>';
   $('secgrid').innerHTML=h;
   drawKept();
 }
-function pickChapter(k){ PICKCH=k; drawPicker(); }
+/* Home's chapter route lands here: scroll to that chapter's card and ring it. */
+function pickChapter(k){
+  drawPicker();
+  const b=$('book-'+k); if(!b) return;
+  b.scrollIntoView({block:'start'}); b.classList.add('flash');
+  setTimeout(()=>b.classList.remove('flash'),1600);
+}
 function buildSelects(){
   const opt=type=>{
     const by={};
@@ -1331,7 +1348,6 @@ function buildSelects(){
   $('lqSec').innerHTML=opt('lq');
 }
 $('secgrid').addEventListener('click',e=>{
-  const tb=e.target.closest('[data-chap]'); if(tb) return pickChapter(tb.dataset.chap);
   const b=e.target.closest('[data-topic]');
   if(b) startSection(b.dataset.page,b.dataset.topic,lbl(b.dataset.topic));
 });
