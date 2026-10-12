@@ -1,0 +1,60 @@
+{
+ "_note": "Common traps shown under the why after a wrong answer, and in Revision. Only entries listed here appear. Copied from bank.json traps; teacher-reviewed chapters only (Ch1 first).",
+ "traps": [
+  {
+   "k": "T0",
+   "topic": "scarcity",
+   "text": "Scarcity ≠ shortage. Scarcity means resources are limited relative to unlimited wants — it exists even when prices have already adjusted to clear the market (no shortage). A shortage is a market DISEQUILIBRIUM (quantity demanded > quantity supplied at the current price); it only ever happens to a good that is already scarce, but scarcity itself doesn't require an actual shortage."
+  },
+  {
+   "k": "T1",
+   "topic": "scarcity",
+   "text": "Scarcity doesn't disappear in a one-person economy, a barter economy, or a planned economy. It only requires that wants exceed available resources for at least one person — no market, money, or private ownership is needed for scarcity to exist."
+  },
+  {
+   "k": "T2",
+   "topic": "oppcost",
+   "text": "Sunk costs (already paid, unrecoverable) are never part of an opportunity cost calculation. Only forward-looking, forgone alternatives count. If a question mentions money spent in the past on the item under discussion, that figure is almost always a distractor."
+  },
+  {
+   "k": "T3",
+   "topic": "oppcost",
+   "text": "Opportunity cost is the value of the SINGLE highest-valued alternative forgone — not the sum of every rejected option. It changes when the value of that FORGONE alternative changes, not when the value of the CHOSEN option changes: a pay cut/raise on the option you actually picked doesn't touch its own opportunity cost."
+  },
+  {
+   "k": "T4",
+   "topic": "goods",
+   "text": "Being 'free of charge' is NOT the same as being a 'free good'. A free good is defined by zero marginal benefit — nobody wants any MORE of it even at a zero price. Something can be given away for free by a shop, government, or friend and still be an economic good, because the resources behind it are scarce and have alternative uses."
+  },
+  {
+   "k": "T5",
+   "topic": "types",
+   "text": "Classifying a good as public/private hinges on rivalry and excludability of CONSUMPTION — not on who owns it, whether government provides it, or the cost of producing it. A government-run service can still be a private good (e.g. one patient occupying a public hospital bed at a time)."
+  },
+  {
+   "k": "T6",
+   "topic": "posnorm",
+   "text": "A positive statement doesn't have to be TRUE — it only has to be testable/refutable by facts. Don't assume 'positive' means 'correct': a positive statement can turn out factually wrong and still be positive, because what matters is whether evidence COULD settle it."
+  },
+  {
+   "k": "T7",
+   "topic": "property",
+   "text": "Weakening private property rights specifically means restricting the right to USE, receive INCOME from, or TRANSFER an asset — not any policy that touches the asset. A tax obligation or a high price is not the same as a restricted property right; check which of the three rights is actually being limited."
+  },
+  {
+   "k": "T8",
+   "topic": "economy",
+   "text": "The defining test for 'market economy' vs 'planned economy' is which mechanism allocates resources (price mechanism vs. government command) plus who owns most resources. Income distribution, unemployment, inflation, and competition levels are NOT guaranteed to differ in a fixed direction between the two systems — treat any option claiming a market economy 'must' have more/less of some outcome with suspicion."
+  },
+  {
+   "k": "T9",
+   "topic": "interest",
+   "text": "Interest doesn't require money, a banking system, or inflation to exist — it's the reward for POSTPONING consumption, and can be paid in kind. Only the absence of SCARCITY would remove the basis for interest, since without scarcity there'd be nothing of value to compensate for giving up."
+  },
+  {
+   "k": "T10",
+   "topic": "basic",
+   "text": "'For whom to produce' means who RECEIVES output; 'how to produce' means the production METHOD/factor combination; 'what to produce' means the type/quantity of output. A single policy can touch more than one question at once — check systematically whether it changes WHO gets it, HOW it's made, or WHAT is made, rather than defaulting to just one."
+  }
+ ]
+}

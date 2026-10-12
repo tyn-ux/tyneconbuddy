@@ -425,6 +425,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <div id="tab-drill" class="hide">
     <div id="picker" class="card">
       <h2>Choose a section</h2>
+      <p class="mono" id="keptLine" style="margin:-4px 0 10px"></p>
       <div id="secgrid"></div>
     </div>
     <div id="qcard" class="card hide">
@@ -673,9 +674,10 @@ function section(type,page,topic,cb){
  * it takes five other questions or ten minutes. That one rule is what stops
  * "tap until green" from being a scoring strategy.
  * -------------------------------------------------------------------------- */
-let P = {cleared:{}, wrong:{}, retry:{}, since:0};
+let P = {cleared:{}, wrong:{}, retry:{}, since:0, ct:{}, kept:{}, wu:{}};
 const pKey = () => 'tjx2:' + (EMAIL||'anon');
-function pLoad(){ try{ const v=JSON.parse(localStorage.getItem(pKey())); if(v) P=v; }catch(e){} P.retry=P.retry||{}; }
+function pLoad(){ try{ const v=JSON.parse(localStorage.getItem(pKey())); if(v) P=v; }catch(e){}
+  P.retry=P.retry||{}; P.ct=P.ct||{}; P.kept=P.kept||{}; P.wu=P.wu||{}; }
 function pSave(){ try{ localStorage.setItem(pKey(), JSON.stringify(P)); }catch(e){} }
 
 /* The server holds the authoritative set of cleared questions, so a student who
@@ -712,7 +714,7 @@ function canCredit(key){
 function markRight(key,topic){
   P.since++;
   if(canCredit(key) && !P.cleared[key]){
-    P.cleared[key]=topic||1; pSave(); queueCleared(key,topic); pushScore(); return true;
+    P.cleared[key]=topic||1; P.ct[key]=Date.now(); pSave(); queueCleared(key,topic); pushScore(); return true;
   }
   pSave(); return false;
 }
@@ -1050,6 +1052,7 @@ function buildSections(){
         +esc(lbl(x.tp))+'<small>'+x.n+' Q</small></button>').join('')
       +'</div></div>';
   }).join('')||'<p class="muted">The bank is empty. Run install() in Apps Script.</p>';
+  drawKept();
 }
 function buildSelects(){
   const opt=type=>{
@@ -1075,7 +1078,63 @@ $('secgrid').addEventListener('click',e=>{
   const b=e.target.closest('.sec');
   if(b) startSection(b.dataset.page,b.dataset.topic,lbl(b.dataset.topic));
 });
+/* ------------------------------------------------------------- warm-up
+ * Cleared means answered right once; kept means still right a week later.
+ * The first section a student opens each day starts with up to three
+ * questions they cleared at least seven days ago. Not scored: a right answer
+ * moves the question into "kept", a wrong one leaves it cleared and brings it
+ * back a week later. Nothing is ever taken away from the level. P.ct is when
+ * a question was cleared; ones cleared before this existed count as old. */
+const WEEK=7*86400000;
+function warmCandidates(){
+  const now=Date.now();
+  return Object.keys(P.cleared).filter(k=>!P.kept[k]
+    && now-(P.ct[k]||0)>=WEEK && now-((P.wu[k]&&P.wu[k].ts)||0)>=WEEK);
+}
+function pagesOf(tp){ const m=(IDX&&IDX.mcq)||{}; return Object.keys(m).filter(pg=>m[pg][tp]); }
 function startSection(page,topic,label,focusKey){
+  const day=new Date().toDateString(), go=()=>openSection(page,topic,label,focusKey);
+  if(P.wuDay===day) return go();
+  const keys=revPick(warmCandidates(),3);
+  if(!keys.length) return go();
+  P.wuDay=day; pSave();
+  $('picker').classList.add('hide'); $('qcard').classList.remove('hide');
+  $('stem').textContent='Loading…'; $('opts').innerHTML='';
+  const need={};
+  keys.forEach(k=>pagesOf(P.cleared[k]).forEach(pg=>{ need[pg+'|'+P.cleared[k]]=[pg,P.cleared[k]]; }));
+  const list=Object.keys(need).map(k=>need[k]), found={};
+  let left=list.length;
+  if(!left) return go();
+  list.forEach(x=>section('mcq',x[0],x[1],items=>{
+    items.forEach(q=>{ if(keys.indexOf(q.key)>=0) found[q.key]=q; });
+    if(--left) return;
+    const qs=keys.map(k=>found[k]).filter(q=>q&&((q.opts&&q.opts.length)||q.img));
+    if(!qs.length) return go();
+    SECTION={warm:true,page:'',topic:'',label:'Warm-up',then:[page,topic,label,focusKey]};
+    QUEUE=qs; POS=0; render();
+  }));
+}
+function warmDone(){ const t=SECTION.then; openSection(t[0],t[1],t[2],t[3]); }
+function warmAnswer(q,ok){
+  P.wu[q.key]={ts:Date.now(),ok:ok?1:0};
+  if(ok) P.kept[q.key]=Date.now(); else P.ct[q.key]=Date.now();
+  pSave();
+  post({event:'warmup', key:q.key, correct:ok, page:'warm'});
+  $('why').className='saybox show';
+  $('why').innerHTML=tynSay(ok?'cheer':'think','TYN says',
+    (ok?'<b>Still right a week later, so this one is now kept.</b> '
+       :'<b>This one slipped since you cleared it. That is normal after a week. It stays cleared and comes back next week.</b> ')
+    +'The answer is '+LAB[Number(q.ans)]+'. '+esc(q.why||''),ok?'ok':'no');
+  $('next').textContent=POS+1<QUEUE.length?'Next':'Start my section';
+  $('next').classList.remove('hide');
+}
+function keptCount(){ return Object.keys(P.kept||{}).filter(k=>P.cleared[k]).length; }
+function drawKept(){
+  const el=$('keptLine'); if(!el) return;
+  const n=keptCount();
+  el.textContent=n?'Kept: '+n+' question'+(n>1?'s':'')+' still right a week after you cleared '+(n>1?'them':'it')+'.':'';
+}
+function openSection(page,topic,label,focusKey){
   SECTION={page,topic,label};
   try{ localStorage.setItem('tjx2:last:'+(EMAIL||'anon'),JSON.stringify(SECTION)); }catch(e){}
   $('picker').classList.add('hide'); $('qcard').classList.remove('hide');
@@ -1087,6 +1146,18 @@ function startSection(page,topic,label,focusKey){
     render();
   });
 }
+
+/* ------------------------------------------------------------------ traps
+ * traps.json holds the common misconceptions copied from the question bank,
+ * one chapter at a time once the teacher has read them. After a wrong answer
+ * one trap for that topic shows under the why; Revision lists a chapter's
+ * traps. A topic with no reviewed trap shows nothing. */
+let TRAPS={};
+fetch('traps.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(j=>{
+  TRAPS={}; ((j&&j.traps)||[]).forEach(t=>{ (TRAPS[t.topic]=TRAPS[t.topic]||[]).push(t); });
+  fillRevTraps();
+});
+function trapFor(tp){ const a=TRAPS[tp]; return a&&a.length?pick_(a):null; }
 
 /* ---------------------------------------------------------------- question */
 function stemHtml(q){ return q.img?'<img src="'+esc(q.img)+'" alt="Question">':esc(q.q||''); }
@@ -1111,10 +1182,18 @@ function optsHtml(q,picked){
    not yet attempted. Tapping a square jumps straight there, so a student can
    go back to the ones they missed instead of grinding forward in order. */
 function drawNav(){
-  let done=0;
+  if(SECTION.warm){
+    $('qnav').innerHTML=''; $('secBar').style.width=Math.round(POS/QUEUE.length*100)+'%';
+    $('secName').textContent='Warm-up';
+    $('secCount').textContent='From questions you cleared over a week ago · not scored';
+    $('crumb').innerHTML='Warm-up › Q '+(POS+1)+' / '+QUEUE.length
+      +' · <button class="btn sm" id="wuSkip" style="padding:2px 8px">Skip warm-up</button>';
+    return;
+  }
+  let done=0, kept=0;
   const cells=QUEUE.map((q,i)=>{
     let cls='';
-    if(P.cleared[q.key]){ cls='done'; done++; }
+    if(P.cleared[q.key]){ cls='done'; done++; if(P.kept[q.key]) kept++; }
     else if(P.wrong[q.key]) cls='miss';
     if(i===POS) cls+=' now';
     return '<button class="'+cls.trim()+'" data-j="'+i+'" title="'+esc(q.id)+'">'+(i+1)+'</button>';
@@ -1123,11 +1202,12 @@ function drawNav(){
   const pct=QUEUE.length?Math.round(done/QUEUE.length*100):0;
   $('secBar').style.width=pct+'%';
   $('secName').textContent=(SECTION&&SECTION.label)||'';
-  $('secCount').textContent=done+' / '+QUEUE.length+' cleared · '+pct+'%';
+  $('secCount').textContent=done+' / '+QUEUE.length+' cleared · '+pct+'%'+(kept?' · '+kept+' kept':'');
   const ch=chapOf(SECTION.page,SECTION.topic);
   $('crumb').innerHTML=(ch?'<b style="color:var(--ch-'+ch[0]+')">'+esc(ch[1])+'</b> › ':'')
     +esc(SECTION.label||'')+' › Q '+(POS+1)+' / '+QUEUE.length;
 }
+$('crumb').addEventListener('click',e=>{ if(e.target.id==='wuSkip'&&SECTION.warm) warmDone(); });
 $('qnav').addEventListener('click',e=>{
   const b=e.target.closest('[data-j]'); if(!b) return;
   POS=Number(b.dataset.j); render();
@@ -1141,9 +1221,9 @@ function render(){
       'Section finished — every question here is done. Pick another section, or tap a red square to revisit one.','ok');
     $('why').className='saybox'; $('next').classList.add('hide');
     drawNav(); return; }
-  const ch=chapOf(SECTION.page,SECTION.topic);
+  const tp=SECTION.warm?(q.topic||q.sub||''):SECTION.topic, ch=chapOf(SECTION.page,tp);
   $('qid').innerHTML=(ch?'<span class="badge b-'+ch[0]+'">'+esc(ch[1])+'</span>':'')
-    +'<span class="subtag">'+esc(lbl(SECTION.topic))+'</span>'
+    +'<span class="subtag">'+esc(lbl(tp))+'</span>'
     +'<span class="qid">'+esc(q.id)+'</span>';
   $('why').className='saybox'; $('next').classList.add('hide');
   $('prog').textContent=(POS+1)+' / '+QUEUE.length+' · '+(SECTION.label||'');
@@ -1162,25 +1242,34 @@ $('opts').addEventListener('click',e=>{
     else if(i===chose)    kids[i].classList.add('wrong');
     else                  kids[i].classList.add('dim');
   }
+  if(SECTION.warm) return warmAnswer(q,ok);
   let note='';
   if(ok){
     const credited=markRight(q.key,q.topic||q.sub||'');
     if(!credited&&P.wrong[q.key]) note='You just got this wrong, so a correct answer only counts after 5 other questions or 10 minutes.';
   }else{
     markWrong(q.key, q.topic||q.sub||'');
-    note='This question is now in your Correction Album. Write what it is testing in your own words there.';
+    note='Saved to your Correction Album.';
     post({event:'mistake', key:q.key, chose:chose, correct:false, page:SECTION.page});
   }
+  /* Step 1 is only the answer and the why, so the why is what gets read.
+     Reflection, AI help and the class thread sit behind one tap each. A note
+     already written opens its box straight away. */
+  const trap=ok?null:trapFor(q.topic||q.sub||SECTION.topic);
   $('why').className='saybox show';
   $('why').innerHTML=tynSay(ok?'cheer':'think','TYN says',
     '<b>'+esc(pick_(ok?CHEER_OK:CHEER_NO))+'</b><br>'
     +'<b>'+(ok?'Correct — the answer is ':'The answer is ')+LAB[Number(q.ans)]+'.</b> '
-    +esc(q.why||'')+(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':''),
+    +esc(q.why||'')
+    +(trap?'<p style="margin:10px 0 0"><b>Common trap 常見誤解:</b> '+esc(trap.text)+'</p>':'')
+    +(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':''),
     ok?'ok':'no');
+  let more='<div class="row step2" style="margin-top:12px;gap:8px;flex-wrap:wrap">', reflect='';
   if(!ok){
     const rec=BOOK.find(m=>m.key===q.key)||{};
     const rst=rec.status||'not';
-    $('why').innerHTML+='<div class="drillnote" data-key="'+esc(q.key)+'" '
+    more+='<button class="btn sm primary" data-more="reflect"'+(rec.note?' aria-pressed="true"':'')+'>✍️ Write my reflection</button>';
+    reflect='<div class="drillnote'+(rec.note?'':' hide')+'" data-key="'+esc(q.key)+'" '
       +'style="margin-top:14px;border-top:1px solid rgba(0,0,0,.12);padding-top:10px">'
       +'<p class="score" style="margin:0 0 2px"><b>Your reflection</b> — goes straight into your Correction Album</p>'
       +'<textarea placeholder="In your own words: what is this question really testing, and why did your answer look right?">'+esc(rec.note||'')+'</textarea>'
@@ -1191,24 +1280,34 @@ $('opts').addEventListener('click',e=>{
       +'<span style="flex:1"></span><button class="dnSave btn sm">Save</button>'
       +'<span class="mono dnMsg"></span></div></div>';
   }
-  if(!ok && q.q){
-    /* Deliberately a button, not automatic — and only for text questions: the
-       explainer cannot see a diagram, so offering it there would invite it to
-       guess. Only a student who has read the written explanation and is still
-       stuck presses it. */
-    $('why').innerHTML+='<div class="row" style="margin-top:12px">'
-      +'<button class="btn sm" id="askAI" data-key="'+esc(q.key)+'" data-ch="'+chose+'">'
-      +'I read it and still don&#39;t get it</button><span class="mono" id="aiMsg"></span></div>'
-      +'<div id="aiOut"></div>';
-  }
-  /* The thread opens only now, after the answer is locked in. Showing it any
-     earlier would turn the top comment into the answer key. */
-  $('why').innerHTML+='<div id="thread" data-key="'+esc(q.key)+'" '
+  /* AI help: deliberately a button, not automatic — and only for text
+     questions: the explainer cannot see a diagram, so offering it there would
+     invite it to guess. Only a student who has read the written explanation
+     and is still stuck presses it. */
+  if(!ok && q.q) more+='<button class="btn sm" id="askAI" data-key="'+esc(q.key)+'" data-ch="'+chose+'">'
+      +'I read it and still don&#39;t get it</button>';
+  more+='<button class="btn sm" data-more="thread">💬 See how classmates explained it</button>'
+    +'<span class="mono" id="aiMsg"></span></div>'+reflect+'<div id="aiOut"></div>'
+  /* The thread opens only after the answer is locked in, and only on request.
+     Showing it any earlier would turn the top comment into the answer key. */
+    +'<div id="thread" class="hide" data-key="'+esc(q.key)+'" '
     +'style="margin-top:16px;border-top:1px solid rgba(0,0,0,.12);padding-top:12px">'
     +'<p class="mono">Class discussion · loading…</p></div>';
-  loadThread(q.key);
+  $('why').innerHTML+=more;
   $('next').classList.remove('hide');
   drawNav();
+});
+$('why').addEventListener('click',e=>{
+  const m=e.target.closest('[data-more]'); if(!m) return;
+  if(m.dataset.more==='reflect'){
+    const dn=$('why').querySelector('.drillnote'); if(!dn) return;
+    dn.classList.remove('hide'); m.setAttribute('aria-pressed','true');
+    dn.querySelector('textarea').focus();
+  }else if(m.dataset.more==='thread'){
+    const th=$('thread'); if(!th) return;
+    if(th.classList.contains('hide')){ th.classList.remove('hide'); loadThread(th.dataset.key); m.textContent='💬 Hide class discussion'; }
+    else{ th.classList.add('hide'); m.textContent='💬 See how classmates explained it'; }
+  }
 });
 
 $('why').addEventListener('click',e=>{
@@ -1227,6 +1326,8 @@ $('why').addEventListener('click',e=>{
   }, 60000);   // a cold model call with retries can take 20s+; 30s cut real answers off
 });
 $('next').addEventListener('click',()=>{
+  $('next').textContent='Next';
+  if(SECTION.warm){ if(++POS>=QUEUE.length) return warmDone(); return render(); }
   /* Skip forward to the next question not yet cleared, so "Next" keeps meaning
      "something still to do" on a second pass through the section. */
   let n=POS+1;
@@ -1236,7 +1337,7 @@ $('next').addEventListener('click',()=>{
 });
 $('quit').addEventListener('click',()=>{
   if(INK.on) $('inkToggle').click();
-  $('qcard').classList.add('hide'); $('picker').classList.remove('hide'); drawOverview();
+  $('qcard').classList.add('hide'); $('picker').classList.remove('hide'); drawKept(); drawOverview();
 });
 
 /* ------------------------------------------------------------------- ink
@@ -1670,6 +1771,8 @@ function lqLoadPoints(cb){
 const lqKey=q=>'tjx2:lq:'+(EMAIL||'anon')+':'+(q.key||q.id);
 function lqGet(q){ try{ return JSON.parse(localStorage.getItem(lqKey(q)))||{}; }catch(e){ return {}; } }
 function lqPut(q,v){ try{ localStorage.setItem(lqKey(q),JSON.stringify(v)); }catch(e){} }
+/* Every AI marking is one draft. A mark from before drafts existed is draft 1. */
+function lqDrafts(st){ return (st.drafts||(st.ai?[{n:1,t:st.ai.t,g:null}]:[])).slice(); }
 const LQ_STOP=new Set(('that this with from will they their there them then than when which would could should '
   +'have been also into more less does such only over each both because while what where were your some most '
   +'very much make made thus hence therefore however other these those being under same given e.g. i.e.').split(' '));
@@ -1729,9 +1832,62 @@ function lqRules(gs){
   return r.join('; ');
 }
 const LQ_BOX='background:var(--surface-2);padding:12px 14px;margin-top:12px;border-left:3px solid ';
+/* Worked chains: how a full-mark answer is built, shown on a DIFFERENT past
+   paper question from the one being answered. Each step pairs what the step
+   does with that question's own marking-scheme line (copied from the bank, not
+   rewritten). Fading by form: S4 sees every step, S5 sees what each step does
+   but opens the scheme lines one by one, S6 does not get the card. */
+const CHAINS=[
+ {id:'diagram', title:'Explain with a diagram', ex:'CE2009/P1/Q9(b)',
+  q:'The price of paper has increased sharply. With the aid of a diagram, explain under what condition publishers’ total revenue from the sale of textbooks would INCREASE. (8 marks)',
+  steps:[['Say which curve moves, which way, and why. Draw it. 邊條線郁、向邊、點解；畫出嚟',
+          'Dearer paper raises production costs — the supply of textbooks decreases (shifts left): price rises and quantity falls (2)'],
+         ['State the condition the question asks for. 講出條件',
+          'Condition: the demand for textbooks is INELASTIC (3)'],
+         ['Explain why the condition gives the result: compare the two changes. 解釋點解：比較兩個變化',
+          'The percentage change in quantity is smaller than the percentage change in price — the revenue gain from the higher price outweighs the loss from the smaller quantity (3)']]},
+ {id:'whether', title:'Explain whether…', ex:'CE1994/P1/Q1',
+  q:'The Kowloon-Canton Railway Corporation provides a free shuttle-bus service at some train stations. Explain whether this service is a ‘free good’ to society or not. (4 marks)',
+  steps:[['Take a stand first. 先表態',
+          'Conclusion: Not a free good (1)'],
+         ['Test the case against the definition, one condition at a time. 用定義逐個條件驗',
+          'Resources used in providing the bus service have alternative uses / there is a real cost of provision (2)'],
+         ['Check the other condition too. 再驗另一個條件',
+          'More of the bus service is preferred to less (positive marginal benefit) (1)']]},
+ {id:'explain', title:'Explain', ex:'DSE2024/P2/Q11(b)',
+  q:'The landlord of Ann’s coffee shop raised the monthly rental from $70,000 to $85,000. Ann said her daily output remains unchanged. Explain Ann’s output decision with reference to the profit-maximising condition under perfect competition. (3 marks)',
+  steps:[['State the rule the question points to. 先講原則',
+          'To maximise profit, a firm under perfect competition produces up to the point where the marginal cost of the last unit equals its marginal revenue (i.e. the market price) (1)'],
+         ['Put the change in the question into the terms of that rule. 將題目嘅變化放入原則',
+          'The monthly rental is a fixed cost as it does not vary with the quantity of output produced in a day (1)'],
+         ['Link back: does the change move anything in the rule? 連返去結論',
+          'As the rental increase affects neither the marginal cost nor the market price, it does not affect the profit-maximising daily output quantity (1)']]}
+];
+function chainFor(q){
+  const cmd=String(q.cmd||''), t=String(q.q||'');
+  let c=null;
+  if(/draw|diagram/i.test(cmd)||/with the aid of a diagram/i.test(t)) c=CHAINS[0];
+  else if(/explain/i.test(cmd)&&/\bwhether\b|necessarily/i.test(t)) c=CHAINS[1];
+  else if(/explain/i.test(cmd)) c=CHAINS[2];
+  if(!c||c.ex===(q.key||q.id)) return null;
+  return c;
+}
+function myForm(){ const m=String((ME&&ME.cls)||'').match(/[4-6]/); return m?Number(m[0]):4; }
+function chainHtml(q){
+  const c=chainFor(q), f=myForm();
+  if(!c||f>=6) return '';
+  return '<details class="lq-chain" style="margin-top:10px"><summary><b>How to build an answer: '+esc(c.title)+'</b>'
+    +' <span class="muted">· worked example from '+esc(c.ex)+'</span></summary>'
+    +'<div style="'+LQ_BOX+'var(--star)"><p style="margin:0 0 6px"><span class="qid">'+esc(c.ex)+'</span> '+esc(c.q)+'</p><ol style="margin:0;padding-left:20px">'
+    +c.steps.map((s,i)=>'<li style="margin:6px 0"><b>'+esc(s[0])+'</b><br>'
+      +(f===5&&i>0?'<button class="btn sm" data-act="chainstep">Try it, then show the scheme line</button><span class="hide">'+esc(s[1])+'</span>'
+                 :'<span class="muted">'+esc(s[1])+'</span>')+'</li>').join('')
+    +'</ol><p class="muted" style="margin:8px 0 0">This shows the order of the links, not words to copy. Your question needs its own links. 學嘅係次序，唔係字眼。</p></div></details>';
+}
 function lqCard(q,i){
   const st=lqGet(q), gs=lqGroups(q), pts=gs?lqMarked(gs):[], h=st.h||0, ai=st.ai, photo=LQ_PHOTO[q.key||q.id];
   const tickTot=gs&&pts.length?lqScore(q,gs,id=>(st.c||[]).indexOf(id)>=0?99:0):(st.self==null?null:Number(st.self));
+  const dr=lqDrafts(st), mk=Number(q.marks)||0;
   let html='<div class="item" data-i="'+i+'"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
     +(q.cmd?'<span class="pill">'+esc(q.cmd)+'</span>':'')
     +(q.marks?'<span class="pill">'+esc(q.marks)+' marks</span>':'')
@@ -1739,13 +1895,20 @@ function lqCard(q,i){
     +(st.open&&tickTot!=null?'<span class="pill partly lq-pill">self-marked '+tickTot+'/'+esc(q.marks||'?')+'</span>':'')+'</div>'
     +'<div class="stem" style="font-size:15px">'+esc(q.q||'')+'</div>'
     +(q.fig?'<img src="'+esc(q.fig)+'" style="max-width:100%">':'')
+    +chainHtml(q)
+    +(dr.length?'<p class="score" style="margin:10px 0 0">'+(dr.length>1?'Your drafts: ':'')+dr.map(d=>'Draft '+d.n+': <b>'+d.t+'/'+esc(q.marks||'?')+'</b>').join(' → ')+'</p>':'')
+    +(ai?'<p class="muted" style="margin:4px 0 0"><b>Draft '+(dr.length+1)+':</b> answer the AI\'s question below by fixing that link in this box, then mark again. 用 AI 最後嗰條問題改呢一稿。</p>':'')
     +'<textarea class="lq-ans" placeholder="Write your answer in your own words first. 先用自己的說法寫，再對 marking points。">'+esc(st.a||'')+'</textarea>'
     +(photo?'<div class="row" style="margin-top:6px"><img src="data:image/jpeg;base64,'+photo+'" style="max-height:120px;border:1px solid var(--line)">'
       +'<button class="btn sm" data-act="unphoto">Remove photo</button></div>':'')
     +'<div class="statusrow">'
     +(pts.length&&h<2?'<button class="btn sm" data-act="hint">'+(h?'Show chain starters':'Hint: how many points?')+'</button>':'')
     +(pts.length?'<label class="btn sm" style="cursor:pointer">📷 Photo of my answer<input type="file" accept="image/*" capture="environment" class="lq-photo" hidden></label>'
-      +'<button class="btn sm" data-act="ai">AI mark my answer</button>':'')
+      +'<label class="mono" style="display:inline-flex;gap:4px;align-items:center">My guess '
+        +'<select class="lq-guess"><option value="">?</option>'
+        +Array.from({length:mk+1},(_,n)=>'<option'+(st.guess===n?' selected':'')+'>'+n+'</option>').join('')
+        +'</select> / '+esc(q.marks||'?')+'</label>'
+      +'<button class="btn sm" data-act="ai">AI mark '+(dr.length?'draft '+(dr.length+1):'my answer')+'</button>':'')
     +(st.open?'<button class="btn sm" data-act="close">Hide marking points</button>'
              :'<button class="btn sm primary" data-act="open">Compare with marking points</button>')
     +'</div><p class="lq-msg muted" style="margin:6px 0 0"></p>';
@@ -1755,7 +1918,10 @@ function lqCard(q,i){
       +'</ol>'+(h>=2?'<p class="muted" style="margin:6px 0 0">Fill each ___ with the link that explains <i>why</i>. 每個 ___ 都要講出「點解」。</p>':'')+'</div>';
   }
   if(ai){
-    html+='<div style="'+LQ_BOX+'var(--teal)"><b>AI marking</b> <span class="muted">· '+ai.t+' / '+esc(q.marks||'?')+(ai.mode==='photo'?' · from your photo':'')+'</span>'
+    const last=dr[dr.length-1];
+    html+='<div style="'+LQ_BOX+'var(--teal)"><b>AI marking'+(dr.length>1?' · draft '+dr.length:'')+'</b> <span class="muted">· '+ai.t+' / '+esc(q.marks||'?')+(ai.mode==='photo'?' · from your photo':'')+'</span>'
+      +(last&&last.g!=null?'<p class="mono" style="margin:4px 0 0">You guessed '+last.g+', the AI gave '+ai.t
+        +(last.g===ai.t?'. Spot on.':last.g>ai.t?'. You were '+(last.g-ai.t)+' too high: check which link you thought you had made.':'. You were '+(ai.t-last.g)+' too low: you know more than you think.')+'</p>':'')
       +(ai.ill?'<p>The AI could not read most of the photo. Try a clearer, closer photo, or type your answer.</p>':'')
       +'<p style="margin:6px 0 0">'+esc(ai.fb||'')+'</p>'
       +(ai.read?'<details style="margin-top:6px"><summary class="muted">What the AI read from your photo</summary><div style="white-space:pre-wrap">'+esc(ai.read)+'</div>'
@@ -1822,6 +1988,7 @@ function lqAiMark(it,btn){
   st.a=it.el.querySelector('.lq-ans').value; lqPut(q,st);
   if(!st.a.trim()&&!photo){ msg.textContent='Write your answer or add a photo first. 先寫答案或者影相。'; return; }
   if(!SESS){ msg.textContent='Sign in first to use AI marking.'; return; }
+  if(st.guess==null){ msg.textContent='First pick your guess: how many marks do you think this gets? 先估吓自己有幾分。'; return; }
   btn.disabled=true; msg.textContent=photo?'Reading your photo and marking… (up to a minute)':'Marking… (about 20 seconds)';
   const points=lqMarked(gs).map(x=>[x[0],x[1][0],x[1][1],x[2].l||'']);
   fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
@@ -1829,9 +1996,12 @@ function lqAiMark(it,btn){
     .then(r=>r.text()).then(txt=>{
       let r; try{ r=JSON.parse(txt); }catch(e){ r={error:txt==='auth'?'Your sign-in has expired. Sign in again.':'AI marking is not set up on the server yet. Ask your teacher.'}; }
       if(r.error){ btn.disabled=false; msg.textContent=r.error; return; }
-      const s2=lqGet(q);
+      const s2=lqGet(q), d=lqDrafts(s2);
       s2.ai={aw:r.awards||{},fb:r.feedback||'',read:r.read||'',ill:!!r.illegible,mode:photo?'photo':'typed',
              t:lqScore(q,gs,id=>(r.awards&&r.awards[id]&&r.awards[id].m)||0)};
+      d.push({n:d.length+1,t:s2.ai.t,g:st.guess,a:st.a,at:Date.now()});
+      s2.drafts=d; s2.guess=null;
+      post({event:'lqdraft', key:q.key||q.id, draft:d.length, guess:st.guess, ai:s2.ai.t, out:Number(q.marks)||0, page:'lq'});
       lqPut(q,s2); delete LQ_PHOTO[q.key||q.id]; lqRedraw(it.el);
       const m2=document.querySelector('.item[data-i="'+it.el.dataset.i+'"] .lq-msg');
       if(m2&&r.left!=null) m2.textContent=r.left+' AI marking'+(r.left===1?'':'s')+' left today.';
@@ -1839,6 +2009,7 @@ function lqAiMark(it,btn){
 }
 $('lqList').addEventListener('click',e=>{
   const b=e.target.closest('button[data-act]'); if(!b) return;
+  if(b.dataset.act==='chainstep'){ b.nextElementSibling.classList.remove('hide'); b.nextElementSibling.classList.add('muted'); b.remove(); return; }
   const it=lqItem(b), q=it.q, st=lqGet(q);
   st.a=it.el.querySelector('.lq-ans').value;
   if(b.dataset.act==='ai'){ lqPut(q,st); return lqAiMark(it,b); }
@@ -1865,6 +2036,9 @@ $('lqList').addEventListener('change',e=>{
       const m2=document.querySelector('.item[data-i="'+it.el.dataset.i+'"] .lq-msg');
       if(m2) m2.textContent='Photo ready. Press "AI mark my answer". Only photograph your answer, not your name or student number. 唔好影到姓名同學號。';
     });
+  }
+  if(e.target.classList.contains('lq-guess')){
+    st.guess=e.target.value===''?null:Number(e.target.value); lqPut(q,st); return;
   }
   if(e.target.dataset.pt!=null){
     const c=new Set(st.c||[]), j=e.target.dataset.pt;
@@ -1950,8 +2124,19 @@ function drawRevision(){
     +((REV_VIDEOS[c[0]]||[]).length
       ?'<div style="margin-top:10px">'+REV_VIDEOS[c[0]].map(v=>'<a class="btn sm" target="_blank" rel="noopener" href="'+esc(v.u)+'">▶ '+esc(v.t)+'</a>').join(' ')+'</div>'
       :'')
+    +'<div class="rev-traps"></div>'
     +'<div class="rev-qs" style="margin-top:8px"></div></div>'
   ).join('');
+  fillRevTraps();
+}
+function fillRevTraps(){
+  document.querySelectorAll('#revList [data-ch]').forEach(card=>{
+    const c=CHAPTERS.find(x=>x[0]===card.dataset.ch), box=card.querySelector('.rev-traps');
+    if(!c||!box) return;
+    const ts=[]; c[3].forEach(tp=>(TRAPS[tp]||[]).forEach(t=>ts.push(t)));
+    box.innerHTML=ts.length?'<details style="margin-top:10px"><summary><b>Common traps 常見誤解</b> <span class="muted">('+ts.length+')</span></summary>'
+      +'<ul style="margin:8px 0 0;padding-left:20px">'+ts.map(t=>'<li style="margin:4px 0"><span class="pill">'+esc(lbl(t.topic))+'</span> '+esc(t.text)+'</li>').join('')+'</ul></details>':'';
+  });
 }
 $('revList').addEventListener('click',e=>{
   const b=e.target.closest('button[data-rev]'); if(!b) return;
