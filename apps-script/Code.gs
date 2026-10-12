@@ -1,4 +1,4 @@
-var BUILD = '2026-10-09a';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-12a';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -77,6 +77,7 @@ function clearedSheet_()  { return sheet_('Cleared',  ['uid','cleared','updated'
 function studentSheet_()  { return sheet_('Students', ['uid','email','class','num','nick','joined','updated']); }
 function commentSheet_()  { return sheet_('Comments', ['cid','key','uid','nick','class','num','text','ts','likes','verified','hidden']); }
 function likeSheet_()     { return sheet_('Likes',    ['cid','uid','ts']); }
+function lqAlbumSheet_()  { return sheet_('LQAlbum',  ['uid','key','score','out_of','missing','fixed','note','status','tries','history','added','updated']); }
 function explainSheet_()  { return sheet_('Explain',  ['key','qid','chose','topic','text','hits','students','first','last','source','reviewed']); }
 function aiLogSheet_()    { return sheet_('AIUsage',  ['day','uid','n']); }
 
@@ -522,16 +523,24 @@ function saveNote_(sess, b) {
   var note = String(b.note || '').slice(0, 2000);
 
   var lock = LockService.getScriptLock();
-  try { lock.waitLock(8000); } catch (e) { return; }
+  try { lock.waitLock(8000); } catch (e) { return false; }
   try {
     var sh = noteSheet_(), v = sh.getDataRange().getValues(), row = -1;
     for (var i = 1; i < v.length; i++) {
       if (String(v[i][0]) === sess.uid && String(v[i][1]) === String(b.key)) { row = i + 1; break; }
     }
-    var rec = [sess.uid, String(b.key).slice(0, 80), status, note, new Date()];
+    var rec = [sess.uid, String(b.key).slice(0, 80), status, cellText_(note), new Date()];
     if (row > 0) sh.getRange(row, 1, 1, rec.length).setValues([rec]);
     else sh.appendRow(rec);
   } finally { try { lock.releaseLock(); } catch (e) {} }
+  return true;
+}
+
+/* Student text that starts with = + - or @ would be read by the Sheet as a
+   formula. A leading apostrophe keeps it as plain text (and is not shown). */
+function cellText_(s) {
+  s = String(s == null ? '' : s);
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
 }
 
 /*
@@ -565,18 +574,112 @@ function myMistakes_(sess) {
     seen[key] = rec; out.push(rec);
   }
 
-  // Attach page and topic to each mistake so the album can shelve it under
-  // its chapter. One pass over the Bank covers every item at once.
-  if (out.length) {
+  // Long questions the student chose to keep in the album (LQAlbum tab).
+  var lq = myLqAlbum_(sess);
+
+  // Attach page and topic to each entry so the album can shelve it under its
+  // chapter and concept. One pass over the Bank covers every item at once.
+  if (out.length || lq.length) {
     var want = {};
     out.forEach(function (r) { want[r.key] = r; });
+    lq.forEach(function (r) { want[r.key] = r; });
     var bv = bankSheet_().getDataRange().getValues();
     for (var b = 1; b < bv.length; b++) {
       var kk = String(bv[b][0]);
       if (want[kk]) { want[kk].pg = String(bv[b][2]); want[kk].tp = String(bv[b][3]); }
     }
   }
-  return { items: out, n: out.length };
+  return { items: out, n: out.length, lq: lq };
+}
+
+/* ============================================================ LQ ALBUM ==== *
+ * A long question enters the Correction Album only when the student puts it
+ * there: after marking (AI or self), they pick the marking points they missed.
+ * One row per (uid, key). The page sends the whole entry each time (score,
+ * points still missing, points since fixed, note, status, tries, history), so
+ * a save that is sent twice — the page retries anything it could not confirm —
+ * leaves the same row behind. There is no delete, same as Mistakes.
+ * ========================================================================== */
+var LQA_MAX_POINTS = 40, LQA_MAX_HIST = 30;
+
+function lqaPoints_(a) {
+  if (!Array.isArray(a)) return [];
+  return a.slice(0, LQA_MAX_POINTS).map(function (p) {
+    p = Array.isArray(p) ? p : [];
+    return [String(p[0] || '').slice(0, 12), String(p[1] || '').slice(0, 400), Number(p[2]) || 0];
+  });
+}
+
+function saveLqAlbum_(sess, b) {
+  var key = String(b.key || '').slice(0, 80);
+  if (!key) return { error: 'no key' };
+  var status = String(b.status || '').toLowerCase();
+  if (STATUSES.indexOf(status) < 0) status = 'not';
+  var hist = (Array.isArray(b.hist) ? b.hist : []).slice(-LQA_MAX_HIST).map(function (h) {
+    h = Array.isArray(h) ? h : [];
+    return [Number(h[0]) || 0, Number(h[1]) || 0, String(h[2] || '').slice(0, 8)];
+  });
+  var rec = [
+    sess.uid, key,
+    b.score === '' || b.score == null ? '' : Number(b.score) || 0,
+    Number(b.out_of) || '',
+    JSON.stringify(lqaPoints_(b.missing)),
+    JSON.stringify(lqaPoints_(b.fixed)),
+    cellText_(String(b.note || '').slice(0, 2000)),
+    status,
+    Math.max(0, Math.floor(Number(b.tries) || 0)),
+    JSON.stringify(hist),
+    b.added ? new Date(Number(b.added)) : new Date(),
+    new Date()
+  ];
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(8000); } catch (e) { return { error: 'busy' }; }
+  try {
+    var sh = lqAlbumSheet_(), v = sh.getDataRange().getValues(), row = -1;
+    for (var i = 1; i < v.length; i++) {
+      if (String(v[i][0]) === sess.uid && String(v[i][1]) === key) { row = i + 1; break; }
+    }
+    if (row > 0) {
+      if (v[row - 1][10]) rec[10] = v[row - 1][10];          // keep the first "added" date
+      sh.getRange(row, 1, 1, rec.length).setValues([rec]);
+    } else sh.appendRow(rec);
+  } finally { try { lock.releaseLock(); } catch (e) {} }
+  return { ok: true };
+}
+
+function myLqAlbum_(sess) {
+  var v = lqAlbumSheet_().getDataRange().getValues(), out = [];
+  function js(x) { try { return JSON.parse(x || '[]'); } catch (e) { return []; } }
+  for (var i = 1; i < v.length; i++) {
+    if (String(v[i][0]) !== sess.uid) continue;
+    out.push({
+      key: String(v[i][1]), score: v[i][2] === '' ? null : Number(v[i][2]), out_of: Number(v[i][3]) || 0,
+      missing: js(v[i][4]), fixed: js(v[i][5]), note: String(v[i][6] || ''),
+      status: String(v[i][7] || 'not'), tries: Number(v[i][8]) || 0, hist: js(v[i][9]),
+      added: v[i][10] ? new Date(v[i][10]).getTime() : 0,
+      updated: v[i][11] ? new Date(v[i][11]).getTime() : 0
+    });
+  }
+  return out;
+}
+
+/* The questions behind the student's own album, for the PDF export. Only keys
+   that are in THIS student's Mistakes or LQAlbum rows come back, so the
+   export cannot be used to pull questions the student never got wrong. */
+var ALBQ_MAX = 300;
+function albumQuestions_(sess, keys) {
+  var asked = {}, n = 0;
+  String(keys || '').split('|').forEach(function (k) { if (k && n < ALBQ_MAX) { asked[k] = 1; n++; } });
+  var mine = {};
+  var mv = mistakeSheet_().getDataRange().getValues();
+  for (var i = 1; i < mv.length; i++) if (String(mv[i][1]) === sess.uid) mine[String(mv[i][2])] = 1;
+  myLqAlbum_(sess).forEach(function (r) { mine[r.key] = 1; });
+  var bv = bankSheet_().getDataRange().getValues(), items = {};
+  for (var b = 1; b < bv.length; b++) {
+    var k = String(bv[b][0]);
+    if (asked[k] && mine[k]) { try { items[k] = JSON.parse(bv[b][4]); } catch (e) {} }
+  }
+  return { items: items };
 }
 
 /* ============================================================= IDENTITY === *
@@ -1095,8 +1198,9 @@ function explain_(sess, key, chose) {
   if (!txt) return { text: '', error: 'The explainer is unavailable right now.' };
 
   aiBump_(sess, quota);
+  // students starts at 0: bumpStudents_ runs right after and counts this asker.
   sh.appendRow([rowKey, key, chose, q.topic || q.sub || q.g || '', txt,
-                1, 1, new Date(), new Date(), 'ai', '']);
+                1, 0, new Date(), new Date(), 'ai', '']);
   return { text: txt, cached: false };
 }
 
@@ -1178,7 +1282,7 @@ function listModels() {
 
 /* ------------------------------------------------------------------ POST -- */
 function doPost(e) {
-  var body = {};
+  var body = {}, reply = 'ok';
   try { body = JSON.parse(e.postData.contents); } catch (err) { body = {}; }
 
   try {
@@ -1190,10 +1294,21 @@ function doPost(e) {
 
     var sess = sessionOf_(body.t);
     if (!sess) return ContentService.createTextOutput('auth');   // silently ignored
+    // Long-question AI marking (LongQMark.gs) answers with JSON the page reads.
+    if (body.event === 'lqmark') return lqMarkReply_(sess, body);
+    // Correction Album saves answer with JSON too, so the page only says
+    // "saved" once the row is really in the Sheet.
+    if (body.event === 'lqalbum') {
+      var res = saveLqAlbum_(sess, body);
+      logSheet_().appendRow([new Date(), 'lqalbum', sess.email, '', '', String(body.key || ''), '',
+                             JSON.stringify({ score: body.score, out_of: body.out_of, tries: body.tries,
+                                              missing: (body.missing || []).length }).slice(0, 2000)]);
+      return ContentService.createTextOutput(JSON.stringify(res)).setMimeType(ContentService.MimeType.JSON);
+    }
 
     if (body.event === 'score')   upsertScore_(sess, body);
     if (body.event === 'mistake') recordMistake_(sess, body);
-    if (body.event === 'note')    saveNote_(sess, body);
+    if (body.event === 'note' && saveNote_(sess, body) === false) reply = 'busy';
     if (body.event === 'cleared') addCleared_(sess, body.items);
     if (body.event === 'comment') addComment_(sess, body.key, body.text);
     if (body.event === 'like')    toggleLike_(sess, body.cid);
@@ -1208,8 +1323,10 @@ function doPost(e) {
     // Never throw: a failed write must not break a student's drilling session.
     // But do leave a trace, or a broken deployment looks exactly like silence.
     authErr_('doPost ' + (body.event || '?') + ' threw: ' + err);
+    reply = 'err';
   }
-  return ContentService.createTextOutput('ok');
+  // 'ok' only when the write went through; the album reads this reply.
+  return ContentService.createTextOutput(reply);
 }
 
 /* One row per (uid, pageId). A lock keeps two tabs from racing each other. */
@@ -1279,7 +1396,7 @@ function route_(p) {
 
   } else if (p.bank === '1' || p.mist === '1' || p.index === '1' || p.meta
              || p.prog === '1' || p.explain || p.cmt || p.setprof === '1'
-             || p.prof === '1' || p.likes === '1' || p.top20 === '1' || p.q) {
+             || p.prof === '1' || p.likes === '1' || p.top20 === '1' || p.q || p.albq === '1') {
     var sess = sessionOf_(p.t);
     if (!sess) {
       out = { error: 'sign in' };
@@ -1289,6 +1406,8 @@ function route_(p) {
       out = myMistakes_(sess);
     } else if (p.q) {
       out = serveOne_(String(p.q));
+    } else if (p.albq === '1') {
+      out = albumQuestions_(sess, p.keys);
     } else if (p.top20 === '1') {
       out = top20_();
     } else if (p.prof === '1') {
@@ -1385,4 +1504,268 @@ function sweepSessions() {
 function resetLeaderboard() {
   var sh = scoreSheet_();
   if (sh.getLastRow() > 1) sh.deleteRows(2, sh.getLastRow() - 1);
+}
+
+/* ====================================================== TEACHER DASHBOARD == *
+ * Where the class is going wrong, written into a "Dashboard" tab of this
+ * Sheet. There is deliberately NO web route to it: the Sheet is yours and
+ * private, so the per-student view stays inside it (see change 1 at the top
+ * of this file for why a public endpoint is not an option).
+ *
+ * HOW TO USE
+ *   Run buildDashboard() from the editor. It rewrites the Dashboard tab.
+ *   Optional: run dashboardDaily() once and it rebuilds itself every morning.
+ *
+ * WHAT IT COUNTS, AND WHAT IT CANNOT SEE
+ *   The site records a wrong MCQ answer in Mistakes and a credited right
+ *   answer in Cleared. "Answered" = signed-in students with either for that
+ *   question; "wrong" = those with at least one Mistakes row. A right answer
+ *   given straight after a wrong one is not credited yet, so it shows only as
+ *   wrong. Unsigned-in drilling records nothing.
+ *
+ * SCALE
+ *   Each run reads Bank, Mistakes, Cleared, Students, Explain, ExplainSeen
+ *   and three columns of Log in full, once each. Comfortable for a few
+ *   hundred students; if Log grows past roughly 200,000 rows a run may near
+ *   the 6-minute limit. Archive old Log rows to another file if it does.
+ * ========================================================================== */
+var DASH_TOP_MISSED = 20;
+var DASH_TOP_EXPLAIN = 30;
+var DASH_ACTIVE_DAYS = 7;
+
+/* Rows 2..last of the first `cols` columns, without touching wider columns
+   (Log's raw JSON column is the heavy one). */
+function rows_(sh, cols) {
+  var n = sh.getLastRow() - 1;
+  return n > 0 ? sh.getRange(2, 1, n, cols).getValues() : [];
+}
+
+function buildDashboard() {
+  var started = Date.now(), LAB = ['A', 'B', 'C', 'D', 'E'];
+
+  // --- Bank: key -> where it lives (MCQ only; LQ has no option to pick) ----
+  var bankSh = bankSheet_(), bank = {}, bv = rows_(bankSh, 4);
+  for (var i = 0; i < bv.length; i++) {
+    if (String(bv[i][1]) !== 'mcq') continue;
+    bank[String(bv[i][0])] = { row: i + 2, page: String(bv[i][2]), topic: String(bv[i][3]) };
+  }
+
+  // --- Students, keyed by uid; email only to join with Log ---------------
+  var stu = {}, byEmail = {};
+  rows_(studentSheet_(), 5).forEach(function (r) {
+    var uid = String(r[0]);
+    if (!uid) return;
+    stu[uid] = { cls: String(r[2] || '?'), num: Number(r[3]) || 0, nick: String(r[4] || ''),
+                 cleared: 0, wrongQ: 0, last: 0 };
+    byEmail[String(r[1]).toLowerCase()] = uid;
+  });
+
+  // --- Per question: who answered, who was wrong, who picked what ---------
+  var q = {};   // key -> { ans: {uid:1}, wrong: {uid:1}, pick: {chose: {uid:1}} }
+  function qOf(k) { return q[k] || (q[k] = { ans: {}, wrong: {}, pick: {} }); }
+
+  var seenWrong = {};
+  rows_(mistakeSheet_(), 4).forEach(function (r) {
+    var k = String(r[2]), uid = String(r[1]);
+    if (!bank[k]) return;
+    var e = qOf(k), c = (r[3] === '' || Number(r[3]) < 0) ? 'blank' : Number(r[3]);
+    e.ans[uid] = 1; e.wrong[uid] = 1;
+    (e.pick[c] = e.pick[c] || {})[uid] = 1;
+    if (!seenWrong[uid + '|' + k]) {
+      seenWrong[uid + '|' + k] = 1;
+      if (stu[uid]) stu[uid].wrongQ++;
+    }
+    var t = r[0] ? new Date(r[0]).getTime() : 0;
+    if (stu[uid] && t > stu[uid].last) stu[uid].last = t;
+  });
+
+  rows_(clearedSheet_(), 3).forEach(function (r) {
+    var uid = String(r[0]), set;
+    try { set = JSON.parse(r[1]) || {}; } catch (e) { return; }
+    var n = 0;
+    for (var k in set) { n++; if (bank[k]) qOf(k).ans[uid] = 1; }
+    if (stu[uid]) {
+      stu[uid].cleared = n;
+      var t = r[2] ? new Date(r[2]).getTime() : 0;
+      if (t > stu[uid].last) stu[uid].last = t;
+    }
+  });
+
+  // Last activity of any kind (sign-in, drilling, notes) from the Log.
+  rows_(logSheet_(), 3).forEach(function (r) {
+    var uid = byEmail[String(r[2]).toLowerCase()];
+    if (!uid) return;
+    var t = r[0] ? new Date(r[0]).getTime() : 0;
+    if (t > stu[uid].last) stu[uid].last = t;
+  });
+
+  function size(o) { return Object.keys(o).length; }
+  function pct(a, b) { return b ? a / b : ''; }
+
+  // --- 1. Most-missed questions -------------------------------------------
+  var missed = Object.keys(q).filter(function (k) { return size(q[k].wrong) > 0; })
+    .sort(function (a, b) {
+      return size(q[b].wrong) - size(q[a].wrong) ||
+             size(q[b].wrong) / size(q[b].ans) - size(q[a].wrong) / size(q[a].ans);
+    }).slice(0, DASH_TOP_MISSED);
+
+  var top = missed.map(function (k, n) {
+    var item = {};
+    try { item = JSON.parse(bankSh.getRange(bank[k].row, 5).getValue()) || {}; } catch (e) {}
+    var e = q[k], ans = Number(item.ans), opts = item.opts || [], cells = [], worst = -1, worstN = 0;
+    for (var o = 0; o < 4; o++) {
+      if (o === ans) { cells.push('✓'); continue; }
+      var c = size(e.pick[o] || {});
+      cells.push(c);
+      if (c > worstN) { worst = o; worstN = c; }
+    }
+    var trap = worst >= 0 ? LAB[worst] + '. ' + String(opts[worst] || '(diagram)').slice(0, 80) : '';
+    return [n + 1, k, bank[k].page, bank[k].topic, isNaN(ans) ? '' : LAB[ans],
+            size(e.wrong), size(e.ans), pct(size(e.wrong), size(e.ans))]
+      .concat(cells, [size(e.pick.blank || {}), trap,
+                      String(item.q || '(diagram question)').replace(/\s+/g, ' ').slice(0, 120)]);
+  });
+
+  // --- 2. Chapter / topic ---------------------------------------------------
+  var tp = {};
+  Object.keys(bank).forEach(function (k) {
+    var id = bank[k].page + '\u0001' + bank[k].topic;
+    var t = tp[id] || (tp[id] = { page: bank[k].page, topic: bank[k].topic,
+                                  qs: 0, touched: 0, pairs: 0, wrong: 0, who: {} });
+    t.qs++;
+    if (!q[k]) return;
+    t.touched++;
+    t.pairs += size(q[k].ans);
+    t.wrong += size(q[k].wrong);
+    for (var u in q[k].ans) t.who[u] = 1;
+  });
+  var topics = Object.keys(tp).map(function (id) { return tp[id]; })
+    .sort(function (a, b) {
+      // Topics nobody has tried go to the bottom; otherwise worst first.
+      return (b.pairs > 0) - (a.pairs > 0) ||
+             (pct(b.wrong, b.pairs) || 0) - (pct(a.wrong, a.pairs) || 0);
+    })
+    .map(function (t) {
+      return [t.page, t.topic, t.qs, t.touched, size(t.who), t.pairs, t.wrong,
+              pct(t.wrong, t.pairs), t.pairs && t.pairs < 10 ? 'few answers yet' : ''];
+    });
+
+  // --- 3. Classes and students ---------------------------------------------
+  var now = Date.now(), DAY = 86400000, cls = {};
+  var people = Object.keys(stu).map(function (u) { return stu[u]; })
+    .sort(function (a, b) { return a.cls < b.cls ? -1 : a.cls > b.cls ? 1 : a.num - b.num; });
+  var plist = people.map(function (s) {
+    var startedQ = s.cleared + s.wrongQ > 0;
+    var days = s.last ? Math.floor((now - s.last) / DAY) : '';
+    var status = !startedQ ? 'Not started'
+               : (days !== '' && days < DASH_ACTIVE_DAYS) ? 'Active' : 'Quiet ' + DASH_ACTIVE_DAYS + '+ days';
+    var c = cls[s.cls] || (cls[s.cls] = { n: 0, started: 0, active: 0, cleared: 0 });
+    c.n++; c.cleared += s.cleared;
+    if (startedQ) c.started++;
+    if (status === 'Active') c.active++;
+    return [s.cls, s.num, s.nick, status, s.cleared, s.wrongQ,
+            s.last ? new Date(s.last) : '', days];
+  });
+  var csum = Object.keys(cls).sort().map(function (c) {
+    var x = cls[c];
+    return [c, x.n, x.started, x.n - x.started, x.active, x.n ? Math.round(x.cleared / x.n) : 0];
+  });
+
+  // Roster names with no Students row (only if you keep a Roster).
+  var signed = {};
+  Object.keys(byEmail).forEach(function (e) { signed[e] = 1; });
+  var absent = rows_(rosterSheet_(), 2).filter(function (r) {
+    return r[0] && !signed[String(r[0]).toLowerCase().trim()];
+  }).map(function (r) { return [String(r[1] || r[0]), 'has not signed in to the site']; });
+
+  // --- 4. AI explanations ---------------------------------------------------
+  // Distinct askers come from ExplainSeen, which is exact; the Explain tab's
+  // own "students" column was one too high on rows the model generated.
+  var askers = {};
+  rows_(sheet_('ExplainSeen', ['key', 'uid']), 2).forEach(function (r) {
+    var k = String(r[0]);
+    askers[k] = (askers[k] || 0) + 1;
+  });
+  var expl = rows_(explainSheet_(), 11).map(function (r) {
+    var who = askers[String(r[0])] || 0, reads = Number(r[5]) || 0, per = who ? reads / who : 0;
+    var flag = (who >= 3 && per >= 2) ? 'Re-read a lot: check this explanation'
+             : (who >= 5) ? 'Common trap: worth teaching in class' : '';
+    return [String(r[1]), (LAB[Number(r[2])] || String(r[2])), String(r[3]), who, reads,
+            who ? Math.round(per * 10) / 10 : '', String(r[9] || ''), String(r[10] || ''), flag,
+            String(r[4] || '').replace(/\s+/g, ' ').slice(0, 140)];
+  }).sort(function (a, b) { return b[3] - a[3] || (b[5] || 0) - (a[5] || 0); })
+    .slice(0, DASH_TOP_EXPLAIN);
+
+  // --- Write -----------------------------------------------------------------
+  var ss = ss_(), sh = ss.getSheetByName('Dashboard') || ss.insertSheet('Dashboard', 0);
+  sh.clear();
+  sh.setFrozenRows(0);
+  var at = 1;
+  function block(title, note, head, body, pctCol, dateCol) {
+    sh.getRange(at, 1).setValue(title).setFontWeight('bold').setFontSize(13);
+    if (note) sh.getRange(at + 1, 1).setValue(note).setFontStyle('italic').setFontColor('#666666');
+    at += note ? 2 : 1;
+    sh.getRange(at, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#eeeeee');
+    if (body.length) {
+      sh.getRange(at + 1, 1, body.length, head.length).setValues(body);
+      if (pctCol) sh.getRange(at + 1, pctCol, body.length, 1).setNumberFormat('0%');
+      if (dateCol) sh.getRange(at + 1, dateCol, body.length, 1).setNumberFormat('d mmm yyyy hh:mm');
+    } else {
+      sh.getRange(at + 1, 1).setValue('Nothing recorded yet.').setFontColor('#999999');
+    }
+    at += Math.max(body.length, 1) + 3;
+  }
+
+  sh.getRange(at, 1).setValue('Class dashboard · built ' +
+    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'd MMM yyyy HH:mm') +
+    ' · ' + people.length + ' students signed up').setFontWeight('bold').setFontSize(15);
+  at += 2;
+
+  block('1. Most-missed MCQs (top ' + DASH_TOP_MISSED + ')',
+    'A–D = how many students picked that wrong option (✓ = the answer). Wrong rate = wrong ÷ answered.',
+    ['#', 'Question', 'Chapter', 'Topic', 'Answer', 'Students wrong', 'Students answered', 'Wrong rate',
+     'A', 'B', 'C', 'D', 'Left blank', 'Most-picked wrong option', 'Question starts'],
+    top, 8);
+
+  block('2. Wrong rate by chapter and topic',
+    'Worst first. "Answer pairs" = one student answering one question. Under 10 pairs is too few to judge.',
+    ['Chapter', 'Topic', 'MCQs in bank', 'MCQs tried', 'Students', 'Answer pairs', 'Wrong pairs',
+     'Wrong rate', 'Note'],
+    topics, 8);
+
+  block('3a. Classes',
+    'Started = answered at least one MCQ. Active = did anything on the site in the last ' + DASH_ACTIVE_DAYS + ' days.',
+    ['Class', 'Signed up', 'Started', 'Not started', 'Active', 'Avg MCQs cleared'], csum);
+
+  block('3b. Students',
+    'Sorted by class and number. Cleared = MCQs credited correct. Wrong = different MCQs ever got wrong.',
+    ['Class', 'No.', 'Nickname', 'Status', 'MCQs cleared', 'MCQs got wrong', 'Last active', 'Days ago'],
+    plist, null, 7);
+
+  if (absent.length) block('3c. On the Roster, never signed in', '', ['Name', ''], absent);
+
+  block('4. AI explanation use (top ' + DASH_TOP_EXPLAIN + ')',
+    'Each row is one wrong option of one question. Many askers = a common trap. ' +
+    'Many reads per asker = students reread it and still came back: the explanation may not be landing.',
+    ['Question', 'Wrong pick', 'Topic', 'Students asked', 'Reads', 'Reads per student', 'Source',
+     'Reviewed', 'Signal', 'Explanation starts'],
+    expl);
+
+  sh.setColumnWidth(2, 150);
+  sh.setColumnWidth(14, 260);
+  sh.setColumnWidth(15, 320);
+  var msg = 'Dashboard rebuilt in ' + Math.round((Date.now() - started) / 1000) + 's: ' +
+            people.length + ' students, ' + Object.keys(q).length + ' MCQs with answers, ' +
+            expl.length + ' AI rows.';
+  Logger.log(msg);
+  return msg;
+}
+
+/* Rebuild the Dashboard every morning around 7. Run once; safe to re-run. */
+function dashboardDaily() {
+  var have = ScriptApp.getProjectTriggers().some(function (t) {
+    return t.getHandlerFunction() === 'buildDashboard';
+  });
+  if (!have) ScriptApp.newTrigger('buildDashboard').timeBased().everyDays(1).atHour(7).create();
+  Logger.log(have ? 'Already scheduled.' : 'Scheduled: buildDashboard runs daily around 07:00.');
 }
