@@ -328,10 +328,55 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 .top20 a:hover{text-decoration-color:var(--brand)}
 .foot{font-family:var(--f-sans); font-size:11px; color:var(--muted); text-align:center; margin-top:30px}
 .hide{display:none}
+/* --- Correction Album: type / chapter / concept filters, Long Q entries --- */
+.albbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
+.albbar select{max-width:100%}
+#tab-miss .btn[aria-pressed="true"]{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
+.alb-con{font-family:var(--f-sans); font-size:12px; font-weight:600; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.05em; margin:12px 0 0}
+.pill.lqtag{background:var(--violet); border-color:var(--violet); color:var(--on-dark)}
+.pill.mctag{background:var(--ch-ch4); border-color:var(--ch-ch4); color:var(--on-dark)}
+.mpts{margin:4px 0 0; padding-left:20px; font-size:15px}
+.mpts li{margin:3px 0}
+.mpts.done li{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--pos)}
+.mrow{display:flex; gap:8px; align-items:flex-start; margin:6px 0; cursor:pointer}
+.mrow input{margin-top:5px}
+.albsync{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
+.albsync.warn{color:var(--star)}
+#albPrint{display:none}
+
 @media print{
   body *{display:none !important}
   body::after{content:"Printing is disabled. Use the Correction Album to revise.";
               display:block !important; font-family:sans-serif; padding:40px}
+  /* The one exception: a student exporting their own Correction Album. */
+  body.print-album::after{content:none !important; display:none !important}
+  body.print-album{background:#fff}
+  body.print-album #albPrint{display:block !important}
+  body.print-album #albPrint *{display:revert !important}
+  #albPrint{font-family:var(--f-serif); color:#111; font-size:11pt; line-height:1.45;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #albPrint .ph{border-bottom:2px solid #211d16; padding-bottom:6px; margin-bottom:10px}
+  #albPrint .ph svg{width:40px !important; height:40px !important; float:right}
+  #albPrint h1{font-size:18pt; margin:0}
+  #albPrint h2{font-family:var(--f-sans); font-size:13pt; margin:16px 0 4px; padding-bottom:2px;
+    border-bottom:2px solid var(--acc,#211d16); color:var(--acc,#211d16); text-transform:none; letter-spacing:0}
+  #albPrint h3{font-family:var(--f-sans); font-size:10pt; text-transform:uppercase; letter-spacing:.05em;
+    color:#555; margin:10px 0 4px}
+  #albPrint .pq{break-inside:avoid; page-break-inside:avoid; border:1px solid #cdc3ad; border-radius:3px;
+    padding:8px 10px; margin:0 0 8px}
+  #albPrint .pqh{font-family:var(--f-mono); font-size:8.5pt; color:#555; margin:0 0 4px}
+  #albPrint .pqs{white-space:pre-wrap; margin:0 0 4px}
+  #albPrint img{max-width:100%; max-height:230px}
+  #albPrint .ok{color:#3f7a4b; font-weight:600}
+  #albPrint .no{color:#c9412e; font-weight:600}
+  #albPrint .nt{background:#f6eccd; padding:4px 8px; margin:4px 0 0; border-left:3px solid #8a5b2a}
+  #albPrint ul{margin:2px 0; padding-left:18px}
+  #albPrint .done li{text-decoration:line-through; color:#666}
+  #albPrint ul.ms{list-style:none; padding-left:2px}
+  #albPrint p{margin:4px 0}
+  #albPrint .small{font-size:9pt; color:#555}
+  @page{margin:14mm}
 }
 </style>
 </head>
@@ -492,14 +537,29 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
     <div class="card ac ac-pink">
       <h2>Correction Album</h2>
       <div id="missHello" style="margin:0 0 10px"></div>
-      <p class="muted">Every question you have ever answered wrongly stays in this album — nothing here can be deleted.
+      <p class="muted">Every MCQ you have ever answered wrongly stays in this album, and so does every Long Q point you chose to keep — nothing here can be deleted.
         Reread it, write what it is really testing in your own words, then retry it as many times as you need.</p>
-      <div class="row" id="bookFilt" style="margin-top:8px">
-        <button class="btn sm" data-filt="all" aria-pressed="true">All</button>
-        <button class="btn sm" data-filt="not">Not yet</button>
-        <button class="btn sm" data-filt="partly">Partly</button>
-        <button class="btn sm" data-filt="understood">Got it</button>
+      <div class="albbar">
+        <div class="row" id="albType" role="group" aria-label="Question type">
+          <button class="btn sm" data-type="all" aria-pressed="true">All</button>
+          <button class="btn sm" data-type="mc" aria-pressed="false">MC</button>
+          <button class="btn sm" data-type="lq" aria-pressed="false">Long Q</button>
+        </div>
+        <select id="albChap" aria-label="Chapter"><option value="">All chapters</option></select>
+        <select id="albCon" aria-label="Concept"><option value="">All concepts</option></select>
       </div>
+      <div class="row" id="bookFilt" style="margin-top:8px" role="group" aria-label="How well you know it">
+        <button class="btn sm" data-filt="all" aria-pressed="true">All</button>
+        <button class="btn sm" data-filt="not" aria-pressed="false">Not yet</button>
+        <button class="btn sm" data-filt="partly" aria-pressed="false">Partly</button>
+        <button class="btn sm" data-filt="understood" aria-pressed="false">Got it</button>
+      </div>
+      <div class="meta" style="margin-top:12px">
+        <span class="mono" id="albCount"></span>
+        <span class="row"><span class="albsync" id="albSync"></span>
+          <button class="btn sm" id="albPdf" title="Opens the print window: choose Save as PDF">Export PDF</button></span>
+      </div>
+      <p class="mono" id="albPdfMsg" style="margin:6px 0 0"></p>
     </div>
     <div class="card" id="booklist"><p class="muted">Loading…</p></div>
   </div>
@@ -556,6 +616,8 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <button data-tab="rev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h10M7 14h6"/></svg><span>Revision</span></button>
   <button data-tab="acct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Me</span></button>
 </div>
+
+<div id="albPrint" aria-hidden="true"></div>
 
 <script>
 /* ============================================================================
@@ -765,7 +827,7 @@ function resumeSess(cb){
   msg('Signing you back in\u2026');
   jsonp({prof:1,t:SESS}, p=>{
     if(!p||(p.error&&p.error!=='none')){ SESS=null; EMAIL=null; dropSess(); msg(''); return cb(false); }
-    pLoad();
+    pLoad(); albLoadLocal();
     $('gate').classList.add('hide');
     $('acctWho').textContent=PROFILE+'  \u00b7  '+EMAIL;
     if(p.cls){ ME={cls:p.cls,num:p.num,nick:p.nick}; enterApp(); }
@@ -825,7 +887,7 @@ function onCredential(resp){
 }
 
 function afterAuth(){
-  pLoad();
+  pLoad(); albLoadLocal();
   $('gate').classList.add('hide');
   $('acctWho').textContent=PROFILE+'  ·  '+EMAIL;
   /* Nothing else opens until the seat is claimed: class and number are what
@@ -850,7 +912,7 @@ function enterApp(){
     pullProgress(drawOverview);
   });
   jsonp({likes:1,t:SESS}, r=>{ if(r&&r.liked) LIKED=r.liked; });
-  jsonp({mist:1,t:SESS}, r=>{ if(r&&r.items) BOOK=r.items; });   // silent preload
+  albPreload();   // silent preload of the album, then send anything still waiting
 }
 
 const PROF_ERR={
@@ -1552,12 +1614,11 @@ $('why').addEventListener('click',e=>{
       const picked=dn.querySelector('[data-st][aria-pressed="true"]');
       const status=picked?picked.dataset.st:'not';
       const note=dn.querySelector('textarea').value;
-      post({event:'note', key:dn.dataset.key, status:status, note:note});
       const i=BOOK.findIndex(m=>m.key===dn.dataset.key);
       if(i>=0){ BOOK[i].status=status; BOOK[i].note=note; }
-      else BOOK.push({key:dn.dataset.key, n:1, status:status, note:note});
-      dn.querySelector('.dnMsg').textContent=' saved to your album';
-      setTimeout(()=>{ const m=dn.querySelector('.dnMsg'); if(m) m.textContent=''; },2500);
+      else BOOK.push({key:dn.dataset.key, n:1, status:status, note:note,
+                      pg:SECTION&&SECTION.page, tp:SECTION&&SECTION.topic});
+      albSend({event:'note', key:dn.dataset.key, status:status, note:note}, dn.querySelector('.dnMsg'));
       return;
     }
     // fall through only if the click was on nothing actionable inside the box
@@ -1584,52 +1645,235 @@ $('why').addEventListener('click',e=>{
   }
 });
 
-/* ------------------------------------------------------------ mistake book */
-let BOOK=[], BOOKFILT='all';
+/* ---------------------------------------------------------- correction album
+ * Two kinds of entry, shelved by chapter and then by concept (the topic):
+ *   MC  — every MCQ answered wrongly (Mistakes tab, append-only) with the
+ *         student's note and status (Notes tab).
+ *   LQ  — a Long Q the student chose to keep after marking it, with the
+ *         marking points they missed, the last score and every try
+ *         (LQAlbum tab). Retrying it here updates the same entry: points
+ *         earned on a later try move to "fixed".
+ *
+ * Saving is honest. Album writes go through albSend(): the page waits for the
+ * server's reply and says "saved" only when the row is really in the Sheet.
+ * Anything not confirmed (offline, busy, signed out, old server) stays in an
+ * outbox on this device and is sent again when the page is back online or
+ * next opened, so nothing typed is lost and nothing claims to be saved early.
+ *
+ * Hook for the E-point system: after the server confirms an album write (or,
+ * for a retry, as soon as it is answered) the page fires a 'tyn:album' event
+ * on document. detail = {act, kind:'mc'|'lq', key, ...}:
+ *   act 'note'      a reflection / status saved            (+status)
+ *   act 'lq-add'    a Long Q put into the album             (+n points, score, out_of)
+ *   act 'lq-update' album entry updated after another try   (+n points left, fixed, score, out_of)
+ *   act 'retry'     an album question answered again        (MC: +ok; LQ: fires as lq-update)
+ *   act 'export'    the album exported as PDF               (+n entries)
+ * -------------------------------------------------------------------------- */
+let BOOK=[], ALB_LQ={}, ALB_Q=[];
+const ALB_F={type:'all', ch:'', con:'', st:'all'};
+const albKey=()=>'tjx2:alb:'+(EMAIL||'anon');
+function albLoadLocal(){ try{ ALB_LQ=JSON.parse(localStorage.getItem(albKey()))||{}; }catch(e){ ALB_LQ={}; } }
+function albSaveLocal(){ try{ localStorage.setItem(albKey(),JSON.stringify(ALB_LQ)); }catch(e){} }
+function albEmit(d){ try{ document.dispatchEvent(new CustomEvent('tyn:album',{detail:d})); }catch(e){} }
+
+/* --- outbox: album writes the server has not confirmed yet --- */
+const obKey=()=>'tjx2:outbox:'+(EMAIL||'anon');
+function obGet(){ try{ return JSON.parse(localStorage.getItem(obKey()))||[]; }catch(e){ return []; } }
+function obPut(a){ try{ localStorage.setItem(obKey(),JSON.stringify(a)); }catch(e){} }
+function obAdd(b){ const a=obGet().filter(x=>!(x.event===b.event&&x.key===b.key)); a.push(b); obPut(a); }
+function obDrop(b){ obPut(obGet().filter(x=>!(x.event===b.event&&x.key===b.key&&x._ts===b._ts))); }
+function obHas(ev,key){ return obGet().some(x=>x.event===ev&&x.key===key); }
+/* A readable POST, like AI marking: the reply says whether the row was stored.
+   Returns 'ok' | 'offline' | 'busy' | 'auth' | 'old' | 'err'. */
+function sendAck(body){
+  if(!SESS) return Promise.resolve('auth');
+  const b=Object.assign({},body,{t:SESS}); delete b._ts; delete b._act;
+  return fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)})
+    .then(r=>r.text()).then(txt=>{
+      let j=null; try{ j=JSON.parse(txt); }catch(e){}
+      if(j&&j.ok) return 'ok';
+      if(txt==='ok') return body.event==='lqalbum'?'old':'ok';   // a server from before the LQ album
+      if(txt==='auth') return 'auth';
+      if(txt==='busy'||(j&&j.error==='busy')) return 'busy';
+      return 'err';
+    }).catch(()=>'offline');
+}
+const SAVE_MSG={
+  ok:'saved ✓',
+  offline:'not saved yet: no connection. Kept on this device; it sends by itself when you are back online.',
+  busy:'the server is busy. Kept on this device; it will try again.',
+  auth:'your sign-in has expired. Kept on this device; sign in again and it will send.',
+  old:'not saved: the album server is not updated yet. Kept on this device; tell your teacher.',
+  err:'the server did not take it. Kept on this device; it will try again.'
+};
+function albDone(b){
+  /* A message that said "not saved yet" for this entry is now out of date. */
+  document.querySelectorAll('[data-obk]').forEach(el=>{
+    if(el.dataset.obk===b.event+'|'+b.key){ el.textContent=' saved ✓ (sent once you were back)'; delete el.dataset.obk; }
+  });
+  if(b.event==='note') albEmit({act:'note',kind:'mc',key:b.key,status:b.status});
+  if(b.event==='lqalbum') albEmit({act:b._act||'lq-update',kind:'lq',key:b.key,n:(b.missing||[]).length,
+    fixed:(b.fixed||[]).length,score:b.score,out_of:b.out_of});
+}
+function albSend(body,msgEl){
+  body._ts=Date.now(); obAdd(body);              // kept until the server confirms
+  if(msgEl) msgEl.textContent=' saving…';
+  return sendAck(body).then(res=>{
+    if(res==='ok'){ obDrop(body); albDone(body); }
+    if(msgEl&&msgEl.isConnected){
+      msgEl.textContent=' '+SAVE_MSG[res];
+      if(res!=='ok') msgEl.dataset.obk=body.event+'|'+body.key; else delete msgEl.dataset.obk;
+      if(res==='ok') setTimeout(()=>{ if(msgEl.textContent===' '+SAVE_MSG.ok) msgEl.textContent=''; },2500);
+    }
+    albSyncLine(); if(res==='ok') obFlush();
+    return res;
+  });
+}
+let obBusy=false;
+function obFlush(){
+  if(!SESS||obBusy) return;
+  const a=obGet(); if(!a.length){ albSyncLine(); return; }
+  obBusy=true; let i=0;
+  (function next(){
+    if(i>=a.length){ obBusy=false; albSyncLine(); return; }
+    const b=a[i++];
+    sendAck(b).then(res=>{
+      if(res==='ok'){ obDrop(b); albDone(b); }
+      if(res==='offline'||res==='auth'||res==='old'){ obBusy=false; albSyncLine(); return; }
+      next();
+    });
+  })();
+}
+window.addEventListener('online',obFlush);
+function albSyncLine(){
+  const el=$('albSync'); if(!el) return;
+  const n=obGet().length;
+  el.className='albsync'+(n?' warn':'');
+  el.innerHTML=n?n+' change'+(n>1?'s':'')+' not saved yet · <a href="#" id="albRetry">send now</a>':'';
+}
+
+/* --- loading: server copy, merged with this device's copy --- */
+function albMerge(lq){
+  const seen={};
+  (lq||[]).forEach(r=>{
+    seen[r.key]=1;
+    const l=ALB_LQ[r.key];
+    if(l&&obHas('lqalbum',r.key)) return;     // a newer change is still waiting to send
+    ALB_LQ[r.key]=Object.assign({},l||{},r,{pg:r.pg||(l&&l.pg)||'',tp:r.tp||(l&&l.tp)||''});
+  });
+  /* A local entry the server has never seen and nothing is sending: queue it. */
+  Object.keys(ALB_LQ).forEach(k=>{ if(!seen[k]&&!obHas('lqalbum',k)) obAdd(lqAlbBody(ALB_LQ[k],'lq-add')); });
+  albSaveLocal();
+}
+function albPreload(){
+  jsonp({mist:1,t:SESS}, r=>{ if(r&&r.items){ BOOK=r.items; if(r.lq) albMerge(r.lq); } obFlush(); });
+}
 $('bookFilt').addEventListener('click',e=>{
   const b=e.target.closest('[data-filt]'); if(!b) return;
-  const all=$('bookFilt').querySelectorAll('[data-filt]');
-  for(let i=0;i<all.length;i++) all[i].setAttribute('aria-pressed',String(all[i]===b));
-  BOOKFILT=b.dataset.filt; renderBook();
+  $('bookFilt').querySelectorAll('[data-filt]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  ALB_F.st=b.dataset.filt; renderBook();
 });
+$('albType').addEventListener('click',e=>{
+  const b=e.target.closest('[data-type]'); if(!b) return;
+  $('albType').querySelectorAll('[data-type]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  ALB_F.type=b.dataset.type; renderBook();
+});
+$('albChap').addEventListener('change',()=>{ ALB_F.ch=$('albChap').value; ALB_F.con=''; renderBook(); });
+$('albCon').addEventListener('change',()=>{ ALB_F.con=$('albCon').value; renderBook(); });
+$('albSync').addEventListener('click',e=>{ if(e.target.id==='albRetry'){ e.preventDefault(); obFlush(); } });
 function loadBook(){
   $('booklist').innerHTML='<p class="muted">Loading…</p>';
+  albSyncLine();
   jsonp({mist:1,t:SESS}, r=>{
     if(r&&r.error){ lockOut(); return; }
-    if(!r){ $('booklist').innerHTML='<p class="muted">Could not load.</p>'; return; }
-    BOOK=r.items||[]; renderBook();
+    if(!r){
+      /* Offline: still show what this device knows. */
+      if(BOOK.length||Object.keys(ALB_LQ).length){ renderBook(); $('albCount').textContent+=' · offline copy'; }
+      else $('booklist').innerHTML='<p class="muted">Could not load.</p>';
+      return;
+    }
+    BOOK=r.items||[]; if(r.lq) albMerge(r.lq);
+    renderBook(); obFlush();
   });
 }
 const ST_EN={understood:'Got it',partly:'Partly',not:'Not yet'};
-function renderBook(){
-  const rows=BOOK.filter(m=>BOOKFILT==='all'||(m.status||'not')===BOOKFILT);
-  if(!rows.length){ $('booklist').innerHTML='<p class="muted">No mistakes match this filter.</p>'; return; }
-  /* Shelve by chapter, chapters in book order. Anything the server could not
-     place (old rows without page/topic) goes on a final shelf rather than
-     disappearing. */
-  const shelves={};
-  rows.forEach(m=>{
-    const c=(m.pg&&m.tp)?chapOf(m.pg,m.tp):null;
-    const k=c?c[0]:'__other';
-    (shelves[k]=shelves[k]||{c:c,items:[]}).items.push(m);
+/* One list of every entry, MC and LQ, each knowing its chapter and concept. */
+function albRows(){
+  const rows=[];
+  BOOK.forEach(m=>rows.push({kind:'mc',key:m.key,pg:m.pg,tp:m.tp,st:m.status||'not',m:m}));
+  Object.keys(ALB_LQ).forEach(k=>{ const m=ALB_LQ[k];
+    rows.push({kind:'lq',key:k,pg:m.pg,tp:m.tp,st:m.status||'not',m:m}); });
+  rows.forEach(r=>{ const c=(r.pg&&r.tp)?chapOf(r.pg,r.tp):(r.pg?chapOf(r.pg,''):null);
+    r.ch=c?c[0]:'__other'; r.c=c; r.con=r.tp||''; });
+  return rows;
+}
+function albFiltered(rows){
+  return (rows||albRows()).filter(r=>(ALB_F.type==='all'||r.kind===ALB_F.type)
+    &&(!ALB_F.ch||r.ch===ALB_F.ch)&&(!ALB_F.con||r.con===ALB_F.con)
+    &&(ALB_F.st==='all'||r.st===ALB_F.st));
+}
+function albSelects(rows){
+  const byCh={}, byCon={};
+  rows.filter(r=>ALB_F.type==='all'||r.kind===ALB_F.type).forEach(r=>{
+    byCh[r.ch]=(byCh[r.ch]||0)+1;
+    if(!ALB_F.ch||r.ch===ALB_F.ch) byCon[r.con]=(byCon[r.con]||0)+1;
   });
-  const order=CHAPTERS.map(c=>c[0]); order.push('__other');
-  $('booklist').innerHTML=order.filter(k=>shelves[k]).map(k=>{
-    const sh=shelves[k];
-    const notyet=sh.items.filter(m=>(m.status||'not')==='not').length;
-    const got=sh.items.filter(m=>m.status==='understood').length;
+  const order=CHAPTERS.map(c=>c[0]).concat('__other');
+  if(ALB_F.ch&&!byCh[ALB_F.ch]) byCh[ALB_F.ch]=0;
+  $('albChap').innerHTML='<option value="">All chapters</option>'+order.filter(k=>byCh[k]!=null).map(k=>{
+    const c=CHAPTERS.find(x=>x[0]===k);
+    return '<option value="'+k+'"'+(ALB_F.ch===k?' selected':'')+'>'+esc(c?c[1]:'Other')+' ('+byCh[k]+')</option>';
+  }).join('');
+  if(ALB_F.con&&!byCon[ALB_F.con]) byCon[ALB_F.con]=0;
+  $('albCon').innerHTML='<option value="">All concepts</option>'+Object.keys(byCon)
+    .sort((a,b)=>lbl(a).localeCompare(lbl(b))).map(k=>
+    '<option value="'+esc(k)+'"'+(ALB_F.con===k?' selected':'')+'>'+esc(k?lbl(k):'Other')+' ('+byCon[k]+')</option>').join('');
+}
+/* Shelve by chapter (book order), then concept. Anything the server could not
+   place goes on a final shelf rather than disappearing. */
+function albShelves(rows){
+  const shelves={};
+  rows.forEach(r=>{
+    const sh=shelves[r.ch]=shelves[r.ch]||{c:r.c,cons:{},n:0};
+    (sh.cons[r.con]=sh.cons[r.con]||[]).push(r); sh.n++;
+  });
+  return CHAPTERS.map(c=>c[0]).concat('__other').filter(k=>shelves[k]).map(k=>Object.assign({k:k},shelves[k]));
+}
+function renderBook(){
+  const all=albRows(); albSelects(all);
+  const rows=albFiltered(all);
+  const nmc=rows.filter(r=>r.kind==='mc').length, nlq=rows.length-nmc;
+  $('albCount').textContent=rows.length+' entr'+(rows.length===1?'y':'ies')+' · '+nmc+' MC · '+nlq+' Long Q';
+  if(!rows.length){
+    $('booklist').innerHTML='<p class="muted">'+(all.length?'Nothing matches this filter.'
+      :'Nothing here yet. Wrong MCQs land here by themselves; for a Long Q, mark it and keep the points you missed.')+'</p>';
+    return;
+  }
+  $('booklist').innerHTML=albShelves(rows).map(sh=>{
+    const items=[].concat.apply([],Object.values(sh.cons));
+    const notyet=items.filter(r=>r.st==='not').length, got=items.filter(r=>r.st==='understood').length;
+    const lqn=items.filter(r=>r.kind==='lq').length;
     return '<div class="alb-ch" style="--acc:var(--ch-'+(sh.c?sh.c[0]:'')+',var(--muted))">'
       +'<h3>'+(sh.c?esc(sh.c[1]):'Other')+'</h3>'
-      +'<p class="chsum">'+sh.items.length+' mistake'+(sh.items.length>1?'s':'')
-      +' · '+notyet+' not yet · '+got+' got it</p>'
-      + sh.items.map(bookItemHtml).join('')
+      +'<p class="chsum">'+(items.length-lqn)+' MC · '+lqn+' Long Q · '+notyet+' not yet · '+got+' got it</p>'
+      +Object.keys(sh.cons).sort((a,b)=>lbl(a).localeCompare(lbl(b))).map(con=>
+        '<p class="alb-con">'+esc(con?lbl(con):'Other')+'</p>'
+        +sh.cons[con].map(r=>r.kind==='lq'?lqAlbHtml(r.m):bookItemHtml(r.m)).join('')).join('')
       +'</div>';
   }).join('');
 }
+function statusRow(st,saveCls,msgCls){
+  return '<div class="statusrow">'
+    +'<button data-st="understood" aria-pressed="'+(st==='understood')+'">Got it</button>'
+    +'<button data-st="partly" aria-pressed="'+(st==='partly')+'">Partly</button>'
+    +'<button data-st="not" aria-pressed="'+(st==='not')+'">Not yet</button>'
+    +'<span style="flex:1"></span><button class="'+saveCls+' btn sm">Save</button>'
+    +'<span class="mono '+msgCls+'"></span></div>';
+}
 function bookItemHtml(m){
     const st=m.status||'', tr=(P.retry[m.key]||{}).n||0;
-    return '<div class="item" data-key="'+esc(m.key)+'">'
-      +'<div class="row"><span class="qid">'+esc(m.key)+'</span>'
+    return '<div class="item alb-row" data-kind="mc" data-key="'+esc(m.key)+'">'
+      +'<div class="row"><span class="pill mctag">MC</span><span class="qid">'+esc(m.key)+'</span>'
       +(m.n>1?'<span class="pill not">wrong ×'+m.n+'</span>':'')
       +(tr?'<span class="trial">trials '+tr+'</span>':'')
       +(st?'<span class="pill '+esc(st)+'">'+(ST_EN[st]||st)+'</span>':'')
@@ -1637,18 +1881,44 @@ function bookItemHtml(m){
       +'<button class="btn sm rev">Review &amp; retry</button></div>'
       +'<div class="revbox"></div>'
       +'<textarea placeholder="In your own words: what is this question really testing, and why did you first get it wrong?">'+esc(m.note)+'</textarea>'
-      +'<div class="statusrow">'
-      +'<button data-st="understood" aria-pressed="'+(st==='understood')+'">Got it</button>'
-      +'<button data-st="partly" aria-pressed="'+(st==='partly')+'">Partly</button>'
-      +'<button data-st="not" aria-pressed="'+(st==='not')+'">Not yet</button>'
-      +'<span style="flex:1"></span><button class="save btn sm">Save</button>'
-      +'<span class="mono saved"></span></div></div>';
+      +statusRow(st,'save','saved')+'</div>';
+}
+function lqLastTs(e){ const h=e&&e.hist; return h&&h.length?Number(h[h.length-1][0])||0:0; }
+function lqAlbSum(e){
+  const ms=e.missing||[], fx=e.fixed||[], h=e.hist||[];
+  return '<div class="row"><span class="pill lqtag">Long Q</span><span class="qid">'+esc(e.key)+'</span>'
+    +(e.score!=null?'<span class="pill partly">last score '+esc(e.score)+'/'+esc(e.out_of||'?')+'</span>':'')
+    +(e.tries?'<span class="trial">tries '+e.tries+'</span>':'')
+    +'<span class="pill '+esc(e.status||'not')+'">'+(ST_EN[e.status||'not'])+'</span>'
+    +'<span class="grow"></span><button class="btn sm lqretry">Retry this question</button></div>'
+    +(ms.length?'<p class="score" style="margin:8px 0 0"><b>Marking points still to fix</b> ('+ms.length+')</p>'
+      +'<ul class="mpts">'+ms.map(p=>'<li>'+esc(p[1])+(p[2]?' <span class="mono">('+esc(p[2])+')</span>':'')+'</li>').join('')+'</ul>'
+      :'<p class="score" style="margin:8px 0 0"><b>No points left to fix ✓</b></p>')
+    +(fx.length?'<details style="margin-top:4px"><summary class="score">Fixed on a later try ('+fx.length+')</summary>'
+      +'<ul class="mpts done">'+fx.map(p=>'<li>'+esc(p[1])+'</li>').join('')+'</ul></details>':'')
+    +(h.length>1?'<p class="mono" style="margin:6px 0 0">Your scores: '+h.map(x=>esc(x[1])).join(' → ')+' / '+esc(e.out_of||'?')+'</p>':'');
+}
+function lqAlbHtml(e){
+  return '<div class="item alb-row" data-kind="lq" data-key="'+esc(e.key)+'">'
+    +'<div class="alb-sum">'+lqAlbSum(e)+'</div>'
+    +'<div class="revbox"></div>'
+    +'<textarea placeholder="In your own words: what link was missing, and how will you write it next time?">'+esc(e.note||'')+'</textarea>'
+    +statusRow(e.status||'not','save','saved')+'</div>';
+}
+function lqAlbBody(e,act){
+  return {event:'lqalbum', _act:act, key:e.key, score:e.score, out_of:e.out_of, missing:e.missing||[],
+    fixed:e.fixed||[], note:e.note||'', status:e.status||'not', tries:e.tries||0, hist:e.hist||[], added:e.added||0};
+}
+/* Redraw an LQ album row's summary after a try changed it (album tab open). */
+function lqAlbRefresh(key){
+  const row=document.querySelector('#booklist .alb-row[data-kind="lq"][data-key="'+CSS.escape(key)+'"]');
+  if(row&&ALB_LQ[key]) row.querySelector('.alb-sum').innerHTML=lqAlbSum(ALB_LQ[key]);
 }
 
-/* Review & retry: pull the real question back, let the student answer it again
-   right here, and count the trials. A correct retry goes through the same
-   cooldown rule as the drill (five other questions or ten minutes after the
-   wrong answer), so the album is a genuine second chance, not a loophole. */
+/* Review & retry (MC): pull the real question back, let the student answer it
+   again right here, and count the trials. A correct retry goes through the
+   same cooldown rule as the drill (five other questions or ten minutes after
+   the wrong answer), so the album is a genuine second chance, not a loophole. */
 function openRetry(row){
   const key=row.dataset.key, box=row.querySelector('.revbox');
   box.innerHTML='<p class="mono">Loading question…</p>';
@@ -1667,9 +1937,32 @@ function drawRetry(row){
     +'<div class="ropts">'+optsHtml(q,-1)+'</div>'
     +'<div class="why" style="margin-top:10px"></div></div>';
 }
+/* Long Q retry: the same card as the Long Qs tab, opened on a blank answer
+   box (the last answer stays one tap away), so the student rewrites the
+   missing links without copying their own draft. */
+function openLqRetry(row){
+  const key=row.dataset.key, box=row.querySelector('.revbox');
+  box.innerHTML='<p class="mono">Loading question…</p>';
+  jsonp({q:key, t:SESS}, r=>{
+    if(!r||!r.item){ box.innerHTML='<p class="mono">Could not load this question.</p>'; return; }
+    lqLoadPoints(()=>{
+      /* A fresh try: answer box, ticks and the last AI mark clear; the drafts
+         and their scores stay, and the last answer sits folded above the box. */
+      const q=r.item, st=lqGet(q);
+      st.drafts=lqDrafts(st); st.prev=st.a||st.prev||'';
+      st.a=''; st.open=0; st.c=[]; st.h=0; st.last=null; st.rt=0; delete st.ai; delete st.self;
+      lqPut(q,st);
+      ALB_Q.push(q);
+      box.innerHTML='<div style="margin-top:10px">'+lqCard(q,ALB_Q.length-1,'alb')+'</div>';
+    });
+  });
+}
 $('booklist').addEventListener('click',e=>{
-  const row=e.target.closest('.item'); if(!row) return;
+  if(e.target.closest('.lqcard')) return;           // the Long Q card handles its own clicks
+  const row=e.target.closest('.alb-row'); if(!row) return;
+  const lq=row.dataset.kind==='lq';
   if(e.target.closest('.rev')){ openRetry(row); return; }
+  if(e.target.closest('.lqretry')){ openLqRetry(row); return; }
   const ob=e.target.closest('.ropts .opt');
   if(ob && row._q && !ob.disabled){
     const q=row._q;
@@ -1701,25 +1994,108 @@ $('booklist').addEventListener('click',e=>{
     }
     const trEl=row.querySelector('.trial');
     if(trEl && trEl.textContent.indexOf('trials')===0) trEl.textContent='trials '+P.retry[q.key].n;
+    albEmit({act:'retry',kind:'mc',key:q.key,ok:ok});
     return;
   }
   if(e.target.closest('[data-again]')){ drawRetry(row); return; }
   const st=e.target.closest('[data-st]');
   if(st){
-    const all=row.querySelectorAll('[data-st]');
-    for(let i=0;i<all.length;i++) all[i].setAttribute('aria-pressed',String(all[i]===st));
+    row.querySelectorAll(':scope > .statusrow [data-st]').forEach(b=>b.setAttribute('aria-pressed',String(b===st)));
     return;
   }
   if(e.target.closest('.save')){
-    const picked=row.querySelector('[data-st][aria-pressed="true"]');
+    const picked=row.querySelector(':scope > .statusrow [data-st][aria-pressed="true"]');
     const status=picked?picked.dataset.st:'not';
-    const note=row.querySelector('textarea').value;
-    post({event:'note', key:row.dataset.key, status:status, note:note});
+    const note=row.querySelector(':scope > textarea').value;
+    const msgEl=row.querySelector(':scope > .statusrow .saved');
+    if(lq){
+      const en=ALB_LQ[row.dataset.key]; if(!en) return;
+      en.status=status; en.note=note; albSaveLocal();
+      albSend(lqAlbBody(en,'note'),msgEl).then(()=>lqAlbRefresh(en.key));
+      return;
+    }
     for(let i=0;i<BOOK.length;i++) if(BOOK[i].key===row.dataset.key){ BOOK[i].status=status; BOOK[i].note=note; }
-    row.querySelector('.saved').textContent=' saved';
-    setTimeout(()=>{ const sv=row.querySelector('.saved'); if(sv) sv.textContent=''; },2500);
+    albSend({event:'note', key:row.dataset.key, status:status, note:note},msgEl);
   }
 });
+
+/* --- PDF export: the print window, with only the album on the page ---
+ * The site blocks printing everywhere else (the bank is not for printing).
+ * Here the student prints their OWN album: only questions in their own
+ * Mistakes / LQAlbum rows come back from the server for it. */
+function albFetchQs(keys,cb){
+  const out={}, chunks=[];
+  for(let i=0;i<keys.length;i+=40) chunks.push(keys.slice(i,i+40));
+  let left=chunks.length; if(!left) return cb(out);
+  chunks.forEach(ch=>jsonp({albq:1, keys:ch.join('|'), t:SESS}, r=>{
+    if(r&&r.items) Object.assign(out,r.items);
+    if(--left===0) cb(out);
+  }, 30000));
+}
+function albPrintHtml(rows,qs){
+  const filt=[ALB_F.type==='mc'?'MC only':ALB_F.type==='lq'?'Long Q only':'',
+    ALB_F.ch?((CHAPTERS.find(c=>c[0]===ALB_F.ch)||[0,'Other'])[1]):'', ALB_F.con?lbl(ALB_F.con):'',
+    ALB_F.st!=='all'?ST_EN[ALB_F.st]:''].filter(Boolean).join(' · ');
+  const nmc=rows.filter(r=>r.kind==='mc').length;
+  let h='<div class="ph">'+TYN.logo+'<h1>Correction Album</h1>'
+    +'<div class="small">'+esc(ME?ME.nick+' · '+ME.cls+'-'+ME.num:'')+' · exported '+esc(new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))
+    +' · '+nmc+' MC · '+(rows.length-nmc)+' Long Q'+(filt?' · '+esc(filt):'')+'</div></div>';
+  albShelves(rows).forEach(sh=>{
+    h+='<h2 style="--acc:var(--ch-'+(sh.c?sh.c[0]:'')+',#211d16)">'+(sh.c?esc(sh.c[1]):'Other')+'</h2>';
+    Object.keys(sh.cons).sort((a,b)=>lbl(a).localeCompare(lbl(b))).forEach(con=>{
+      h+='<h3>'+esc(con?lbl(con):'Other')+'</h3>';
+      sh.cons[con].forEach(r=>{ h+=r.kind==='lq'?albPrintLq(r.m,qs[r.key]):albPrintMc(r.m,qs[r.key]); });
+    });
+  });
+  return h;
+}
+function albPrintMc(m,q){
+  const tr=(P.retry[m.key]||{}).n||0, ch=m.chose===''||m.chose==null?-1:Number(m.chose);
+  let h='<div class="pq"><p class="pqh">MC · '+esc(m.key)+(m.n>1?' · wrong ×'+m.n:'')+(tr?' · trials '+tr:'')
+    +' · '+esc(ST_EN[m.status||'not'])+'</p>';
+  if(q){
+    h+='<div class="pqs">'+stemHtml(q)+'</div>';
+    if(q.opts&&q.opts.length) h+='<ul style="list-style:none;padding-left:0">'+q.opts.map((o,i)=>
+      '<li>'+(i===Number(q.ans)?'<span class="ok">✓ ':i===ch?'<span class="no">✗ ':'<span>')+LAB[i]+'.</span> '+esc(o)+'</li>').join('')+'</ul>';
+    h+='<p><span class="ok">Answer: '+LAB[Number(q.ans)]+'</span>'+(ch>=0&&ch!==Number(q.ans)?' · <span class="no">you chose '+LAB[ch]+'</span>':'')+'</p>'
+      +(q.why?'<p class="small">'+esc(q.why)+'</p>':'');
+  }else h+='<p class="small">Question text could not be loaded.</p>';
+  return h+(m.note?'<div class="nt"><b>My note:</b> '+esc(m.note)+'</div>':'')+'</div>';
+}
+function albPrintLq(e,q){
+  const ms=e.missing||[], fx=e.fixed||[], hs=e.hist||[];
+  let h='<div class="pq"><p class="pqh">Long Q · '+esc(e.key)+' · last score '+esc(e.score==null?'–':e.score)+'/'+esc(e.out_of||'?')
+    +(e.tries?' · tries '+e.tries:'')+(hs.length>1?' · scores '+hs.map(x=>esc(x[1])).join(' → '):'')+' · '+esc(ST_EN[e.status||'not'])+'</p>';
+  h+=q?'<div class="pqs">'+esc(q.q||'')+'</div>'+(q.fig?'<img src="'+esc(q.fig)+'" alt="">':''):'<p class="small">Question text could not be loaded.</p>';
+  h+=ms.length?'<p><b>Marking points still to fix</b></p><ul class="ms">'+ms.map(p=>'<li>☐ '+esc(p[1])+(p[2]?' ('+esc(p[2])+')':'')+'</li>').join('')+'</ul>'
+    :'<p class="ok">No points left to fix.</p>';
+  if(fx.length) h+='<p class="small"><b>Fixed on a later try</b></p><ul class="done">'+fx.map(p=>'<li>'+esc(p[1])+'</li>').join('')+'</ul>';
+  return h+(e.note?'<div class="nt"><b>My note:</b> '+esc(e.note)+'</div>':'')+'</div>';
+}
+$('albPdf').addEventListener('click',()=>{
+  const rows=albFiltered(), m=$('albPdfMsg');
+  if(!rows.length){ m.textContent='Nothing to export with this filter.'; return; }
+  const btn=$('albPdf'); btn.disabled=true;
+  m.textContent='Preparing '+rows.length+' entr'+(rows.length===1?'y':'ies')+'…';
+  albFetchQs(rows.map(r=>r.key),qs=>{
+    const box=$('albPrint'); box.innerHTML=albPrintHtml(rows,qs);
+    const imgs=[...box.querySelectorAll('img')];
+    let waited=0;
+    const go=()=>{
+      btn.disabled=false;
+      m.textContent='In the print window, choose "Save as PDF" as the printer. 揀「另存為 PDF」。';
+      document.body.classList.add('print-album');
+      albEmit({act:'export',kind:'all',key:'',n:rows.length});
+      window.print();
+      setTimeout(()=>document.body.classList.remove('print-album'),1000);
+    };
+    (function wait(){
+      if(imgs.every(i=>i.complete)||waited>=8000) return go();
+      waited+=200; setTimeout(wait,200);
+    })();
+  });
+});
+window.addEventListener('afterprint',()=>document.body.classList.remove('print-album'));
 
 
 /* ----------------------------------------------------------- all questions */
@@ -1884,20 +2260,23 @@ function chainHtml(q){
                  :'<span class="muted">'+esc(s[1])+'</span>')+'</li>').join('')
     +'</ol><p class="muted" style="margin:8px 0 0">This shows the order of the links, not words to copy. Your question needs its own links. 學嘅係次序，唔係字眼。</p></div></details>';
 }
-function lqCard(q,i){
+function lqCard(q,i,src){
   const st=lqGet(q), gs=lqGroups(q), pts=gs?lqMarked(gs):[], h=st.h||0, ai=st.ai, photo=LQ_PHOTO[q.key||q.id];
+  const inAlb=ALB_LQ[q.key||q.id];
   const tickTot=gs&&pts.length?lqScore(q,gs,id=>(st.c||[]).indexOf(id)>=0?99:0):(st.self==null?null:Number(st.self));
   const dr=lqDrafts(st), mk=Number(q.marks)||0;
-  let html='<div class="item" data-i="'+i+'"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
+  let html='<div class="item lqcard" data-src="'+(src||'lq')+'" data-i="'+i+'"><div class="row"><span class="qid">'+esc(q.id)+'</span>'
     +(q.cmd?'<span class="pill">'+esc(q.cmd)+'</span>':'')
     +(q.marks?'<span class="pill">'+esc(q.marks)+' marks</span>':'')
     +(ai?'<span class="pill understood">AI '+ai.t+'/'+esc(q.marks||'?')+'</span>':'')
-    +(st.open&&tickTot!=null?'<span class="pill partly lq-pill">self-marked '+tickTot+'/'+esc(q.marks||'?')+'</span>':'')+'</div>'
+    +(st.open&&tickTot!=null?'<span class="pill partly lq-pill">self-marked '+tickTot+'/'+esc(q.marks||'?')+'</span>':'')
+    +(inAlb&&src!=='alb'?'<span class="pill lqtag">in your album · '+(inAlb.missing||[]).length+' to fix</span>':'')+'</div>'
     +'<div class="stem" style="font-size:15px">'+esc(q.q||'')+'</div>'
     +(q.fig?'<img src="'+esc(q.fig)+'" style="max-width:100%">':'')
     +chainHtml(q)
     +(dr.length?'<p class="score" style="margin:10px 0 0">'+(dr.length>1?'Your drafts: ':'')+dr.map(d=>'Draft '+d.n+': <b>'+d.t+'/'+esc(q.marks||'?')+'</b>').join(' → ')+'</p>':'')
     +(ai?'<p class="muted" style="margin:4px 0 0"><b>Draft '+(dr.length+1)+':</b> answer the AI\'s question below by fixing that link in this box, then mark again. 用 AI 最後嗰條問題改呢一稿。</p>':'')
+    +(st.prev?'<details style="margin-top:8px"><summary class="muted">Your last answer (try without looking first)</summary><div style="white-space:pre-wrap;font-size:14px">'+esc(st.prev)+'</div></details>':'')
     +'<textarea class="lq-ans" placeholder="Write your answer in your own words first. 先用自己的說法寫，再對 marking points。">'+esc(st.a||'')+'</textarea>'
     +(photo?'<div class="row" style="margin-top:6px"><img src="data:image/jpeg;base64,'+photo+'" style="max-height:120px;border:1px solid var(--line)">'
       +'<button class="btn sm" data-act="unphoto">Remove photo</button></div>':'')
@@ -1955,7 +2334,95 @@ function lqCard(q,i){
       +(h?' · used hint'+(h>1?'s':''):'')+'</p>'
       +'<p class="muted" style="margin:6px 0 0">Missed a point? Rewrite that part in the box above without looking, then tick it next time.</p></div>';
   }
-  return html+(q.concept?'<p class="mono">Concept: '+esc(q.concept)+'</p>':'')+'</div>';
+  return html+lqAlbPanel(q,st)+(q.concept?'<p class="mono">Concept: '+esc(q.concept)+'</p>':'')+'</div>';
+}
+
+/* ------------------------------------------- Long Q → Correction Album
+ * After marking (AI, or ticking the marking points), the card lists the
+ * points this try missed and the student ticks the ones to keep. The album
+ * entry then carries those points, the last score and every try. When a
+ * question already in the album is marked again, points earned this time
+ * move to "fixed"; an AI mark updates the album by itself, a self-mark when
+ * the student presses "Update album". */
+function lqResult(q,st){
+  const gs=lqGroups(q), pts=gs?lqMarked(gs):[];
+  const mode=st.last==='self'&&st.open?'self':st.ai?'ai':st.open?'self':null;
+  if(!mode) return null;
+  const dr=lqDrafts(st), ld=dr[dr.length-1];
+  if(!pts.length){
+    if(mode!=='self'||st.self==null) return null;
+    return {t:Number(st.self), missed:null, mode:mode, rt:st.rt||0};
+  }
+  const got=mode==='ai'?(id=>(st.ai.aw&&st.ai.aw[id]&&st.ai.aw[id].m)||0):(id=>(st.c||[]).indexOf(id)>=0?99:0);
+  const t=mode==='ai'?st.ai.t:lqScore(q,gs,got);
+  const missed=pts.filter(x=>got(x[0])<Number(x[1][1])).map(x=>{
+    const part=lqPartOf(x[2]), txt=String(x[1][0]);
+    return [x[0], part&&txt.indexOf(part)!==0?part+' '+txt:txt, Number(x[1][1])];
+  });
+  return {t:t, missed:missed, mode:mode, rt:mode==='ai'?((ld&&ld.at)||st.rt||0):(st.rt||0)};
+}
+function lqAlbPanel(q,st){
+  const k=q.key||q.id, e=ALB_LQ[k], r=lqResult(q,st), mk=esc(q.marks||'?');
+  if(!r&&!e) return '';
+  let h='<div class="lq-albp" style="'+LQ_BOX+'var(--pink)"><b>Correction Album</b>';
+  if(e) h+=' <span class="muted">· last score '+esc(e.score==null?'–':e.score)+'/'+esc(e.out_of||mk)
+    +' · '+(e.missing||[]).length+' point'+((e.missing||[]).length===1?'':'s')+' to fix'+(e.tries?' · '+e.tries+' tr'+(e.tries===1?'y':'ies'):'')+'</span>';
+  if(!r){ h+='<p class="muted" style="margin:6px 0 0">Mark this try (AI, or tick the marking points) to update your album.</p>'; }
+  else if(r.missed){
+    const fresh=!e||(r.rt&&r.rt>lqLastTs(e));
+    const inAlb=new Set(e?(e.missing||[]).map(p=>p[0]):[]);
+    const cand=r.missed.filter(x=>!inAlb.has(x[0]));
+    const earned=e?(e.missing||[]).filter(p=>!r.missed.some(x=>x[0]===p[0])):[];
+    if(e&&fresh&&earned.length) h+='<p style="margin:6px 0 0;color:var(--pos)"><b>'+earned.length+' album point'+(earned.length>1?'s':'')
+      +' made this try ✓</b> They move to "fixed" when you update.</p>';
+    if(cand.length){
+      h+='<p class="muted" style="margin:6px 0 4px">'+(e?'Also missed this try. Tick any to add:'
+        :'This try ('+r.t+'/'+mk+') missed '+cand.length+' point'+(cand.length>1?'s':'')+'. Tick the ones to keep in your Correction Album. 揀返要再溫嘅 point：')+'</p>'
+        +cand.map(x=>'<label class="mrow"><input type="checkbox" data-miss="'+esc(x[0])+'"'+(e?'':' checked')+'>'
+          +'<span>'+esc(x[1])+' <span class="mono">('+esc(x[2])+')</span></span></label>').join('');
+    }else if(!e) h+='<p style="margin:6px 0 0">Full marks on this try. Nothing to keep. 全中！</p>';
+    if(!e&&cand.length) h+='<div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="albsave">Add to Correction Album</button></div>';
+    else if(e&&fresh) h+='<div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="albsave">Update album with this try ('+r.t+'/'+mk+')</button></div>';
+    else if(e&&cand.length) h+='<div class="row" style="margin-top:8px"><button class="btn sm" data-act="albsave">Add ticked points</button></div>';
+  }else{
+    /* Scheme not split into points: the student writes what they missed. */
+    h+='<p class="muted" style="margin:6px 0 4px">This scheme is not split into points. Write the points you missed, one per line, in your own words:</p>'
+      +'<textarea class="lq-missw" placeholder="One missing point per line">'+esc(e?(e.missing||[]).map(p=>p[1]).join('\n'):'')+'</textarea>'
+      +'<div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="albsave">'+(e?'Update album':'Add to Correction Album')+' ('+r.t+'/'+mk+')</button></div>';
+  }
+  return h+'<span class="mono lq-albmsg"></span></div>';
+}
+/* Fold one marked try into the album entry. picked = ids of newly missed
+   points the student chose to add; lines = typed points (unsplit schemes). */
+function lqAlbApply(q,st,picked,lines){
+  const k=q.key||q.id, old=ALB_LQ[k], r=lqResult(q,st); if(!r) return null;
+  const e=old?JSON.parse(JSON.stringify(old)):{key:k, pg:q._page||q.page||'', tp:q.topic||'',
+    missing:[], fixed:[], note:'', status:'not', tries:0, hist:[], added:Date.now()};
+  if(r.missed){
+    const still=new Set(r.missed.map(x=>x[0]));
+    const nowFixed=(e.missing||[]).filter(p=>!still.has(p[0]));
+    e.missing=(e.missing||[]).filter(p=>still.has(p[0]))
+      .concat(r.missed.filter(x=>picked.has(x[0])&&!(e.missing||[]).some(p=>p[0]===x[0])));
+    e.fixed=(e.fixed||[]).filter(p=>!e.missing.some(m=>m[0]===p[0])).concat(nowFixed);
+  }else{
+    e.missing=(lines||[]).map((t,j)=>['w'+j,t.slice(0,400),0]);
+  }
+  e.score=r.t; e.out_of=Number(q.marks)||e.out_of||0;
+  if(!old||!r.rt||r.rt>lqLastTs(e)){ e.tries=(e.tries||0)+1; e.hist=(e.hist||[]).concat([[r.rt||Date.now(),r.t,r.mode]]).slice(-30); }
+  if(!e.missing.length&&e.score>=e.out_of) e.status='understood';
+  else if(old&&(e.fixed||[]).length&&e.status==='not') e.status='partly';
+  ALB_LQ[k]=e; albSaveLocal();
+  return {e:e, act:old?'lq-update':'lq-add'};
+}
+function lqAlbSave(it,picked,lines,auto){
+  const res=lqAlbApply(it.q,lqGet(it.q),picked,lines); if(!res) return;
+  const k=it.q.key||it.q.id;
+  lqRedraw(it.el);
+  const card=document.querySelector(lqSel(it.el));
+  const m=card&&card.querySelector('.lq-albmsg');
+  if(m&&auto) m.textContent=' Album updated with this try.';
+  albSend(lqAlbBody(res.e,res.act),m).then(()=>lqAlbRefresh(k));
+  lqAlbRefresh(k);
 }
 function renderLq(){
   const v=$('lqSec').value;
@@ -1964,11 +2431,15 @@ function renderLq(){
   $('lqList').innerHTML='<p class="muted">Loading…</p>';
   lqLoadPoints(()=>section(parts[0],parts[1],parts[2],items=>{
     LQ_ITEMS=items.slice().sort(byYearDesc);
-    $('lqList').innerHTML=LQ_ITEMS.map(lqCard).join('')||'<p class="muted">No long questions here.</p>';
+    $('lqList').innerHTML=LQ_ITEMS.map((q,i)=>lqCard(q,i,'lq')).join('')||'<p class="muted">No long questions here.</p>';
   }));
 }
-function lqRedraw(el){ const i=Number(el.dataset.i); el.outerHTML=lqCard(LQ_ITEMS[i],i); }
-function lqItem(t){ const el=t.closest('.item'); return el?{el:el,q:LQ_ITEMS[Number(el.dataset.i)]}:null; }
+/* A Long Q card lives in the Long Qs tab (src 'lq') or inside an album entry
+   being retried (src 'alb'); each source keeps its own list of questions. */
+const lqArr=el=>el.dataset.src==='alb'?ALB_Q:LQ_ITEMS;
+const lqSel=el=>'.lqcard[data-src="'+el.dataset.src+'"][data-i="'+el.dataset.i+'"]';
+function lqRedraw(el){ const i=Number(el.dataset.i); el.outerHTML=lqCard(lqArr(el)[i],i,el.dataset.src); }
+function lqItem(t){ const el=t.closest('.lqcard'); return el?{el:el,q:lqArr(el)[Number(el.dataset.i)]}:null; }
 /* Phone photos are 3–12 MB; the marker needs ~1600px of readable handwriting. */
 function lqShrink(file,cb){
   const url=URL.createObjectURL(file), img=new Image();
@@ -2000,19 +2471,32 @@ function lqAiMark(it,btn){
       s2.ai={aw:r.awards||{},fb:r.feedback||'',read:r.read||'',ill:!!r.illegible,mode:photo?'photo':'typed',
              t:lqScore(q,gs,id=>(r.awards&&r.awards[id]&&r.awards[id].m)||0)};
       d.push({n:d.length+1,t:s2.ai.t,g:st.guess,a:st.a,at:Date.now()});
-      s2.drafts=d; s2.guess=null;
+      s2.drafts=d; s2.guess=null; s2.last='ai'; s2.rt=Date.now();
       post({event:'lqdraft', key:q.key||q.id, draft:d.length, guess:st.guess, ai:s2.ai.t, out:Number(q.marks)||0, page:'lq'});
-      lqPut(q,s2); delete LQ_PHOTO[q.key||q.id]; lqRedraw(it.el);
-      const m2=document.querySelector('.item[data-i="'+it.el.dataset.i+'"] .lq-msg');
+      lqPut(q,s2); delete LQ_PHOTO[q.key||q.id];
+      const sel=lqSel(it.el);
+      /* Already in the album: this try updates it by itself. */
+      if(ALB_LQ[q.key||q.id]) lqAlbSave(it,new Set(),null,true); else lqRedraw(it.el);
+      const m2=document.querySelector(sel+' .lq-msg');
       if(m2&&r.left!=null) m2.textContent=r.left+' AI marking'+(r.left===1?'':'s')+' left today.';
     }).catch(()=>{ btn.disabled=false; msg.textContent='Could not reach the marker. Check your connection and try again.'; });
 }
-$('lqList').addEventListener('click',e=>{
-  const b=e.target.closest('button[data-act]'); if(!b) return;
+function lqOnClick(e){
+  const b=e.target.closest('.lqcard button[data-act]'); if(!b) return;
   if(b.dataset.act==='chainstep'){ b.nextElementSibling.classList.remove('hide'); b.nextElementSibling.classList.add('muted'); b.remove(); return; }
   const it=lqItem(b), q=it.q, st=lqGet(q);
   st.a=it.el.querySelector('.lq-ans').value;
   if(b.dataset.act==='ai'){ lqPut(q,st); return lqAiMark(it,b); }
+  if(b.dataset.act==='albsave'){
+    lqPut(q,st);
+    const picked=new Set([...it.el.querySelectorAll('.lq-albp [data-miss]:checked')].map(x=>x.dataset.miss));
+    const w=it.el.querySelector('.lq-missw'), lines=w?w.value.split('\n').map(x=>x.trim()).filter(Boolean):null;
+    if(!ALB_LQ[q.key||q.id]&&(w?!lines.length:!picked.size)){
+      it.el.querySelector('.lq-albmsg').textContent=w?' Write at least one point first.':' Tick at least one point first.';
+      return;
+    }
+    return lqAlbSave(it,picked,lines,false);
+  }
   if(b.dataset.act==='hint') st.h=Math.min(2,(st.h||0)+1);
   if(b.dataset.act==='unphoto') delete LQ_PHOTO[q.key||q.id];
   if(b.dataset.act==='useread'&&st.ai&&st.ai.read) st.a=(st.a.trim()?st.a.trim()+'\n\n':'')+st.ai.read;
@@ -2022,8 +2506,8 @@ $('lqList').addEventListener('click',e=>{
   }
   if(b.dataset.act==='close') st.open=0;
   lqPut(q,st); lqRedraw(it.el);
-});
-$('lqList').addEventListener('change',e=>{
+}
+function lqOnChange(e){
   const it=lqItem(e.target); if(!it) return;
   const q=it.q, st=lqGet(q);
   if(e.target.classList.contains('lq-photo')){
@@ -2033,7 +2517,7 @@ $('lqList').addEventListener('change',e=>{
     return lqShrink(f,b64=>{
       if(!b64){ msg.textContent='That file could not be opened as a photo.'; return; }
       LQ_PHOTO[q.key||q.id]=b64; lqRedraw(it.el);
-      const m2=document.querySelector('.item[data-i="'+it.el.dataset.i+'"] .lq-msg');
+      const m2=document.querySelector(lqSel(it.el)+' .lq-msg');
       if(m2) m2.textContent='Photo ready. Press "AI mark my answer". Only photograph your answer, not your name or student number. 唔好影到姓名同學號。';
     });
   }
@@ -2047,17 +2531,28 @@ $('lqList').addEventListener('change',e=>{
     const n=Math.max(0,Math.min(Number(q.marks)||0,Math.round(Number(e.target.value))));
     st.self=e.target.value===''||isNaN(n)?null:n;
   }else return;
+  st.last='self'; st.rt=Date.now();
   lqPut(q,st);
   const gs=lqGroups(q);
   const t=gs&&lqMarked(gs).length?lqScore(q,gs,id=>(st.c||[]).indexOf(id)>=0?99:0):st.self;
   it.el.querySelector('.lq-tot').textContent=t==null?'–':t;
   const pill=it.el.querySelector('.lq-pill'); if(pill) pill.textContent='self-marked '+(t==null?'–':t)+'/'+(q.marks||'?');
-});
+  /* The missed points changed with the ticks: redraw the album box only, so
+     the checkbox being clicked keeps its place. */
+  const box=it.el.querySelector('.lq-albp'), nb=lqAlbPanel(q,st);
+  if(box) box.outerHTML=nb; else if(nb){ const cp=it.el.querySelector(':scope > p.mono:last-child');
+    cp?cp.insertAdjacentHTML('beforebegin',nb):it.el.insertAdjacentHTML('beforeend',nb); }
+}
 /* Keep the draft as they type, so leaving the tab does not lose it. */
-$('lqList').addEventListener('input',e=>{
+function lqOnInput(e){
   if(!e.target.classList.contains('lq-ans')) return;
-  const it=lqItem(e.target);
+  const it=lqItem(e.target); if(!it) return;
   clearTimeout(it.el._t); it.el._t=setTimeout(()=>{ const st=lqGet(it.q); st.a=e.target.value; lqPut(it.q,st); },400);
+}
+['lqList','booklist'].forEach(id=>{
+  $(id).addEventListener('click',lqOnClick);
+  $(id).addEventListener('change',lqOnChange);
+  $(id).addEventListener('input',lqOnInput);
 });
 $('lqSec').addEventListener('change',renderLq);
 
