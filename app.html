@@ -327,6 +327,49 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 .top20 a{color:var(--ink); cursor:pointer; text-decoration:underline; text-decoration-color:var(--line)}
 .top20 a:hover{text-decoration-color:var(--brand)}
 .foot{font-family:var(--f-sans); font-size:11px; color:var(--muted); text-align:center; margin-top:30px}
+/* --- Drill, layout C: each question walks through five steps. 1 Answer,
+       2 Check, 3 Reflect (a wrong answer must write one line before moving
+       on), then two optional steps, 4 AI help and 5 class discussion, as big
+       ink-filled buttons with the paper's hard shadow. --- */
+.steps{display:grid; grid-template-columns:repeat(5,1fr); margin:0 0 14px; font-family:var(--f-sans); font-size:12px; font-weight:600}
+.steps.hide{display:none}
+.steps div{display:flex; align-items:center; gap:6px; min-width:0; padding:8px 0; color:var(--muted); border-bottom:3px solid var(--line)}
+.steps div span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.steps div b{flex:0 0 22px; display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%;
+  border:1.5px solid var(--line); font-family:var(--f-mono); font-size:11px; background:var(--surface)}
+.steps div.on{color:var(--ink); border-bottom-color:var(--ch-ch4)}
+.steps div.on b{border-color:var(--ch-ch4); color:var(--ch-ch4)}
+.steps div.done{color:var(--pos); border-bottom-color:var(--pos-line)}
+.steps div.done b{background:var(--pos-bg); border-color:var(--pos-line); color:var(--pos)}
+.steps div.off{opacity:.45}
+@media (max-width:520px){ .steps div{flex-direction:column; gap:2px; font-size:10.5px} }
+.stepcard{border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); padding:14px; margin-top:14px;
+  animation:steprise .25s ease-out}
+.stepcard.hide{display:none}
+@keyframes steprise{from{transform:translateY(6px)}}
+.stepcard .lbl{font-family:var(--f-sans); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--muted); margin:0 0 8px}
+.bigstep{display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; width:100%; margin-top:12px;
+  cursor:pointer; text-align:left; padding:14px 16px; border:2px solid var(--ink); border-radius:var(--r-md);
+  color:#fff; background:var(--sc,var(--ink)); box-shadow:4px 4px 0 var(--ink); font-family:var(--f-sans);
+  transition:transform .08s, box-shadow .08s}
+.bigstep:hover{transform:translate(-1px,-1px); box-shadow:5px 5px 0 var(--ink)}
+.bigstep:active,.bigstep.open{transform:translate(3px,3px); box-shadow:1px 1px 0 var(--ink)}
+.bigstep[disabled]{opacity:.45; cursor:not-allowed; transform:none; box-shadow:2px 2px 0 var(--ink)}
+.bigstep .ico{display:grid; place-items:center; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.22); font-size:20px}
+.bigstep .k{display:block; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; opacity:.9}
+.bigstep .t{display:block; font-size:16px; font-weight:700; line-height:1.25}
+.bigstep .go{font-family:var(--f-mono); font-size:18px}
+.bigstep.hide{display:none}
+.bigstep.s3{--sc:var(--pink)} .bigstep.s4{--sc:var(--violet)} .bigstep.s5{--sc:var(--teal)}
+.optlbl{font-family:var(--f-sans); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:18px 0 0}
+.optrow{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:0 12px}
+.steppanel{border:1px solid var(--line); border-left:4px solid var(--sc); border-radius:var(--r-sm); background:var(--surface);
+  padding:12px 14px; margin-top:12px}
+.steppanel:empty,.steppanel.hide{display:none}
+.steppanel.s4{--sc:var(--violet)} .steppanel.s5{--sc:var(--teal)}
+#next{padding:12px 26px; font-size:15px; box-shadow:4px 4px 0 var(--line)}
+@media (prefers-reduced-motion:reduce){ .stepcard{animation:none} .bigstep{transition:none} }
 .hide{display:none}
 /* --- Correction Album: type / chapter / concept filters, Long Q entries --- */
 .albbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
@@ -547,7 +590,7 @@ nav button[data-tab="store"]{--tabc:var(--gold)}
         <span class="mono" id="secCount"></span></div>
       <div class="bar" style="margin:6px 0 2px"><i id="secBar" style="width:0%"></i></div>
       <div class="qnav" id="qnav"></div>
-      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+      <div class="steps" id="steps"></div>
       <div class="meta"><div class="qid" id="qid"></div>
         <button class="btn sm" id="inkToggle" aria-pressed="false">✏️ Draw</button></div>
       <div class="inkbar" id="inkbar">
@@ -1378,12 +1421,13 @@ function render(){
     $('stem').innerHTML=tynSay('cheer','TYN says',
       'Section finished — every question here is done. Pick another section, or tap a red square to revisit one.','ok');
     $('why').className='saybox'; $('next').classList.add('hide');
-    drawNav(); return; }
+    $('steps').classList.add('hide'); drawNav(); return; }
   const tp=SECTION.warm?(q.topic||q.sub||''):SECTION.topic, ch=chapOf(SECTION.page,tp);
   $('qid').innerHTML=(ch?'<span class="badge b-'+ch[0]+'">'+esc(ch[1])+'</span>':'')
     +'<span class="subtag">'+esc(lbl(tp))+'</span>'
     +'<span class="qid">'+esc(q.id)+'</span>';
   $('why').className='saybox'; $('next').classList.add('hide');
+  DSTEP={at:1}; drawSteps();
   $('prog').textContent=(POS+1)+' / '+QUEUE.length+' · '+(SECTION.label||'');
   $('stem').innerHTML=stemHtml(q);
   $('opts').innerHTML=optsHtml(q,-1);
@@ -1411,72 +1455,107 @@ $('opts').addEventListener('click',e=>{
     post({event:'mistake', key:q.key, chose:chose, correct:false, page:SECTION.page});
   }
   epAns(q.key, ok, 'drill');
-  /* Step 1 is only the answer and the why, so the why is what gets read.
-     Reflection, AI help and the class thread sit behind one tap each. A note
-     already written opens its box straight away. */
+  /* Step 2 is only the answer, the why and one common trap, so the why is
+     what gets read. A wrong answer then has to pass step 3, one line in the
+     student's own words saved to the Correction Album, before Next and the
+     two optional steps (AI help, class discussion) open. A note already
+     written for this question counts, so a second visit is not blocked. */
   const trap=ok?null:trapFor(q.topic||q.sub||SECTION.topic);
+  const rec=ok?null:(BOOK.find(m=>m.key===q.key)||{});
+  const ai=!ok && !!q.q;
+  DSTEP={at:2, ok:ok, ai:ai, refl:ok||!!(rec&&rec.note), saw4:false, saw5:false};
   $('why').className='saybox show';
-  $('why').innerHTML=tynSay(ok?'cheer':'think','TYN says',
+  let h='<div class="stepcard"><p class="lbl">Step 2 · Check</p>'+tynSay(ok?'cheer':'think','TYN says',
     '<b>'+esc(pick_(ok?CHEER_OK:CHEER_NO))+'</b><br>'
     +'<b>'+(ok?'Correct — the answer is ':'The answer is ')+LAB[Number(q.ans)]+'.</b> '
     +esc(q.why||'')
     +(trap?'<p style="margin:10px 0 0"><b>Common trap 常見誤解:</b> '+esc(trap.text)+'</p>':'')
     +(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':''),
-    ok?'ok':'no');
-  let more='<div class="row step2" style="margin-top:12px;gap:8px;flex-wrap:wrap">', reflect='';
+    ok?'ok':'no')+'</div>';
   if(!ok){
-    const rec=BOOK.find(m=>m.key===q.key)||{};
     const rst=rec.status||'not';
-    more+='<button class="btn sm primary" data-more="reflect"'+(rec.note?' aria-pressed="true"':'')+'>✍️ Write my reflection</button>';
-    reflect='<div class="drillnote'+(rec.note?'':' hide')+'" data-key="'+esc(q.key)+'" '
-      +'style="margin-top:14px;border-top:1px solid rgba(0,0,0,.12);padding-top:10px">'
+    h+=bigStep('s3'+(rec.note?' hide':''),'data-more="reflect"','✍️','Step 3','Reflect: what was it really testing?')
+      +'<div class="stepcard drillnote'+(rec.note?'':' hide')+'" data-key="'+esc(q.key)+'">'
+      +'<p class="lbl">Step 3 · Reflect</p>'
       +'<p class="score" style="margin:0 0 2px"><b>Your reflection</b> — goes straight into your Correction Album</p>'
-      +'<textarea placeholder="In your own words: what is this question really testing, and why did your answer look right?">'+esc(rec.note||'')+'</textarea>'
+      +'<textarea placeholder="One line in your own words: what is this question really testing, and why did your answer look right?">'+esc(rec.note||'')+'</textarea>'
       +'<div class="statusrow">'
       +'<button data-st="understood" aria-pressed="'+(rst==='understood')+'">Got it</button>'
       +'<button data-st="partly" aria-pressed="'+(rst==='partly')+'">Partly</button>'
       +'<button data-st="not" aria-pressed="'+(rst==='not')+'">Not yet</button>'
-      +'<span style="flex:1"></span><button class="dnSave btn sm">Save</button>'
-      +'<span class="mono dnMsg"></span></div></div>';
+      +'<span style="flex:1"></span><span class="mono dnMsg"></span></div>'
+      +bigStep('s3 dnSave','','💾','Save to my album',rec.note?'Save changes':'Save and open the next steps',rec.note?'':' disabled')
+      +'</div>';
   }
   /* AI help: deliberately a button, not automatic — and only for text
      questions: the explainer cannot see a diagram, so offering it there would
      invite it to guess. Only a student who has read the written explanation
      and is still stuck presses it. */
-  if(!ok && q.q) more+='<button class="btn sm" id="askAI" data-key="'+esc(q.key)+'" data-ch="'+chose+'">'
-      +'I read it and still don&#39;t get it</button>';
-  more+='<button class="btn sm" data-more="thread">💬 See how classmates explained it</button>'
-    +'<span class="mono" id="aiMsg"></span></div>'+reflect+'<div id="aiOut"></div>'
+  h+='<div id="stepMore"'+(DSTEP.refl?'':' class="hide"')+'><p class="optlbl">Optional</p><div class="optrow">'
+    +(ai?bigStep('s4','id="askAI" data-key="'+esc(q.key)+'" data-ch="'+chose+'"','💡','Step 4','Still stuck? Ask TYN&#39;s AI'):'')
+    +bigStep('s5','data-more="thread"','💬','Step '+(ai?5:4),'See how classmates explained it')
+    +'</div><p class="mono" id="aiMsg" style="margin:8px 0 0"></p>'
+    +'<div id="aiOut" class="steppanel s4"></div>'
   /* The thread opens only after the answer is locked in, and only on request.
      Showing it any earlier would turn the top comment into the answer key. */
-    +'<div id="thread" class="hide" data-key="'+esc(q.key)+'" '
-    +'style="margin-top:16px;border-top:1px solid rgba(0,0,0,.12);padding-top:12px">'
-    +'<p class="mono">Class discussion · loading…</p></div>';
-  $('why').innerHTML+=more;
-  $('next').classList.remove('hide');
-  drawNav();
+    +'<div id="thread" class="steppanel s5 hide" data-key="'+esc(q.key)+'">'
+    +'<p class="mono">Class discussion · loading…</p></div></div>';
+  $('why').innerHTML=h;
+  if(DSTEP.refl) $('next').classList.remove('hide');
+  drawSteps(); drawNav();
+});
+function bigStep(cls,attrs,ico,k,t,extra){
+  return '<button class="bigstep '+cls+'" '+attrs+(extra||'')+'><span class="ico" aria-hidden="true">'+ico+'</span>'
+    +'<span><span class="k">'+k+'</span><span class="t">'+t+'</span></span><span class="go" aria-hidden="true">→</span></button>';
+}
+/* The step strip under the question map. Steps that do not apply to this
+   answer (no reflection after a right answer) are faded; a question with no
+   AI help (a right answer, or a diagram) has four steps instead of five. */
+let DSTEP={at:1};
+function drawSteps(){
+  const el=$('steps'); if(!el) return;
+  if(SECTION&&SECTION.warm){ el.classList.add('hide'); return; }
+  el.classList.remove('hide');
+  const d=DSTEP, names=d.at>1&&!d.ai?['Answer','Check','Reflect','Discuss']:['Answer','Check','Reflect','AI help','Discuss'];
+  el.style.gridTemplateColumns='repeat('+names.length+',1fr)';
+  el.innerHTML=names.map((n,i)=>{
+    let c='';
+    if(d.at===1) c=i===0?'on':'';
+    else if(i<2) c='done';
+    else if(n==='Reflect') c=d.ok?'off':(d.refl?'done':'on');
+    else if(n==='AI help') c=d.saw4?'done':(d.refl?'on':'');
+    else c=d.saw5?'done':(d.refl?'on':'');
+    return '<div class="'+c+'"><b>'+(c==='done'?'✓':i+1)+'</b><span>'+n+'</span></div>';
+  }).join('');
+}
+/* Step 3's save button wakes up once there is something to save. */
+$('why').addEventListener('input',e=>{
+  const dn=e.target.closest('.drillnote'); if(!dn||e.target.tagName!=='TEXTAREA') return;
+  const sv=dn.querySelector('.dnSave'); if(sv) sv.disabled=!e.target.value.trim();
 });
 $('why').addEventListener('click',e=>{
   const m=e.target.closest('[data-more]'); if(!m) return;
   if(m.dataset.more==='reflect'){
     const dn=$('why').querySelector('.drillnote'); if(!dn) return;
-    dn.classList.remove('hide'); m.setAttribute('aria-pressed','true');
+    dn.classList.remove('hide'); m.classList.add('hide');
     dn.querySelector('textarea').focus();
   }else if(m.dataset.more==='thread'){
     const th=$('thread'); if(!th) return;
-    if(th.classList.contains('hide')){ th.classList.remove('hide'); loadThread(th.dataset.key); m.textContent='💬 Hide class discussion'; }
-    else{ th.classList.add('hide'); m.textContent='💬 See how classmates explained it'; }
+    const open=th.classList.contains('hide');
+    th.classList.toggle('hide',!open); m.classList.toggle('open',open);
+    m.querySelector('.t').textContent=open?'Hide class discussion':'See how classmates explained it';
+    if(open){ loadThread(th.dataset.key); DSTEP.saw5=true; drawSteps(); }
   }
 });
 
 $('why').addEventListener('click',e=>{
   const b=e.target.closest('#askAI'); if(!b) return;
   b.disabled=true; $('aiMsg').textContent=' thinking…';
+  DSTEP.saw4=true; drawSteps();
   jsonp({explain:b.dataset.key, chose:b.dataset.ch, t:SESS}, r=>{
     $('aiMsg').textContent='';
     if(r&&r.text){
-      $('aiOut').innerHTML='<div style="margin-top:12px">'
-        +tynSay('idea','TYN&#39;s AI helper',esc(r.text),'ai')+'</div>';
+      $('aiOut').innerHTML=tynSay('idea','TYN&#39;s AI helper',esc(r.text),'ai');
     }else{
       $('aiOut').innerHTML='<p class="mono">'+esc((r&&r.error)
         ||'Not available right now. Ask your teacher about this one.')+'</p>';
@@ -1713,11 +1792,18 @@ $('why').addEventListener('click',e=>{
       const picked=dn.querySelector('[data-st][aria-pressed="true"]');
       const status=picked?picked.dataset.st:'not';
       const note=dn.querySelector('textarea').value;
+      if(!note.trim()){ dn.querySelector('.dnMsg').textContent=' Write one line first.'; return; }
       const i=BOOK.findIndex(m=>m.key===dn.dataset.key);
       if(i>=0){ BOOK[i].status=status; BOOK[i].note=note; }
       else BOOK.push({key:dn.dataset.key, n:1, status:status, note:note,
                       pg:SECTION&&SECTION.page, tp:SECTION&&SECTION.topic});
       albSend({event:'note', key:dn.dataset.key, status:status, note:note}, dn.querySelector('.dnMsg'));
+      if(!DSTEP.refl){            // step 3 done: open Next and the optional steps
+        DSTEP.refl=true; drawSteps();
+        const more=$('stepMore'); if(more) more.classList.remove('hide');
+        $('next').classList.remove('hide');
+        const sv=dn.querySelector('.dnSave .t'); if(sv) sv.textContent='Save changes';
+      }
       return;
     }
     // fall through only if the click was on nothing actionable inside the box
