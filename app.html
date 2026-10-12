@@ -327,6 +327,75 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 .top20 a{color:var(--ink); cursor:pointer; text-decoration:underline; text-decoration-color:var(--line)}
 .top20 a:hover{text-decoration-color:var(--brand)}
 .foot{font-family:var(--f-sans); font-size:11px; color:var(--muted); text-align:center; margin-top:30px}
+/* --- Drill, layout C: each question walks through five steps. 1 Answer,
+       2 Check, 3 Reflect (a wrong answer must write one line before moving
+       on), then two optional steps, 4 AI help and 5 class discussion, as big
+       ink-filled buttons with the paper's hard shadow. --- */
+.steps{display:grid; grid-template-columns:repeat(5,1fr); margin:0 0 14px; font-family:var(--f-sans); font-size:12px; font-weight:600}
+.steps.hide{display:none}
+.steps div{display:flex; align-items:center; gap:6px; min-width:0; padding:8px 0; color:var(--muted); border-bottom:3px solid var(--line)}
+.steps div span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.steps div b{flex:0 0 22px; display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%;
+  border:1.5px solid var(--line); font-family:var(--f-mono); font-size:11px; background:var(--surface)}
+.steps div.on{color:var(--ink); border-bottom-color:var(--ch-ch4)}
+.steps div.on b{border-color:var(--ch-ch4); color:var(--ch-ch4)}
+.steps div.done{color:var(--pos); border-bottom-color:var(--pos-line)}
+.steps div.done b{background:var(--pos-bg); border-color:var(--pos-line); color:var(--pos)}
+.steps div.off{opacity:.45}
+@media (max-width:520px){ .steps div{flex-direction:column; gap:2px; font-size:10.5px} }
+.stepcard{border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); padding:14px; margin-top:14px;
+  animation:steprise .25s ease-out}
+.stepcard.hide{display:none}
+@keyframes steprise{from{transform:translateY(6px)}}
+.stepcard .lbl{font-family:var(--f-sans); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--muted); margin:0 0 8px}
+.bigstep{display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; width:100%; margin-top:12px;
+  cursor:pointer; text-align:left; padding:14px 16px; border:2px solid var(--ink); border-radius:var(--r-md);
+  color:#fff; background:var(--sc,var(--ink)); box-shadow:4px 4px 0 var(--ink); font-family:var(--f-sans);
+  transition:transform .08s, box-shadow .08s}
+.bigstep:hover{transform:translate(-1px,-1px); box-shadow:5px 5px 0 var(--ink)}
+.bigstep:active,.bigstep.open{transform:translate(3px,3px); box-shadow:1px 1px 0 var(--ink)}
+.bigstep[disabled]{opacity:.45; cursor:not-allowed; transform:none; box-shadow:2px 2px 0 var(--ink)}
+.bigstep .ico{display:grid; place-items:center; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.22); font-size:20px}
+.bigstep .k{display:block; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; opacity:.9}
+.bigstep .t{display:block; font-size:16px; font-weight:700; line-height:1.25}
+.bigstep .go{font-family:var(--f-mono); font-size:18px}
+.bigstep.hide{display:none}
+.bigstep.s3{--sc:var(--pink)} .bigstep.s4{--sc:var(--violet)} .bigstep.s5{--sc:var(--teal)}
+.optlbl{font-family:var(--f-sans); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:18px 0 0}
+.optrow{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:0 12px}
+.steppanel{border:1px solid var(--line); border-left:4px solid var(--sc); border-radius:var(--r-sm); background:var(--surface);
+  padding:12px 14px; margin-top:12px}
+.steppanel:empty,.steppanel.hide{display:none}
+.steppanel.s4{--sc:var(--violet)} .steppanel.s5{--sc:var(--teal)}
+#next{padding:12px 26px; font-size:15px; box-shadow:4px 4px 0 var(--line)}
+/* --- Drill picker: one chapter at a time. A "continue" box and a strip of
+       the three concepts with the most open mistakes sit on top, then a row of
+       chapter tabs, then the chosen chapter's concepts as cards that say what
+       to do next. --- */
+.plead{border:1px solid var(--line); border-top:4px solid var(--ch-ch4); border-radius:var(--r-sm); padding:12px; margin:0 0 12px;
+  display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.plead h3{font-family:var(--f-serif); font-size:17px; margin:0}
+.plead .grow{min-width:0}
+.weak{border:1px solid var(--neg-line); background:var(--neg-bg); border-radius:var(--r-sm); padding:10px 12px; margin:0 0 12px;
+  font-family:var(--f-sans); font-size:13px}
+.weak .row{margin-top:6px}
+.weak button{border-color:var(--neg-line)}
+.ctabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin:0 0 12px}
+.ctabs button{flex:0 0 auto; cursor:pointer; font-family:var(--f-sans); font-size:13px; font-weight:600; padding:8px 12px;
+  border:1px solid var(--line); border-bottom:4px solid var(--chc); border-radius:var(--r-sm); background:var(--surface); color:var(--muted)}
+.ctabs button[aria-selected="true"]{background:var(--chc); color:#fff; border-color:var(--chc)}
+.chname{font-family:var(--f-serif); font-size:18px; margin:0 0 10px; color:var(--chc)}
+.board{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px}
+.ccard{display:grid; gap:6px; cursor:pointer; text-align:left; padding:12px; background:var(--surface); border:1px solid var(--line);
+  border-top:4px solid var(--chc); border-radius:var(--r-sm); font-family:var(--f-sans); color:var(--ink); box-shadow:var(--shadow-1)}
+.ccard:hover{border-color:var(--chc)}
+.ccard .nm{font-size:15px; font-weight:700}
+.ccard .ct{font-family:var(--f-mono); font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
+.ccard .st{font-size:12px; font-weight:600}
+.ccard .st.go{color:var(--chc)} .ccard .st.ok{color:var(--pos)} .ccard .st.no{color:var(--neg)}
+@media (max-width:520px){ .board{grid-template-columns:1fr 1fr} .ccard{padding:10px} .ccard .nm{font-size:14px} }
+@media (prefers-reduced-motion:reduce){ .stepcard{animation:none} .bigstep{transition:none} }
 .hide{display:none}
 /* --- Correction Album: type / chapter / concept filters, Long Q entries --- */
 .albbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
@@ -378,6 +447,66 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   #albPrint .small{font-size:9pt; color:#555}
   @page{margin:14mm}
 }
+/* --- E-points: wallet, store, characters, class page --- */
+.epill{display:inline-flex; align-items:center; gap:6px; font-family:var(--f-mono); font-weight:600; font-size:14px; cursor:pointer;
+  padding:4px 10px; background:var(--warn-bg); border:1px solid #dcc78a; color:var(--star); border-radius:var(--r-sm)}
+.epill:hover{border-color:var(--star)}
+#wallet{margin-left:8px}
+#wallet.hide{display:none}
+@media (max-width:520px){ header .who{display:none} #stAv svg{max-width:170px} }
+.ecoin{width:18px; height:18px; border-radius:50%; background:var(--gold); color:#fff; display:inline-grid; place-items:center;
+  font:700 11px/1 var(--f-sans); box-shadow:inset 0 -2px 0 #b07f05}
+.epbig{display:flex; align-items:center; gap:8px; font-family:var(--f-mono); font-size:26px; color:var(--star); margin:0}
+.epbig .ecoin{width:26px; height:26px; font-size:14px}
+.epme{display:grid; grid-template-columns:120px 1fr; gap:14px; align-items:center}
+.epme svg{width:120px; height:auto; display:block; border:1px solid var(--line); border-radius:var(--r-sm)}
+.mates{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:10px}
+.mate{border:1px solid var(--line); border-radius:var(--r-sm); padding:6px; text-align:center; min-width:0; background:var(--surface)}
+.mate svg{width:100%; height:auto; display:block; border-radius:var(--r-sm)}
+.mate .nk{font-family:var(--f-sans); font-weight:700; font-size:13px; margin-top:5px; overflow-wrap:anywhere; line-height:1.3}
+.mate .lv{font-family:var(--f-sans); font-size:11px; color:var(--muted)}
+.lvb{display:inline-block; font-family:var(--f-sans); font-size:10px; font-weight:700; padding:0 5px; border-radius:var(--r-sm); background:var(--gold); color:#fff}
+.studio{display:grid; gap:16px}
+.studio > div{min-width:0}
+@media (min-width:900px){ .studio{grid-template-columns:270px 1fr; align-items:start} .studio .stme{position:sticky; top:14px} }
+#stAv svg{width:100%; max-width:240px; height:auto; display:block; margin:0 auto; border:1px solid var(--line); border-radius:var(--r-md)}
+.wearing{font-family:var(--f-sans); font-size:12px; color:var(--muted); margin-top:10px}
+.wearing span{display:inline-block; margin:2px 4px 2px 0; padding:1px 7px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2)}
+.cats{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px}
+.cats button{cursor:pointer; font-family:var(--f-sans); font-size:12px; font-weight:600; padding:5px 11px; border:1px solid var(--line);
+  border-radius:var(--r-sm); background:var(--surface); color:var(--muted)}
+.cats button[aria-pressed="true"]{background:var(--ink); color:var(--on-dark); border-color:var(--ink)}
+.epitems{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px}
+.epitem{border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); padding:8px; display:flex; flex-direction:column; gap:6px; min-width:0}
+.epitem.on{outline:2px solid var(--gold); outline-offset:1px}
+.epitem svg{width:100%; height:auto; display:block; border-radius:var(--r-sm)}
+.epitem .nm{font-family:var(--f-sans); font-size:13px; font-weight:600; line-height:1.25}
+.epitem .zh{font-weight:400; color:var(--muted); font-size:12px}
+.epitem .btn{width:100%; margin-top:auto}
+.epitem .btn:disabled{opacity:.55; cursor:default}
+.eptag{font-family:var(--f-sans); font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:1px 6px;
+  border-radius:var(--r-sm); background:var(--surface-2); color:var(--muted); border:1px solid var(--line)}
+.eptag.free{background:var(--pos-bg); color:var(--pos); border-color:var(--pos-line)}
+.eppr,.epe{font-family:var(--f-mono); font-size:12px; font-weight:600; color:var(--star)}
+.tblwrap{overflow-x:auto}
+#stRecent div{border-top:1px dashed var(--line); padding:3px 0; font-family:var(--f-sans); font-size:13px}
+#epToasts{position:fixed; right:16px; bottom:16px; display:grid; gap:6px; z-index:60; pointer-events:none}
+@media (max-width:899px){ #epToasts{bottom:calc(70px + env(safe-area-inset-bottom,0px))} }
+.eptoast{font-family:var(--f-sans); font-size:13px; font-weight:600; background:var(--ink); color:var(--on-dark);
+  padding:8px 12px; border-radius:var(--r-sm); box-shadow:var(--shadow-1); animation:eptin .25s ease-out}
+.eptoast b{color:var(--gold)}
+@keyframes eptin{from{transform:translateY(8px); opacity:0}}
+nav button[data-tab="store"]{--tabc:var(--gold)}
+.fx-tw{animation:fxtw 1.8s ease-in-out infinite; transform-box:fill-box; transform-origin:center}
+@keyframes fxtw{0%,100%{opacity:.25; transform:scale(.6)}50%{opacity:1; transform:scale(1)}}
+.fx-up{animation:fxup 3.2s linear infinite}
+@keyframes fxup{0%{transform:translateY(0); opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateY(-70px); opacity:0}}
+.fx-fall{animation:fxfall 2.6s linear infinite}
+@keyframes fxfall{0%{transform:translateY(-20px) rotate(0); opacity:0}10%{opacity:1}100%{transform:translateY(170px) rotate(220deg); opacity:.8}}
+.fx-pulse{animation:fxpulse 2.2s ease-in-out infinite; transform-box:fill-box; transform-origin:center}
+@keyframes fxpulse{50%{transform:scale(1.06); opacity:.35}}
+.fx-bob{animation:tbob 2.8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){ .fx-tw,.fx-up,.fx-fall,.fx-pulse,.fx-bob{animation:none} }
 </style>
 </head>
 <body>
@@ -390,6 +519,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
     <p id="sub-line">one page, every chapter</p>
   </div>
   <span class="who" id="who"></span>
+  <button class="epill hide" id="wallet" title="Your E-points: open the store"><span class="ecoin">E</span><span id="epBal">0</span></button>
 </header>
 <div class="shell">
 <nav id="nav" class="hide">
@@ -401,6 +531,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   <button data-tab="allq" class="sub">All Questions</button>
   <button data-tab="miss">Correction Album</button>
   <button data-tab="rev">Revision</button>
+  <button data-tab="store">E-Store</button>
   <button data-tab="acct">Account</button>
 </nav>
 <div class="content">
@@ -442,6 +573,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
       <div class="bar"><i id="ovBar" style="width:0%"></i></div>
       <p class="mono" id="ovLine" style="margin:10px 0 0"></p>
     </div>
+    <div class="card ac ac-gold" id="ovMe"><h2>My character</h2><p class="muted">Loading…</p></div>
     <div class="card ac ac-pink" id="ovCheer">
       <h2>Cheer up kashinger</h2>
       <p class="muted">Leave a line to cheer your classmates on. The whole class can see it.</p>
@@ -454,6 +586,11 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
     <div class="card ac ac-blue">
       <h2>Your route · progress by chapter</h2>
       <div id="ovChaps" class="route"></div>
+    </div>
+    <div class="card ac ac-blue" id="ovClass">
+      <div class="meta" style="margin-bottom:10px"><h2 style="margin:0" id="ovClsName">Classmates</h2>
+        <select id="ovClsSel" class="hide" aria-label="Class"></select></div>
+      <div id="ovMates"><p class="muted">Loading…</p></div>
     </div>
     <div class="card ac ac-green">
       <h2>Top 20 most-cleared in class</h2>
@@ -479,7 +616,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
         <span class="mono" id="secCount"></span></div>
       <div class="bar" style="margin:6px 0 2px"><i id="secBar" style="width:0%"></i></div>
       <div class="qnav" id="qnav"></div>
-      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+      <div class="steps" id="steps"></div>
       <div class="meta"><div class="qid" id="qid"></div>
         <button class="btn sm" id="inkToggle" aria-pressed="false">✏️ Draw</button></div>
       <div class="inkbar" id="inkbar">
@@ -585,6 +722,30 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
     <div id="revList"></div>
   </div>
 
+  <div id="tab-store" class="hide">
+    <div class="studio">
+      <div class="stme"><div class="card ac ac-pink">
+        <h2>My character</h2>
+        <div id="stAv"></div>
+        <div class="wearing" id="stWear"></div>
+        <p class="mono" id="stMsg" style="margin:8px 0 0"></p>
+      </div></div>
+      <div>
+        <div class="card ac ac-gold">
+          <div class="meta" style="margin-bottom:12px"><h2 style="margin:0">E-point store</h2>
+            <span class="epbig" style="font-size:18px"><span class="ecoin">E</span><b id="stBal">0</b></span></div>
+          <div class="cats" id="stCats"></div>
+          <div class="epitems" id="stItems"><p class="muted">Loading…</p></div>
+        </div>
+        <div class="card">
+          <h2>How to earn E</h2>
+          <div id="stRules"></div>
+          <h2 style="margin-top:16px">Recent</h2>
+          <div id="stRecent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="tab-acct" class="hide">
     <div class="card">
       <h2>Account</h2>
@@ -618,6 +779,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 </div>
 
 <div id="albPrint" aria-hidden="true"></div>
+<div id="epToasts" aria-live="polite"></div>
 
 <script>
 /* ============================================================================
@@ -831,7 +993,7 @@ function resumeSess(cb){
     $('gate').classList.add('hide');
     $('acctWho').textContent=PROFILE+'  \u00b7  '+EMAIL;
     if(p.cls){ ME={cls:p.cls,num:p.num,nick:p.nick}; enterApp(); }
-    else $('setup').classList.remove('hide');
+    else { $('setup').classList.remove('hide'); epSeatPicker(); }
     cb(true);
   }, 15000);
 }
@@ -893,7 +1055,7 @@ function afterAuth(){
   /* Nothing else opens until the seat is claimed: class and number are what
      make every later record actionable, so they are collected first, once. */
   jsonp({prof:1,t:SESS}, p=>{
-    if(p&&p.error==='none'||!p||!p.cls){ $('setup').classList.remove('hide'); return; }
+    if(p&&p.error==='none'||!p||!p.cls){ $('setup').classList.remove('hide'); epSeatPicker(); return; }
     ME={cls:p.cls,num:p.num,nick:p.nick};
     enterApp();
   });
@@ -913,12 +1075,14 @@ function enterApp(){
   });
   jsonp({likes:1,t:SESS}, r=>{ if(r&&r.liked) LIKED=r.liked; });
   albPreload();   // silent preload of the album, then send anything still waiting
+  epLoad(); epSeatPicker();
 }
 
 const PROF_ERR={
   missing:'All three fields are needed.',
   badnum:'Class number must be digits, e.g. 12.',
   taken:'That class and number is already taken. Typo? If it is really yours, tell your teacher.',
+  noclass:'Pick your class from the list. If it is missing, ask your teacher to open it.',
   busy:'Server is busy — try once more.'
 };
 function submitProfile(cls,num,nick,msgEl,after){
@@ -941,7 +1105,7 @@ function lockOut(){
 }
 
 /* -------------------------------------------------------------------- nav */
-const TABS=['overview','drill','exam','miss','allq','lq','rev','acct'];
+const TABS=['overview','drill','exam','miss','allq','lq','rev','store','acct'];
 const PRACTISE=['drill','exam','lq','allq'];
 let LASTP='drill';                 // the Practise tab reopens the last mode used
 function show(tab){
@@ -951,7 +1115,9 @@ function show(tab){
     String(b.dataset.tab===tab||(b.dataset.group==='practise'&&PRACTISE.indexOf(tab)>=0))));
   $('subnav').classList.toggle('hide',PRACTISE.indexOf(tab)<0);
   window.scrollTo(0,0);
-  if(tab==='overview'){ drawGreeting(); drawOverview(); loadBoard('ovLb'); loadTop20(); loadCheer(); }
+  if(tab==='overview'){ drawGreeting(); drawOverview(); loadBoard('ovLb'); loadTop20(); loadCheer(); epHome(); }
+  if(tab==='store')    drawStore();
+  if(tab==='drill' && IDX && !$('picker').classList.contains('hide')) drawPicker();
   if(tab==='miss')     loadBook();
   if(tab==='rev')      drawRevision();
   if(tab==='acct')     loadBoard('lb');
@@ -1031,8 +1197,7 @@ $('ovChaps').addEventListener('click',e=>{
   const b=e.target.closest('.stop'); if(!b) return;
   show('drill');
   if(!$('qcard').classList.contains('hide')) $('quit').click();
-  const c=document.querySelector('#secgrid .chap[data-ch="'+b.dataset.ch+'"]');
-  if(c) c.scrollIntoView({block:'start'});
+  pickChapter(b.dataset.ch);
 });
 
 function drawGreeting(){
@@ -1098,24 +1263,53 @@ function eachSection(type,fn){
   const m=(IDX&&IDX[type])||{};
   Object.keys(m).forEach(pg=>Object.keys(m[pg]).forEach(tp=>{ if(m[pg][tp]) fn(pg,tp,m[pg][tp]); }));
 }
-function buildSections(){
-  const by={};                                 // chapter key -> [{pg,tp,n}]
+/* The picker shows one chapter at a time. Each concept card says what to do
+   next there: start, keep going, fix the ones still wrong, or all cleared.
+   It is redrawn whenever the picker comes back into view, so the numbers
+   follow the drill. */
+let PICKCH=null;
+function buildSections(){ drawPicker(); }
+function drawPicker(){
+  const t=totals(), wrongPer={}, by={};
+  Object.keys(P.wrong).forEach(k=>{ if(P.cleared[k]) return; const tp=P.wrong[k].tp||''; wrongPer[tp]=(wrongPer[tp]||0)+1; });
   eachSection('mcq',(pg,tp,n)=>{
     const c=chapOf(pg,tp); if(!c) return;
-    (by[c[0]]=by[c[0]]||[]).push({pg,tp,n});
+    (by[c[0]]=by[c[0]]||[]).push({pg,tp,n,ok:Math.min(n,t.per[tp]?t.per[tp].cleared:0),bad:wrongPer[tp]||0});
   });
-  $('secgrid').innerHTML=CHAPTERS.map(c=>{
-    const secs=by[c[0]]; if(!secs||!secs.length) return '';
-    secs.sort((a,b)=>c[3].indexOf(a.tp)-c[3].indexOf(b.tp));   // book order, not size
-    const tot=secs.reduce((x,y)=>x+y.n,0);
-    return '<div class="chap" data-ch="'+c[0]+'"><div class="chap-hd"><span>'+esc(c[1])+'</span>'
-      +'<span class="score">'+tot+' Q</span></div><div class="chap-secs">'
-      +secs.map(x=>'<button class="sec" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'">'
-        +esc(lbl(x.tp))+'<small>'+x.n+' Q</small></button>').join('')
-      +'</div></div>';
-  }).join('')||'<p class="muted">The bank is empty. Run install() in Apps Script.</p>';
+  const chs=CHAPTERS.filter(c=>by[c[0]]&&by[c[0]].length);
+  if(!chs.length){ $('secgrid').innerHTML='<p class="muted">The bank is empty. Run install() in Apps Script.</p>'; drawKept(); return; }
+  const last=lastSec(), lastCh=last?chapOf(last.page,last.topic):null;
+  if(!PICKCH||!by[PICKCH]) PICKCH=lastCh&&by[lastCh[0]]?lastCh[0]:chs[0][0];
+  let h='';
+  if(last&&last.topic){
+    h+='<div class="plead"><div class="grow"><p class="score" style="margin:0">Pick up where you left off</p>'
+      +'<h3>'+(lastCh?'<span style="color:var(--ch-'+lastCh[0]+')">'+esc(lastCh[1].split(' · ')[0])+'</span> · ':'')+esc(last.label||lbl(last.topic))+'</h3></div>'
+      +'<button class="btn primary" data-page="'+esc(last.page)+'" data-topic="'+esc(last.topic)+'">Continue</button></div>';
+  }
+  const all=[]; chs.forEach(c=>by[c[0]].forEach(x=>all.push(x)));
+  const weak=all.filter(x=>x.bad>0).sort((a,b)=>b.bad-a.bad).slice(0,3);
+  if(weak.length) h+='<div class="weak"><b>Most wrong right now</b><div class="row">'
+    +weak.map(x=>'<button class="btn sm" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'">'+esc(lbl(x.tp))+' · '+x.bad+' wrong</button>').join('')+'</div></div>';
+  h+='<div class="ctabs" role="tablist">'+chs.map(c=>{
+    const s=by[c[0]], tot=s.reduce((a,x)=>a+x.n,0), ok=s.reduce((a,x)=>a+x.ok,0);
+    return '<button role="tab" data-chap="'+c[0]+'" aria-selected="'+(c[0]===PICKCH)+'" style="--chc:var(--ch-'+c[0]+')">'
+      +esc(c[1].split(' · ')[0])+' · '+Math.round(ok/tot*100)+'%</button>';
+  }).join('')+'</div>';
+  const c=chs.find(x=>x[0]===PICKCH), secs=by[PICKCH].slice();
+  secs.sort((a,b)=>c[3].indexOf(a.tp)-c[3].indexOf(b.tp));   // book order, not size
+  const tot=secs.reduce((a,x)=>a+x.n,0);
+  h+='<div style="--chc:var(--ch-'+c[0]+')"><h3 class="chname">'+esc(c[1])+' <span class="score">· '+tot+' Q</span></h3><div class="board">'
+    +secs.map(x=>{
+      const st=x.ok>=x.n?['ok','✓ All cleared']:x.bad?['no','Fix '+x.bad+' wrong →']:x.ok?['go','Keep going →']:['go','Start →'];
+      return '<button class="ccard" data-page="'+esc(x.pg)+'" data-topic="'+esc(x.tp)+'"><span class="nm">'+esc(lbl(x.tp))+'</span>'
+        +'<span class="tbar"><span style="width:'+(x.ok/x.n*100)+'%;background:var(--pos)"></span>'
+        +'<span style="width:'+(Math.min(x.bad,x.n-x.ok)/x.n*100)+'%;background:var(--neg)"></span></span>'
+        +'<span class="ct">'+x.ok+' / '+x.n+' cleared</span><span class="st '+st[0]+'">'+st[1]+'</span></button>';
+    }).join('')+'</div></div>';
+  $('secgrid').innerHTML=h;
   drawKept();
 }
+function pickChapter(k){ PICKCH=k; drawPicker(); }
 function buildSelects(){
   const opt=type=>{
     const by={};
@@ -1137,7 +1331,8 @@ function buildSelects(){
   $('lqSec').innerHTML=opt('lq');
 }
 $('secgrid').addEventListener('click',e=>{
-  const b=e.target.closest('.sec');
+  const tb=e.target.closest('[data-chap]'); if(tb) return pickChapter(tb.dataset.chap);
+  const b=e.target.closest('[data-topic]');
   if(b) startSection(b.dataset.page,b.dataset.topic,lbl(b.dataset.topic));
 });
 /* ------------------------------------------------------------- warm-up
@@ -1282,12 +1477,13 @@ function render(){
     $('stem').innerHTML=tynSay('cheer','TYN says',
       'Section finished — every question here is done. Pick another section, or tap a red square to revisit one.','ok');
     $('why').className='saybox'; $('next').classList.add('hide');
-    drawNav(); return; }
+    $('steps').classList.add('hide'); drawNav(); return; }
   const tp=SECTION.warm?(q.topic||q.sub||''):SECTION.topic, ch=chapOf(SECTION.page,tp);
   $('qid').innerHTML=(ch?'<span class="badge b-'+ch[0]+'">'+esc(ch[1])+'</span>':'')
     +'<span class="subtag">'+esc(lbl(tp))+'</span>'
     +'<span class="qid">'+esc(q.id)+'</span>';
   $('why').className='saybox'; $('next').classList.add('hide');
+  DSTEP={at:1}; drawSteps();
   $('prog').textContent=(POS+1)+' / '+QUEUE.length+' · '+(SECTION.label||'');
   $('stem').innerHTML=stemHtml(q);
   $('opts').innerHTML=optsHtml(q,-1);
@@ -1304,7 +1500,7 @@ $('opts').addEventListener('click',e=>{
     else if(i===chose)    kids[i].classList.add('wrong');
     else                  kids[i].classList.add('dim');
   }
-  if(SECTION.warm) return warmAnswer(q,ok);
+  if(SECTION.warm){ epSoon(); return warmAnswer(q,ok); }
   let note='';
   if(ok){
     const credited=markRight(q.key,q.topic||q.sub||'');
@@ -1314,72 +1510,108 @@ $('opts').addEventListener('click',e=>{
     note='Saved to your Correction Album.';
     post({event:'mistake', key:q.key, chose:chose, correct:false, page:SECTION.page});
   }
-  /* Step 1 is only the answer and the why, so the why is what gets read.
-     Reflection, AI help and the class thread sit behind one tap each. A note
-     already written opens its box straight away. */
+  epAns(q.key, ok, 'drill');
+  /* Step 2 is only the answer, the why and one common trap, so the why is
+     what gets read. A wrong answer then has to pass step 3, one line in the
+     student's own words saved to the Correction Album, before Next and the
+     two optional steps (AI help, class discussion) open. A note already
+     written for this question counts, so a second visit is not blocked. */
   const trap=ok?null:trapFor(q.topic||q.sub||SECTION.topic);
+  const rec=ok?null:(BOOK.find(m=>m.key===q.key)||{});
+  const ai=!ok && !!q.q;
+  DSTEP={at:2, ok:ok, ai:ai, refl:ok||!!(rec&&rec.note), saw4:false, saw5:false};
   $('why').className='saybox show';
-  $('why').innerHTML=tynSay(ok?'cheer':'think','TYN says',
+  let h='<div class="stepcard"><p class="lbl">Step 2 · Check</p>'+tynSay(ok?'cheer':'think','TYN says',
     '<b>'+esc(pick_(ok?CHEER_OK:CHEER_NO))+'</b><br>'
     +'<b>'+(ok?'Correct — the answer is ':'The answer is ')+LAB[Number(q.ans)]+'.</b> '
     +esc(q.why||'')
     +(trap?'<p style="margin:10px 0 0"><b>Common trap 常見誤解:</b> '+esc(trap.text)+'</p>':'')
     +(note?'<p class="mono" style="margin:10px 0 0">'+note+'</p>':''),
-    ok?'ok':'no');
-  let more='<div class="row step2" style="margin-top:12px;gap:8px;flex-wrap:wrap">', reflect='';
+    ok?'ok':'no')+'</div>';
   if(!ok){
-    const rec=BOOK.find(m=>m.key===q.key)||{};
     const rst=rec.status||'not';
-    more+='<button class="btn sm primary" data-more="reflect"'+(rec.note?' aria-pressed="true"':'')+'>✍️ Write my reflection</button>';
-    reflect='<div class="drillnote'+(rec.note?'':' hide')+'" data-key="'+esc(q.key)+'" '
-      +'style="margin-top:14px;border-top:1px solid rgba(0,0,0,.12);padding-top:10px">'
+    h+=bigStep('s3'+(rec.note?' hide':''),'data-more="reflect"','✍️','Step 3','Reflect: what was it really testing?')
+      +'<div class="stepcard drillnote'+(rec.note?'':' hide')+'" data-key="'+esc(q.key)+'">'
+      +'<p class="lbl">Step 3 · Reflect</p>'
       +'<p class="score" style="margin:0 0 2px"><b>Your reflection</b> — goes straight into your Correction Album</p>'
-      +'<textarea placeholder="In your own words: what is this question really testing, and why did your answer look right?">'+esc(rec.note||'')+'</textarea>'
+      +'<textarea placeholder="One line in your own words: what is this question really testing, and why did your answer look right?">'+esc(rec.note||'')+'</textarea>'
       +'<div class="statusrow">'
       +'<button data-st="understood" aria-pressed="'+(rst==='understood')+'">Got it</button>'
       +'<button data-st="partly" aria-pressed="'+(rst==='partly')+'">Partly</button>'
       +'<button data-st="not" aria-pressed="'+(rst==='not')+'">Not yet</button>'
-      +'<span style="flex:1"></span><button class="dnSave btn sm">Save</button>'
-      +'<span class="mono dnMsg"></span></div></div>';
+      +'<span style="flex:1"></span><span class="mono dnMsg"></span></div>'
+      +bigStep('s3 dnSave','','💾','Save to my album',rec.note?'Save changes':'Save and open the next steps',rec.note?'':' disabled')
+      +'</div>';
   }
   /* AI help: deliberately a button, not automatic — and only for text
      questions: the explainer cannot see a diagram, so offering it there would
      invite it to guess. Only a student who has read the written explanation
      and is still stuck presses it. */
-  if(!ok && q.q) more+='<button class="btn sm" id="askAI" data-key="'+esc(q.key)+'" data-ch="'+chose+'">'
-      +'I read it and still don&#39;t get it</button>';
-  more+='<button class="btn sm" data-more="thread">💬 See how classmates explained it</button>'
-    +'<span class="mono" id="aiMsg"></span></div>'+reflect+'<div id="aiOut"></div>'
+  h+='<div id="stepMore"'+(DSTEP.refl?'':' class="hide"')+'><p class="optlbl">Optional</p><div class="optrow">'
+    +(ai?bigStep('s4','id="askAI" data-key="'+esc(q.key)+'" data-ch="'+chose+'"','💡','Step 4','Still stuck? Ask TYN&#39;s AI'):'')
+    +bigStep('s5','data-more="thread"','💬','Step '+(ai?5:4),'See how classmates explained it')
+    +'</div><p class="mono" id="aiMsg" style="margin:8px 0 0"></p>'
+    +'<div id="aiOut" class="steppanel s4"></div>'
   /* The thread opens only after the answer is locked in, and only on request.
      Showing it any earlier would turn the top comment into the answer key. */
-    +'<div id="thread" class="hide" data-key="'+esc(q.key)+'" '
-    +'style="margin-top:16px;border-top:1px solid rgba(0,0,0,.12);padding-top:12px">'
-    +'<p class="mono">Class discussion · loading…</p></div>';
-  $('why').innerHTML+=more;
-  $('next').classList.remove('hide');
-  drawNav();
+    +'<div id="thread" class="steppanel s5 hide" data-key="'+esc(q.key)+'">'
+    +'<p class="mono">Class discussion · loading…</p></div></div>';
+  $('why').innerHTML=h;
+  if(DSTEP.refl) $('next').classList.remove('hide');
+  drawSteps(); drawNav();
+});
+function bigStep(cls,attrs,ico,k,t,extra){
+  return '<button class="bigstep '+cls+'" '+attrs+(extra||'')+'><span class="ico" aria-hidden="true">'+ico+'</span>'
+    +'<span><span class="k">'+k+'</span><span class="t">'+t+'</span></span><span class="go" aria-hidden="true">→</span></button>';
+}
+/* The step strip under the question map. Steps that do not apply to this
+   answer (no reflection after a right answer) are faded; a question with no
+   AI help (a right answer, or a diagram) has four steps instead of five. */
+let DSTEP={at:1};
+function drawSteps(){
+  const el=$('steps'); if(!el) return;
+  if(SECTION&&SECTION.warm){ el.classList.add('hide'); return; }
+  el.classList.remove('hide');
+  const d=DSTEP, names=d.at>1&&!d.ai?['Answer','Check','Reflect','Discuss']:['Answer','Check','Reflect','AI help','Discuss'];
+  el.style.gridTemplateColumns='repeat('+names.length+',1fr)';
+  el.innerHTML=names.map((n,i)=>{
+    let c='';
+    if(d.at===1) c=i===0?'on':'';
+    else if(i<2) c='done';
+    else if(n==='Reflect') c=d.ok?'off':(d.refl?'done':'on');
+    else if(n==='AI help') c=d.saw4?'done':(d.refl?'on':'');
+    else c=d.saw5?'done':(d.refl?'on':'');
+    return '<div class="'+c+'"><b>'+(c==='done'?'✓':i+1)+'</b><span>'+n+'</span></div>';
+  }).join('');
+}
+/* Step 3's save button wakes up once there is something to save. */
+$('why').addEventListener('input',e=>{
+  const dn=e.target.closest('.drillnote'); if(!dn||e.target.tagName!=='TEXTAREA') return;
+  const sv=dn.querySelector('.dnSave'); if(sv) sv.disabled=!e.target.value.trim();
 });
 $('why').addEventListener('click',e=>{
   const m=e.target.closest('[data-more]'); if(!m) return;
   if(m.dataset.more==='reflect'){
     const dn=$('why').querySelector('.drillnote'); if(!dn) return;
-    dn.classList.remove('hide'); m.setAttribute('aria-pressed','true');
+    dn.classList.remove('hide'); m.classList.add('hide');
     dn.querySelector('textarea').focus();
   }else if(m.dataset.more==='thread'){
     const th=$('thread'); if(!th) return;
-    if(th.classList.contains('hide')){ th.classList.remove('hide'); loadThread(th.dataset.key); m.textContent='💬 Hide class discussion'; }
-    else{ th.classList.add('hide'); m.textContent='💬 See how classmates explained it'; }
+    const open=th.classList.contains('hide');
+    th.classList.toggle('hide',!open); m.classList.toggle('open',open);
+    m.querySelector('.t').textContent=open?'Hide class discussion':'See how classmates explained it';
+    if(open){ loadThread(th.dataset.key); DSTEP.saw5=true; drawSteps(); }
   }
 });
 
 $('why').addEventListener('click',e=>{
   const b=e.target.closest('#askAI'); if(!b) return;
   b.disabled=true; $('aiMsg').textContent=' thinking…';
+  DSTEP.saw4=true; drawSteps();
   jsonp({explain:b.dataset.key, chose:b.dataset.ch, t:SESS}, r=>{
     $('aiMsg').textContent='';
     if(r&&r.text){
-      $('aiOut').innerHTML='<div style="margin-top:12px">'
-        +tynSay('idea','TYN&#39;s AI helper',esc(r.text),'ai')+'</div>';
+      $('aiOut').innerHTML=tynSay('idea','TYN&#39;s AI helper',esc(r.text),'ai');
     }else{
       $('aiOut').innerHTML='<p class="mono">'+esc((r&&r.error)
         ||'Not available right now. Ask your teacher about this one.')+'</p>';
@@ -1399,7 +1631,7 @@ $('next').addEventListener('click',()=>{
 });
 $('quit').addEventListener('click',()=>{
   if(INK.on) $('inkToggle').click();
-  $('qcard').classList.add('hide'); $('picker').classList.remove('hide'); drawKept(); drawOverview();
+  $('qcard').classList.add('hide'); $('picker').classList.remove('hide'); drawPicker(); drawOverview();
 });
 
 /* ------------------------------------------------------------------- ink
@@ -1553,6 +1785,8 @@ $('exNext').addEventListener('click',()=>{ if(EX.i<EX.q.length-1){ EX.i++; exRen
 $('exSubmit').addEventListener('click',()=>{
   clearInterval(EX.timer);
   let right=0, html='';
+  epAnsMany(EX.q.map((q,i)=>({key:q.key, ok:EX.a[i]===Number(q.ans)?1:0, a:EX.a[i]})).filter(x=>x.a>=0)
+    .map(x=>({key:x.key, ok:x.ok})), 'exam');
   EX.q.forEach((q,i)=>{
     const ok=EX.a[i]===Number(q.ans);
     if(ok){ right++; markRight(q.key,q.topic||q.sub||''); }
@@ -1614,11 +1848,18 @@ $('why').addEventListener('click',e=>{
       const picked=dn.querySelector('[data-st][aria-pressed="true"]');
       const status=picked?picked.dataset.st:'not';
       const note=dn.querySelector('textarea').value;
+      if(!note.trim()){ dn.querySelector('.dnMsg').textContent=' Write one line first.'; return; }
       const i=BOOK.findIndex(m=>m.key===dn.dataset.key);
       if(i>=0){ BOOK[i].status=status; BOOK[i].note=note; }
       else BOOK.push({key:dn.dataset.key, n:1, status:status, note:note,
                       pg:SECTION&&SECTION.page, tp:SECTION&&SECTION.topic});
       albSend({event:'note', key:dn.dataset.key, status:status, note:note}, dn.querySelector('.dnMsg'));
+      if(!DSTEP.refl){            // step 3 done: open Next and the optional steps
+        DSTEP.refl=true; drawSteps();
+        const more=$('stepMore'); if(more) more.classList.remove('hide');
+        $('next').classList.remove('hide');
+        const sv=dn.querySelector('.dnSave .t'); if(sv) sv.textContent='Save changes';
+      }
       return;
     }
     // fall through only if the click was on nothing actionable inside the box
@@ -1639,7 +1880,7 @@ $('why').addEventListener('click',e=>{
     const box=$('cmtBox'), el=$('thread');
     const txt=box.value.trim();
     if(!txt){ $('cmtMsg').textContent=' Write something first.'; return; }
-    post({event:'comment', key:el.dataset.key, text:txt});
+    post({event:'comment', key:el.dataset.key, text:txt}); epSoon(4000);
     box.value=''; $('cmtMsg').textContent=' Posted — it will show in a moment.';
     setTimeout(()=>loadThread(el.dataset.key), 2500);
   }
@@ -1994,6 +2235,7 @@ $('booklist').addEventListener('click',e=>{
     }
     const trEl=row.querySelector('.trial');
     if(trEl && trEl.textContent.indexOf('trials')===0) trEl.textContent='trials '+P.retry[q.key].n;
+    epAns(q.key, ok, 'album');
     albEmit({act:'retry',kind:'mc',key:q.key,ok:ok});
     return;
   }
@@ -2467,6 +2709,7 @@ function lqAiMark(it,btn){
     .then(r=>r.text()).then(txt=>{
       let r; try{ r=JSON.parse(txt); }catch(e){ r={error:txt==='auth'?'Your sign-in has expired. Sign in again.':'AI marking is not set up on the server yet. Ask your teacher.'}; }
       if(r.error){ btn.disabled=false; msg.textContent=r.error; return; }
+      if(r.ep) epGot(r.ep);
       const s2=lqGet(q), d=lqDrafts(s2);
       s2.ai={aw:r.awards||{},fb:r.feedback||'',read:r.read||'',ill:!!r.illegible,mode:photo?'photo':'typed',
              t:lqScore(q,gs,id=>(r.awards&&r.awards[id]&&r.awards[id].m)||0)};
@@ -2720,6 +2963,294 @@ function initGoogle(){
           +' is listed under Authorised JavaScript origins for this OAuth client.');
     }
   },200);
+}
+
+/* ============================================================== E-POINTS ===
+ * Effort points, the store and the class page. The server (EPoints.gs) works
+ * out every award; this page only reports what happened (an MC answer, an
+ * album save, a Long Q marked) and shows what the server counted.
+ *
+ * Characters are drawn here, in SVG, so the store needs no images. An item's
+ * id must match a row in the EStore tab, which sets its price and name.
+ * ========================================================================== */
+const epArt=(function(){
+const INK='#211d16', SKIN='#f6d5b8', HAIR='#1d1a17';
+let UID=0;
+const BG={
+  classroom:()=>`<rect width="160" height="180" fill="#efe3c8"/><rect x="14" y="14" width="132" height="66" fill="#2f5a46" stroke="#8a5b2a" stroke-width="4"/>
+    <text x="22" y="34" font-family="IBM Plex Mono,monospace" font-size="10" fill="#e9efe6" opacity=".85">Qd = Qs</text>
+    <path d="M100 70 L136 28 M100 28 L136 70" stroke="#e9efe6" stroke-width="1.6" opacity=".75"/>
+    <text x="137" y="27" font-size="8" fill="#e9efe6" font-family="IBM Plex Sans,sans-serif">S</text><text x="137" y="76" font-size="8" fill="#e9efe6" font-family="IBM Plex Sans,sans-serif">D</text>
+    <rect y="150" width="160" height="30" fill="#c9a77a"/>`,
+  harbour:()=>{ const id='g'+(UID++); let s=`<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16203f"/><stop offset="1" stop-color="#3b4a7a"/></linearGradient></defs><rect width="160" height="180" fill="url(#${id})"/><circle cx="130" cy="24" r="9" fill="#f4efe3" opacity=".9"/>`;
+    const b=[[4,70,16],[22,52,12],[36,30,14],[52,62,12],[66,44,10],[78,20,10],[90,56,14],[106,38,12],[120,66,14],[136,48,20]];
+    b.forEach(([x,y,w])=>{ s+=`<rect x="${x}" y="${y}" width="${w}" height="${118-y}" fill="#0f162b"/>`; for(let yy=y+6;yy<112;yy+=9) for(let xx=x+3;xx<x+w-2;xx+=5) if((xx*7+yy)%3) s+=`<rect x="${xx}" y="${yy}" width="2" height="3" fill="#f2c94c" opacity=".8"/>`; });
+    s+=`<rect y="118" width="160" height="62" fill="#1f2c55"/>`; for(let i=0;i<9;i++) s+=`<rect x="${8+i*17}" y="${124+(i%3)*14}" width="10" height="2" fill="#f2c94c" opacity=".45"/>`; return s; },
+  mtr:()=>{ let s=`<rect width="160" height="180" fill="#e7dcc4"/>`; for(let y=0;y<140;y+=14) for(let x=(y/14%2)*10;x<160;x+=20) s+=`<rect x="${x}" y="${y}" width="19" height="13" fill="#d8a53a" opacity="${.55+((x+y)%3)*.12}"/>`;
+    s+=`<rect x="20" y="22" width="120" height="22" fill="#211d16"/><text x="80" y="37" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#f4efe3">Platform 1 月台</text>
+    <rect y="140" width="160" height="40" fill="#8f8a80"/><rect y="140" width="160" height="5" fill="#f2c230"/>`; return s; },
+  library:()=>{ let s=`<rect width="160" height="180" fill="#6b4a2c"/>`; const cols=['#c9412e','#3f5bd9','#0f9d76','#d9a10f','#8a56d6','#f4efe3','#12a4c4'];
+    [10,52,94].forEach((y,r)=>{ let x=6; while(x<150){ const w=6+((x*3+r*5)%7); s+=`<rect x="${x}" y="${y+((x+r)%6)}" width="${w}" height="${38-((x+r)%6)}" fill="${cols[(x+r)%7]}"/>`; x+=w+1; } s+=`<rect y="${y+38}" width="160" height="5" fill="#4a3220"/>`; });
+    s+=`<rect y="140" width="160" height="40" fill="#4a3220"/>`; return s; },
+  tram:()=>`<rect width="160" height="180" fill="#bfe0ee"/><rect x="0" y="20" width="34" height="100" fill="#e9c9a5"/><rect x="36" y="8" width="30" height="112" fill="#d6dbe0"/><rect x="104" y="14" width="26" height="106" fill="#efd7c7"/><rect x="132" y="30" width="28" height="90" fill="#cfd8c6"/>
+    <rect y="120" width="160" height="60" fill="#8f8a80"/><path d="M0 70 H160" stroke="#211d16" stroke-width="1"/>
+    <rect x="-6" y="74" width="172" height="62" rx="4" fill="#2f6e4a"/><rect x="-6" y="74" width="172" height="10" fill="#f4efe3"/>
+    ${[0,1,2,3,4,5].map(i=>`<rect x="${2+i*27}" y="88" width="20" height="18" fill="#dfeee8" stroke="#1d4a32"/>`).join('')}
+    <text x="80" y="82" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="7" font-weight="700" fill="#2f6e4a">DING DING</text>`
+};
+const HEADS={
+  boy:()=>({neck:SKIN, back:'', head:`<circle cx="46" cy="80" r="6" fill="${SKIN}" stroke="${INK}" stroke-width="1.4"/><circle cx="114" cy="80" r="6" fill="${SKIN}" stroke="${INK}" stroke-width="1.4"/>
+    <circle cx="80" cy="76" r="34" fill="${SKIN}" stroke="${INK}" stroke-width="1.6"/>
+    <path d="M45 72 Q42 38 80 36 Q118 38 115 72 Q110 56 100 58 Q96 48 86 55 Q80 44 70 54 Q60 47 54 60 Q48 62 45 72Z" fill="${HAIR}"/>${FACE()}`}),
+  girl:()=>({neck:SKIN, back:`<path d="M42 74 Q38 34 80 34 Q122 34 118 74 L122 124 Q106 130 100 112 L60 112 Q54 130 38 124Z" fill="${HAIR}"/>`,
+    head:`<circle cx="80" cy="76" r="34" fill="${SKIN}" stroke="${INK}" stroke-width="1.6"/>
+    <path d="M46 74 Q44 40 80 40 Q116 40 114 74 Q104 56 88 58 Q72 54 46 74Z" fill="${HAIR}"/><rect x="98" y="50" width="12" height="5" rx="2" fill="#d64a7a" transform="rotate(-20 104 52)"/>${FACE()}`}),
+  cat:()=>({neck:'#e8964a', back:'', head:`<path d="M50 60 L52 30 L72 46Z M110 60 L108 30 L88 46Z" fill="#e8964a" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/><path d="M55 52 L56 37 L66 46Z M105 52 L104 37 L94 46Z" fill="#f2a7b8"/>
+    <ellipse cx="80" cy="78" rx="36" ry="32" fill="#e8964a" stroke="${INK}" stroke-width="1.6"/><path d="M74 50 L76 60 M80 48 L80 59 M86 50 L84 60" stroke="#b8642a" stroke-width="3" stroke-linecap="round"/>
+    ${EYES(66,94,78)}<path d="M77 86 L83 86 L80 90Z" fill="#d64a7a"/><path d="M80 90 Q76 95 72 92 M80 90 Q84 95 88 92" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M40 84 L58 86 M40 92 L58 90 M120 84 L102 86 M120 92 L102 90" stroke="${INK}" stroke-width="1"/>`}),
+  shiba:()=>({neck:'#d9934f', back:'', head:`<path d="M48 62 L50 30 L74 48Z M112 62 L110 30 L86 48Z" fill="#d9934f" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/><path d="M53 54 L54 38 L66 48Z M107 54 L106 38 L94 48Z" fill="#fbeedd"/>
+    <ellipse cx="80" cy="78" rx="36" ry="32" fill="#d9934f" stroke="${INK}" stroke-width="1.6"/><path d="M50 86 Q58 108 80 108 Q102 108 110 86 Q98 78 80 82 Q62 78 50 86Z" fill="#fbeedd"/>
+    <circle cx="68" cy="64" r="3" fill="#fbeedd"/><circle cx="92" cy="64" r="3" fill="#fbeedd"/>${EYES(68,92,74)}<ellipse cx="80" cy="88" rx="5" ry="3.5" fill="${INK}"/><path d="M80 92 Q76 98 72 95 M80 92 Q84 98 88 95" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/>`}),
+  panda:()=>({neck:'#fdfcf8', back:'', head:`<circle cx="52" cy="50" r="11" fill="${INK}"/><circle cx="108" cy="50" r="11" fill="${INK}"/>
+    <ellipse cx="80" cy="78" rx="36" ry="32" fill="#fdfcf8" stroke="${INK}" stroke-width="1.6"/><ellipse cx="66" cy="78" rx="8" ry="11" fill="${INK}" transform="rotate(-25 66 78)"/><ellipse cx="94" cy="78" rx="8" ry="11" fill="${INK}" transform="rotate(25 94 78)"/>
+    <circle cx="67" cy="77" r="3" fill="#fff"/><circle cx="93" cy="77" r="3" fill="#fff"/><ellipse cx="80" cy="90" rx="5" ry="3.5" fill="${INK}"/><path d="M80 93 Q76 98 73 95 M80 93 Q84 98 87 95" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/>
+    <ellipse cx="58" cy="94" rx="5" ry="3" fill="#f2a7b8" opacity=".6"/><ellipse cx="102" cy="94" rx="5" ry="3" fill="#f2a7b8" opacity=".6"/>`}),
+  penguin:()=>({neck:'#2b3a6b', back:'', head:`<ellipse cx="80" cy="76" rx="36" ry="34" fill="#2b3a6b" stroke="${INK}" stroke-width="1.6"/>
+    <path d="M80 62 Q70 50 58 58 Q46 70 54 92 Q64 108 80 108 Q96 108 106 92 Q114 70 102 58 Q90 50 80 62Z" fill="#fdfcf8"/>${EYES(68,92,76)}<path d="M72 86 L88 86 L80 96Z" fill="#e8962a" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/>
+    <ellipse cx="60" cy="90" rx="5" ry="3" fill="#f2a7b8" opacity=".7"/><ellipse cx="100" cy="90" rx="5" ry="3" fill="#f2a7b8" opacity=".7"/>`}),
+  dolphin:()=>({neck:'#f2a7b8', back:'', head:`<path d="M74 44 Q84 26 96 36 Q88 40 86 46Z" fill="#e88aa0" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>
+    <ellipse cx="80" cy="74" rx="36" ry="32" fill="#f2a7b8" stroke="${INK}" stroke-width="1.6"/><ellipse cx="80" cy="96" rx="16" ry="10" fill="#f8c6d2" stroke="${INK}" stroke-width="1.4"/>
+    <path d="M70 96 Q80 101 90 96" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/>${EYES(62,98,74)}<circle cx="80" cy="50" r="2.5" fill="${INK}" opacity=".6"/>`})
+};
+function EYES(x1,x2,y){ return `<ellipse cx="${x1}" cy="${y}" rx="3.2" ry="4.2" fill="${INK}"/><ellipse cx="${x2}" cy="${y}" rx="3.2" ry="4.2" fill="${INK}"/><circle cx="${x1+1}" cy="${y-1.6}" r="1.2" fill="#fff"/><circle cx="${x2+1}" cy="${y-1.6}" r="1.2" fill="#fff"/>`; }
+function FACE(){ return EYES(68,92,78)+`<ellipse cx="61" cy="89" rx="5" ry="3" fill="#ef8f8f" opacity=".5"/><ellipse cx="99" cy="89" rx="5" ry="3" fill="#ef8f8f" opacity=".5"/><path d="M73 92 Q80 98 87 92" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>`; }
+const BODY='M28 180 C30 142 52 124 80 124 C108 124 130 142 132 180 Z';
+const OUTFITS={
+  uniform:()=>`<path d="${BODY}" fill="#fbfaf6" stroke="${INK}" stroke-width="1.6"/><path d="M66 126 L80 140 L94 126" fill="none" stroke="${INK}" stroke-width="1.4"/><path d="M76 132 L84 132 L87 156 L80 166 L73 156Z" fill="#2b3a6b"/>`,
+  hoodie:()=>`<path d="${BODY}" fill="#c9412e" stroke="${INK}" stroke-width="1.6"/><path d="M56 128 Q80 150 104 128" fill="none" stroke="#8f2a1c" stroke-width="5"/><path d="M72 140 L71 158 M88 140 L89 158" stroke="#f4efe3" stroke-width="2" stroke-linecap="round"/><rect x="60" y="160" width="40" height="14" rx="3" fill="#a83322"/>`,
+  varsity:()=>`<path d="${BODY}" fill="#2b3a6b" stroke="${INK}" stroke-width="1.6"/><path d="M28 180 C30 150 40 136 54 130 L58 180Z M132 180 C130 150 120 136 106 130 L102 180Z" fill="#f4efe3" stroke="${INK}" stroke-width="1.2"/><path d="M68 126 L80 136 L92 126" fill="none" stroke="#c9412e" stroke-width="3"/><text x="72" y="166" font-family="Source Serif 4,serif" font-weight="700" font-size="20" fill="#d9a10f">E</text>`,
+  raincoat:()=>`<path d="${BODY}" fill="#e8b923" stroke="${INK}" stroke-width="1.6"/><path d="M62 126 L80 142 L98 126" fill="#d29e10" stroke="${INK}" stroke-width="1.2"/><path d="M80 142 V180" stroke="${INK}" stroke-width="1.2"/>${[150,162,174].map(y=>`<circle cx="86" cy="${y}" r="2.2" fill="${INK}"/>`).join('')}`,
+  gown:()=>`<path d="${BODY}" fill="#211d16" stroke="${INK}" stroke-width="1.6"/><path d="M64 126 L80 146 L96 126" fill="#fbfaf6"/><path d="M64 126 L70 180 M96 126 L90 180" stroke="#d9a10f" stroke-width="6"/>`
+};
+const CAP=`<path d="M40 44 L80 28 L120 44 L80 60Z" fill="#211d16" stroke="#000" stroke-width="1"/><rect x="62" y="46" width="36" height="12" fill="#211d16"/><path d="M118 45 L120 66" stroke="#d9a10f" stroke-width="2"/><circle cx="120" cy="68" r="3" fill="#d9a10f"/>`;
+const FX={
+  none:()=>['',''],
+  sparkle:()=>['',[[22,40,0],[136,54,.5],[30,120,1],[132,118,.3],[78,14,.8]].map(([x,y,d])=>`<path class="fx-tw" style="animation-delay:${d}s" d="M${x} ${y-8} L${x+2} ${y-2} L${x+8} ${y} L${x+2} ${y+2} L${x} ${y+8} L${x-2} ${y+2} L${x-8} ${y} L${x-2} ${y-2}Z" fill="#fff6c2" stroke="#d9a10f" stroke-width="1"/>`).join('')],
+  coins:()=>['',[[20,150,0],[140,160,1.1],[32,170,2],[128,140,.6]].map(([x,y,d])=>`<g class="fx-up" style="animation-delay:${d}s"><circle cx="${x}" cy="${y}" r="7" fill="#d9a10f" stroke="#b07f05"/><text x="${x}" y="${y+3.5}" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#fff">E</text></g>`).join('')],
+  curves:()=>[`<g><path d="M44 6 L116 50" stroke="#3f5bd9" stroke-width="3"/><path d="M44 50 L116 6" stroke="#c9412e" stroke-width="3"/><text x="118" y="10" font-size="9" font-weight="700" fill="#c9412e" font-family="IBM Plex Sans,sans-serif">S</text><text x="118" y="56" font-size="9" font-weight="700" fill="#3f5bd9" font-family="IBM Plex Sans,sans-serif">D</text></g>`,
+    `<circle class="fx-pulse" cx="80" cy="28" r="4" fill="#d9a10f" stroke="#211d16"/>`],
+  aura:()=>[`<circle class="fx-pulse" cx="80" cy="96" r="66" fill="#d9a10f" opacity=".18"/><circle cx="80" cy="96" r="60" fill="none" stroke="#d9a10f" stroke-width="3" opacity=".6"/>`,''],
+  confetti:()=>['',Array.from({length:12},(_,i)=>`<rect class="fx-fall" style="animation-delay:${(i*.21).toFixed(2)}s" x="${8+i*12.5}" y="0" width="5" height="8" fill="${['#c9412e','#3f5bd9','#0f9d76','#d9a10f','#8a56d6','#d64a7a'][i%6]}"/>`).join('')]
+};
+function avatar(o,label){
+  if(!o||!HEADS[o.base]) return EMPTY(label);
+  o={base:o.base, outfit:OUTFITS[o.outfit]?o.outfit:'uniform', bg:BG[o.bg]?o.bg:'classroom', fx:FX[o.fx]?o.fx:'none'};
+  const h=HEADS[o.base](), fx=FX[o.fx](), cid='epc'+(UID++);
+  return `<svg viewBox="0 0 160 180" role="img" aria-label="${label||'character'}"><defs><clipPath id="${cid}"><rect width="160" height="180" rx="3"/></clipPath></defs><g clip-path="url(#${cid})">
+    ${BG[o.bg]()}${fx[0]}<g class="fx-bob">${h.back}<rect x="71" y="104" width="18" height="24" fill="${h.neck}" stroke="${INK}" stroke-width="1.4"/>${OUTFITS[o.outfit]()}${h.head}${o.outfit==='gown'?CAP:''}</g>${fx[1]}</g></svg>`;
+}
+/* Not picked yet: a plain silhouette, so nobody is given a character they did not choose. */
+function EMPTY(label){
+  return `<svg viewBox="0 0 160 180" role="img" aria-label="${label||'no character yet'}"><rect width="160" height="180" rx="3" fill="#efe9db"/>
+    <circle cx="80" cy="76" r="32" fill="#ddd3bf"/><path d="M30 180 C32 140 52 124 80 124 C108 124 128 140 130 180Z" fill="#ddd3bf"/>
+    <text x="80" y="88" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="34" font-weight="700" fill="#b9ad94">?</text></svg>`;
+}
+return avatar;
+})();
+
+let EPW=null;                 // the wallet from ?wallet=1
+let EP_LOOK=null;             // what the store is showing on the big character
+let EP_CAT='base', EP_CLS='';
+const EP_CATS=[['base','Characters'],['outfit','Outfits'],['bg','Backgrounds'],['fx','Effects']];
+const EP_ACT={mc_answer:'Answered an MC',mc_correct:'Correct',mc_fix:'Fixed a mistake',mc_ten:'10 questions today',
+  lq_submit:'Long Q marked',lq_better:'Beat your Long Q score',album_point:'Album point marked',album_retry:'Album retry right',
+  comment:'Comment posted',verified:'Teacher verified your comment',week5:'5 days this week',teacher:'From your teacher',
+  buy:'Bought',comment_hidden:'Comment hidden by your teacher'};
+const epItem=id=>(EPW&&EPW.store||[]).find(x=>x.id===id);
+const epName=id=>{ const it=epItem(id); return it?it.n:id; };
+const epOwns=id=>{ const it=epItem(id); return !!it&&(it.p===0||(EPW.owned||[]).indexOf(id)>=0); };
+
+function epToast(html){
+  const z=$('epToasts'), t=document.createElement('div');
+  t.className='eptoast'; t.innerHTML=html; z.appendChild(t);
+  setTimeout(()=>t.remove(),2600);
+}
+function epSetBal(b){
+  if(EPW) EPW.bal=b;
+  $('epBal').textContent=b; $('wallet').classList.remove('hide');
+  if($('stBal')) $('stBal').textContent=b;
+  if($('ovEBal')) $('ovEBal').textContent=b;
+}
+/* A reply from the server that may carry awards: {e:[{a,p}], bal}. */
+function epGot(r){
+  if(!r) return;
+  const e=r.e||[];
+  if(r.bal!=null) epSetBal(r.bal);
+  if(!e.length) return;
+  const sum=e.reduce((a,x)=>a+x.p,0);
+  epToast(esc(e.map(x=>EP_ACT[x.a]||x.a).filter((v,i,a)=>a.indexOf(v)===i).join(' · '))
+    +' <b>'+(sum>0?'+':'')+sum+' E</b>');
+}
+function epLoad(cb){
+  if(!SESS) return;
+  jsonp({wallet:1,t:SESS}, r=>{
+    if(!r||r.error){ cb&&cb(null); return; }
+    const before=EPW?EPW.bal:null;
+    EPW=r; epSetBal(r.bal);
+    if(r.e&&r.e.length) epGot({e:r.e});
+    else if(before!=null&&r.bal>before) epToast('E-points <b>+'+(r.bal-before)+' E</b>');
+    cb&&cb(r);
+  });
+}
+/* Points that land through a save we cannot read (album, comment, warm-up):
+   look again shortly after and show the difference. */
+let epTimer=null;
+function epSoon(ms){
+  clearTimeout(epTimer);
+  epTimer=setTimeout(()=>epLoad(()=>{
+    if(!$('tab-store').classList.contains('hide')) drawStore();
+    if(!$('tab-overview').classList.contains('hide')) epHome();
+  }), ms||2500);
+}
+function epPost(body){
+  if(!SESS) return Promise.resolve(null);
+  return fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(Object.assign({t:SESS},body))})
+    .then(r=>r.text()).then(t=>{ try{ return JSON.parse(t); }catch(e){ return {error:t==='auth'?'auth':'old'}; } })
+    .catch(()=>({error:'offline'}));
+}
+/* One MC answer, or a whole exam as items:[{key,ok}]. */
+function epAns(key,ok,page){ epPost({event:'mcans',key:key,ok:ok?1:0,page:page}).then(epGot); }
+function epAnsMany(items,page){ if(items.length) epPost({event:'mcans',items:items,page:page}).then(epGot); }
+
+/* --------------------------------------------------------------- home --- */
+function epHome(){
+  if(!EPW){ epLoad(epHome); return; }
+  const lk=EPW.look;
+  $('ovMe').innerHTML='<h2>My character</h2><div class="epme">'
+    +'<div class="epmeav">'+epArt(lk,'your character')+'</div><div>'
+    +'<p class="epbig"><span class="ecoin">E</span><b id="ovEBal">'+EPW.bal+'</b></p>'
+    +'<p class="mono" style="margin:0 0 10px">'+EPW.earned+' E earned so far</p>'
+    +(lk?'<button class="btn primary" data-ep="store">Dress up and shop</button>'
+        :'<p class="muted" style="margin:0 0 8px">Pick your starter character. You can change it any time.</p>'
+         +'<div class="row"><button class="btn" data-ep="pick" data-base="boy">Teen boy</button>'
+         +'<button class="btn" data-ep="pick" data-base="girl">Teen girl</button></div>')
+    +'</div></div>';
+  epClassList();
+}
+$('ovMe').addEventListener('click',e=>{
+  const b=e.target.closest('[data-ep]'); if(!b) return;
+  if(b.dataset.ep==='store') show('store');
+  if(b.dataset.ep==='pick') epWear({base:b.dataset.base,outfit:'uniform',bg:'classroom',fx:'none'},()=>epHome());
+});
+
+let EP_CLASSES=null;
+function epClassList(){
+  if(EP_CLASSES){ epClassDraw(); return; }
+  jsonp({classes:1,t:SESS}, r=>{
+    EP_CLASSES=(r&&r.classes)||[];
+    if(!EP_CLS) EP_CLS=EP_CLASSES.indexOf(ME&&ME.cls)>=0?ME.cls:(EP_CLASSES[0]||'');
+    epClassDraw();
+  });
+}
+function epClassDraw(){
+  const sel=$('ovClsSel');
+  sel.innerHTML=EP_CLASSES.map(c=>'<option'+(c===EP_CLS?' selected':'')+'>'+esc(c)+'</option>').join('');
+  sel.classList.toggle('hide',EP_CLASSES.length<2);
+  if(!EP_CLS){ $('ovMates').innerHTML='<p class="muted">No classes are open yet.</p>'; return; }
+  $('ovClsName').textContent='Class '+EP_CLS;
+  jsonp({cpage:EP_CLS,t:SESS}, r=>{
+    const items=(r&&r.items)||[];
+    if(!items.length){ $('ovMates').innerHTML='<p class="muted">Nobody here yet.</p>'; return; }
+    $('ovMates').innerHTML='<div class="mates">'+items.map(m=>
+      '<div class="mate">'+epArt(m.look,esc(m.nick)+'\'s character')+'<div class="nk">'+esc(m.nick)+'</div>'
+      +'<div class="lv"><span class="lvb">Lv.'+m.lv+'</span> '+esc(LEVEL_NAMES[m.lv-1]||'')+'</div></div>').join('')+'</div>';
+  });
+}
+$('ovClsSel').addEventListener('change',e=>{ EP_CLS=e.target.value; epClassDraw(); });
+
+/* -------------------------------------------------------------- store --- */
+function drawStore(){
+  if(!EPW){ $('stItems').innerHTML='<p class="muted">Loading…</p>'; epLoad(r=>{ if(r) drawStore(); else $('stItems').innerHTML='<p class="muted">The store is not switched on yet. Ask your teacher.</p>'; }); return; }
+  if(!EP_LOOK) EP_LOOK=Object.assign({base:'',outfit:'uniform',bg:'classroom',fx:'none'},EPW.look||{});
+  $('stBal').textContent=EPW.bal;
+  $('stAv').innerHTML=epArt(EP_LOOK.base?EP_LOOK:null,'your character');
+  $('stWear').innerHTML=EP_LOOK.base?'Wearing: '+['base','outfit','bg','fx'].map(k=>'<span>'+esc(epName(EP_LOOK[k]))+'</span>').join('')
+    :'Pick a character first: the two teens are free.';
+  $('stCats').innerHTML=EP_CATS.map(c=>'<button data-cat="'+c[0]+'" aria-pressed="'+(c[0]===EP_CAT)+'">'+c[1]+'</button>').join('');
+  const base=EP_LOOK.base||'boy';
+  $('stItems').innerHTML=(EPW.store||[]).filter(i=>i.k===EP_CAT&&(i.on||epOwns(i.id))).map(i=>{
+    const own=epOwns(i.id), on=EP_LOOK[i.k]===i.id, look=Object.assign({},EP_LOOK,{base:base},{[i.k]:i.id});
+    let btn;
+    if(on) btn='<button class="btn sm" disabled>Wearing</button>';
+    else if(own) btn='<button class="btn sm" data-wear="'+esc(i.id)+'">Wear</button>';
+    else if(EPW.bal>=i.p) btn='<button class="btn sm primary" data-buy="'+esc(i.id)+'">Buy · '+i.p+' E</button>';
+    else btn='<button class="btn sm" disabled>Need '+(i.p-EPW.bal)+' more E</button>';
+    const tag=!i.p?'<span class="eptag free">Free</span>':own?'<span class="eptag">Owned</span>':'<span class="eppr">'+i.p+' E</span>';
+    return '<div class="epitem'+(on?' on':'')+'">'+epArt(look,esc(i.n))+'<div class="nm">'+esc(i.n)
+      +(i.zh?' <span class="zh">'+esc(i.zh)+'</span>':'')+'</div><div>'+tag+'</div>'+btn+'</div>';
+  }).join('')||'<p class="muted">Nothing on sale here right now.</p>';
+  $('stRules').innerHTML='<div class="tblwrap"><table><tr><th>Activity</th><th>E</th><th>Today</th></tr>'
+    +(EPW.rules||[]).map(r=>'<tr><td>'+esc(r.what)+'</td><td class="epe">+'+r.p+'</td><td class="mono">'
+      +(r.lim?r.today+' / '+r.lim:(r.today||'—'))+'</td></tr>').join('')+'</table></div>'
+    +'<p class="mono" style="margin:8px 0 0">A wrong answer never costs E. Answering the same question again on the same day earns nothing.</p>';
+  $('stRecent').innerHTML=(EPW.recent||[]).map(x=>'<div><b>'+(x[2]>0?'+':'')+x[2]+' E</b> '+esc(EP_ACT[x[1]]||x[1])
+    +' <span class="muted">'+esc(String(x[3]||''))+' · '+new Date(x[0]).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+'</span></div>').join('')
+    ||'<p class="muted">Nothing yet. Answer a question to earn your first E.</p>';
+}
+$('stCats').addEventListener('click',e=>{ const b=e.target.closest('[data-cat]'); if(!b) return; EP_CAT=b.dataset.cat; drawStore(); });
+$('stItems').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-buy],button[data-wear]'); if(!b) return;
+  if(b.dataset.wear){
+    const it=epItem(b.dataset.wear);
+    EP_LOOK=Object.assign({},EP_LOOK,{[it.k]:it.id});
+    if(!EP_LOOK.base) EP_LOOK.base='boy';
+    epWear(EP_LOOK); drawStore(); return;
+  }
+  /* Two taps to spend: the first asks, the second buys. */
+  if(!b.dataset.sure){ b.dataset.sure='1'; b.textContent='Tap again to buy'; setTimeout(()=>{ if(b.isConnected) drawStore(); },3500); return; }
+  const it=epItem(b.dataset.buy); b.disabled=true; b.textContent='Buying…';
+  epPost({event:'ebuy',item:it.id}).then(r=>{
+    if(r&&r.ok){
+      EPW.owned=r.owned; epSetBal(r.bal); epToast('Bought '+esc(it.n)+' <b>−'+it.p+' E</b>');
+      EP_LOOK=Object.assign({},EP_LOOK,{[it.k]:it.id}); if(!EP_LOOK.base) EP_LOOK.base='boy';
+      epWear(EP_LOOK);
+    }else{
+      if(r&&r.bal!=null) epSetBal(r.bal);
+      $('stMsg').textContent=({poor:'Not enough E yet.',owned:'You already own that.',off:'That item is not on sale now.',
+        offline:'No connection. Nothing was spent.',auth:'Sign in again first.',old:'The store is not switched on yet. Ask your teacher.'})[r&&r.error]||'Could not buy that. Nothing was spent.';
+    }
+    drawStore();
+  });
+});
+function epWear(look,after){
+  epPost({event:'ewear',look:look}).then(r=>{
+    if(r&&r.ok){ EPW.look=r.look; EP_LOOK=Object.assign({},r.look); $('stMsg').textContent='Saved. Classmates see this look.'; EP_CLASSES=null; }
+    else $('stMsg').textContent='Could not save your look. Try again.';
+    if(!$('tab-store').classList.contains('hide')) drawStore();
+    after&&after();
+  });
+}
+$('wallet').addEventListener('click',()=>show('store'));
+
+/* Album saves, Long Q marks and comments pay through the server; refresh after. */
+document.addEventListener('tyn:album',()=>epSoon());
+
+/* ------------------------------------------------- class picker (seat) --- */
+/* Once the teacher lists classes in the Sheet, the class is picked, not typed. */
+function epSeatPicker(){
+  jsonp({classes:1,t:SESS}, r=>{
+    const list=(r&&r.classes)||[];
+    if(!list.length) return;
+    [['pCls','pClsSel'],['aCls','aClsSel']].forEach(([inp,sel])=>{
+      let s=$(sel);
+      if(!s){ s=document.createElement('select'); s.id=sel; s.setAttribute('aria-label','Class'); $(inp).after(s); }
+      const cur=($(inp).value||'').toUpperCase();
+      s.innerHTML='<option value="">Class</option>'+list.map(c=>'<option'+(c===cur?' selected':'')+'>'+esc(c)+'</option>').join('');
+      s.onchange=()=>{ $(inp).value=s.value; };
+      $(inp).classList.add('hide');
+    });
+  });
 }
 </script>
 </body>
