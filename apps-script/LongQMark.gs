@@ -103,6 +103,11 @@ function lqMark_(sess, b) {
   lqMarkSheet_().appendRow([new Date(), sess.uid, key, img ? 'photo' : 'typed', sum, q.marks || '',
     out.feedback, (img ? out.read : text).slice(0, 2000), JSON.stringify(out.awards).slice(0, 4000)]);
   out.left = LQ_DAILY_CAP - used - 1;
+  try {                                       // E-points (EPoints.gs)
+    var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    var ep = epLqMarked_(sess, key, sum, words, !!img);
+    if (ep) out.ep = ep;
+  } catch (err) { try { authErr_('ep lqmark: ' + err); } catch (e) {} }
   return out;
 }
 

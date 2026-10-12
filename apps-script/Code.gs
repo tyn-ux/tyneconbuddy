@@ -1,4 +1,4 @@
-var BUILD = '2026-10-12a';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-12e';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -74,7 +74,7 @@ function sessionSheet_()  { return sheet_('Sessions', ['nonce','token','uid','em
 function rosterSheet_()   { return sheet_('Roster',   ['email','name','active']); }
 function blockSheet_()    { return sheet_('Blocklist',['email','reason','added','status']); }
 function clearedSheet_()  { return sheet_('Cleared',  ['uid','cleared','updated']); }
-function studentSheet_()  { return sheet_('Students', ['uid','email','class','num','nick','joined','updated']); }
+function studentSheet_()  { return sheet_('Students', ['uid','email','class','num','nick','joined','updated','status']); }
 function commentSheet_()  { return sheet_('Comments', ['cid','key','uid','nick','class','num','text','ts','likes','verified','hidden']); }
 function likeSheet_()     { return sheet_('Likes',    ['cid','uid','ts']); }
 function lqAlbumSheet_()  { return sheet_('LQAlbum',  ['uid','key','score','out_of','missing','fixed','note','status','tries','history','added','updated']); }
@@ -698,6 +698,8 @@ function profileOf_(sess) {
   var v = studentSheet_().getDataRange().getValues();
   for (var i = 1; i < v.length; i++) {
     if (String(v[i][0]) === sess.uid) {
+      // Removed by the teacher (EPoints.gs menu): no seat until they pick a class again.
+      if (String(v[i][7] || '').trim().toLowerCase() === 'removed') return null;
       return { cls: String(v[i][2] || ''), num: String(v[i][3] || ''),
                nick: String(v[i][4] || ''), row: i + 1 };
     }
@@ -711,6 +713,9 @@ function saveProfile_(sess, cls, num, nick) {
   nick = String(nick || '').trim().slice(0, 16);
   if (!cls || !num || !nick) return { error: 'missing' };
   if (!/^[0-9]{1,2}$/.test(num)) return { error: 'badnum' };
+  // Once the Classes tab lists classes, only an open one can be picked.
+  var classes = classMap_();
+  if (Object.keys(classes).length && classes[cls] !== 'open') return { error: 'noclass' };
 
   var lock = LockService.getScriptLock();
   try { lock.waitLock(8000); } catch (e) { return { error: 'busy' }; }
@@ -718,6 +723,7 @@ function saveProfile_(sess, cls, num, nick) {
     var sh = studentSheet_(), v = sh.getDataRange().getValues(), mine = -1;
     for (var i = 1; i < v.length; i++) {
       if (String(v[i][0]) === sess.uid) { mine = i + 1; continue; }
+      if (String(v[i][7] || '').trim().toLowerCase() === 'removed') continue;   // a removed student's old seat is free
       if (String(v[i][2]).toUpperCase() === cls && String(v[i][3]) === num) {
         return { error: 'taken' };          // that seat already belongs to someone
       }
@@ -725,9 +731,11 @@ function saveProfile_(sess, cls, num, nick) {
     if (mine > 0) {
       sh.getRange(mine, 3, 1, 3).setValues([[cls, num, nick]]);
       sh.getRange(mine, 7).setValue(new Date());
+      if (String(v[mine - 1][7] || '').trim().toLowerCase() === 'removed') sh.getRange(mine, 8).setValue('');
     } else {
       sh.appendRow([sess.uid, sess.email, cls, num, nick, new Date(), new Date()]);
     }
+    try { CacheService.getScriptCache().removeAll(['ep_hidden', 'ep_cp_' + cls]); } catch (e) {}
     return { ok: true, cls: cls, num: num, nick: nick };
   } finally { try { lock.releaseLock(); } catch (e) {} }
 }
@@ -774,10 +782,12 @@ function addComment_(sess, key, text) {
   if (!key || !text) return;
   var p = profileOf_(sess);
   if (!p) return;                                   // no profile, no voice
+  var cid = Utilities.getUuid().slice(0, 8);
   commentSheet_().appendRow([
-    Utilities.getUuid().slice(0, 8), String(key).slice(0, 80), sess.uid,
+    cid, String(key).slice(0, 80), sess.uid,
     p.nick, p.cls, p.num, text, new Date(), 0, '', ''
   ]);
+  try { epComment_(sess, cid, String(key).slice(0, 80), text); } catch (err) { authErr_('ep comment: ' + err); }
 }
 
 /* One like per student per comment, enforced by a row in Likes. A second tap
@@ -1300,10 +1310,26 @@ function doPost(e) {
     // "saved" once the row is really in the Sheet.
     if (body.event === 'lqalbum') {
       var res = saveLqAlbum_(sess, body);
+      if (res && res.ok) {
+        try { var ep = epAlbumPoints_(sess, String(body.key || '').slice(0, 80), body.missing, body.fixed); if (ep) res.ep = ep; }
+        catch (err) { authErr_('ep album: ' + err); }
+      }
       logSheet_().appendRow([new Date(), 'lqalbum', sess.email, '', '', String(body.key || ''), '',
                              JSON.stringify({ score: body.score, out_of: body.out_of, tries: body.tries,
                                               missing: (body.missing || []).length }).slice(0, 2000)]);
       return ContentService.createTextOutput(JSON.stringify(res)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // E-points (EPoints.gs). An MC answer, a purchase and a change of outfit
+    // answer with JSON, so the page shows points only once they are counted.
+    // MC answers are not copied into Log: the ELedger already records them.
+    if (body.event === 'mcans' || body.event === 'ebuy' || body.event === 'ewear') {
+      var er = body.event === 'mcans' ? epAnswer_(sess, body)
+             : body.event === 'ebuy'  ? epBuy_(sess, body) : epWear_(sess, body);
+      return ContentService.createTextOutput(JSON.stringify(er)).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (body.event === 'warmup') {
+      try { epAnswer_(sess, { key: body.key, ok: body.correct === true, page: 'warm' }); } catch (err) { authErr_('ep warmup: ' + err); }
     }
 
     if (body.event === 'score')   upsertScore_(sess, body);
@@ -1396,7 +1422,8 @@ function route_(p) {
 
   } else if (p.bank === '1' || p.mist === '1' || p.index === '1' || p.meta
              || p.prog === '1' || p.explain || p.cmt || p.setprof === '1'
-             || p.prof === '1' || p.likes === '1' || p.top20 === '1' || p.q || p.albq === '1') {
+             || p.prof === '1' || p.likes === '1' || p.top20 === '1' || p.q || p.albq === '1'
+             || p.wallet === '1' || p.classes === '1' || p.cpage) {
     var sess = sessionOf_(p.t);
     if (!sess) {
       out = { error: 'sign in' };
@@ -1408,6 +1435,12 @@ function route_(p) {
       out = serveOne_(String(p.q));
     } else if (p.albq === '1') {
       out = albumQuestions_(sess, p.keys);
+    } else if (p.wallet === '1') {
+      out = epWallet_(sess);
+    } else if (p.classes === '1') {
+      out = epClasses_();
+    } else if (p.cpage) {
+      out = epClassPage_(String(p.cpage));
     } else if (p.top20 === '1') {
       out = top20_();
     } else if (p.prof === '1') {
@@ -1446,7 +1479,7 @@ function leaderboard_(myUid) {
   var sh = scoreSheet_(), vals = sh.getDataRange().getValues();
   if (vals.length < 2) return { n: 0, top: [], you: null, total: 0 };
 
-  var pageMax = {}, byUid = {};
+  var pageMax = {}, byUid = {}, hidden = hiddenUids_();
   for (var i = 1; i < vals.length; i++) {
     var uid = String(vals[i][0]), nick = String(vals[i][2] || '');
     var pageId = String(vals[i][3]);
@@ -1466,6 +1499,7 @@ function leaderboard_(myUid) {
 
   var rows = [];
   for (var u in byUid) {
+    if (hidden[u]) continue;                 // hidden or removed by the teacher
     var r = byUid[u];
     var pc = Math.round((Math.min(r.cleared, universe) / universe) * 1000) / 10;
     rows.push({ uid: u, nick: r.nick, pct: pc, lvl: levelOf_(pc) });
