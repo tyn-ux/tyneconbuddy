@@ -204,6 +204,17 @@ input[type=text],input[type=number],select{font-family:var(--f-sans); font-size:
 .qid{font-family:var(--f-mono); font-size:11px; color:var(--muted)}
 .stem{font-size:17px; margin:10px 0 16px; white-space:pre-wrap; font-family:var(--f-serif)}
 .stem img{max-width:100%; height:auto; border:1px solid var(--line); background:#fff}
+.qtx+.qtx{margin-top:8px}
+.qtbl{white-space:normal; overflow-x:auto; margin:10px 0 12px; -webkit-overflow-scrolling:touch}
+.qtcap{font-family:var(--f-sans); font-size:13px; font-weight:600; margin:0 0 4px}
+.qtbl table{border-collapse:collapse; font-family:var(--f-sans); font-size:14px; line-height:1.35;
+  background:var(--surface); min-width:min(100%,280px)}
+.qtbl th,.qtbl td{border:1px solid var(--line); padding:5px 9px; text-align:center; vertical-align:middle}
+.qtbl th{background:var(--surface-2); font-weight:600; color:var(--ink); text-transform:none; letter-spacing:0; font-size:inherit}
+.qtbl .nw{white-space:nowrap}
+@media (max-width:480px){ .qtbl table{font-size:13px} .qtbl th,.qtbl td{padding:4px 6px} }
+.qtbl td:first-child{text-align:left}
+.qtbl th:empty,.qtbl td:empty{background:transparent}
 .opt{display:flex; gap:10px; width:100%; text-align:left; align-items:flex-start;
   padding:11px 13px; margin:6px 0; cursor:pointer; font-size:15px;
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm);
@@ -445,6 +456,9 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
     padding:8px 10px; margin:0 0 8px}
   #albPrint .pqh{font-family:var(--f-mono); font-size:8.5pt; color:#555; margin:0 0 4px}
   #albPrint .pqs{white-space:pre-wrap; margin:0 0 4px}
+  #albPrint .qtbl{overflow:visible; margin:4px 0 6px}
+  #albPrint .qtbl table{font-size:9pt; background:#fff}
+  #albPrint .qtbl th,#albPrint .qtbl td{border:1px solid #999; padding:2px 6px}
   #albPrint img{max-width:100%; max-height:230px}
   #albPrint .ok{color:#3f7a4b; font-weight:600}
   #albPrint .no{color:#c9412e; font-weight:600}
@@ -1433,7 +1447,35 @@ fetch('traps.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).catch(()=>({}))
 function trapFor(tp){ const a=TRAPS[tp]; return a&&a.length?pick_(a):null; }
 
 /* ---------------------------------------------------------------- question */
-function stemHtml(q){ return q.img?'<img src="'+esc(q.img)+'" alt="Question">':esc(q.q||''); }
+/* tables.json holds the past-paper tables that were flattened into running
+ * text when the bank was built ("Year 1 Year 2; Number of workers 250 300…").
+ * Each entry is the question rebuilt as text and tables, used only while the
+ * question text still matches the text the table was built from (h), so a
+ * question edited in the Sheet falls back to its own text. */
+let TABLES={};
+fetch('tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(j=>{
+  TABLES=(j&&j.items)||{};
+  const q=QUEUE&&QUEUE[POS], st=$('stem');
+  if(q&&st&&TABLES[q.key]&&!$('qcard').classList.contains('hide')) st.innerHTML=stemHtml(q);
+});
+function qHash(s){
+  s=String(s||'').replace(/\s+/g,' ').trim(); let h=5381;
+  for(let i=0;i<s.length;i++) h=(Math.imul(h,33)^s.charCodeAt(i))>>>0;
+  return ('0000000'+h.toString(16)).slice(-8);
+}
+function tblHtml(t){
+  const cell=(tag,c)=>{ const a=Array.isArray(c), x=a?c[0]:c;
+    return '<'+tag+(a?' colspan="'+c[1]+'"':'')+(x.length<=18?' class="nw"':'')+'>'+esc(x)+'</'+tag+'>'; };
+  return '<div class="qtbl">'+(t.c?'<div class="qtcap">'+esc(t.c)+'</div>':'')+'<table>'
+    +t.h.map(r=>'<tr>'+r.map(c=>cell('th',c)).join('')+'</tr>').join('')
+    +t.r.map(r=>'<tr>'+r.map(c=>cell('td',c)).join('')+'</tr>').join('')+'</table></div>';
+}
+function stemHtml(q){
+  if(q.img) return '<img src="'+esc(q.img)+'" alt="Question">';
+  const t=TABLES[q.key||q.id];
+  if(t&&t.h===qHash(q.q)) return t.p.map(x=>typeof x==='string'?'<div class="qtx">'+esc(x)+'</div>':tblHtml(x)).join('');
+  return esc(q.q||'');
+}
 /* Some past-paper questions were captured as a single image that already
    contains the options. There is nothing to print beside the letters, so the
    buttons are bare A B C D and the student reads the choices off the image. */
@@ -2324,7 +2366,7 @@ function albPrintLq(e,q){
   const ms=e.missing||[], fx=e.fixed||[], hs=e.hist||[];
   let h='<div class="pq"><p class="pqh">Long Q · '+esc(e.key)+' · last score '+esc(e.score==null?'–':e.score)+'/'+esc(e.out_of||'?')
     +(e.tries?' · tries '+e.tries:'')+(hs.length>1?' · scores '+hs.map(x=>esc(x[1])).join(' → '):'')+' · '+esc(ST_EN[e.status||'not'])+'</p>';
-  h+=q?'<div class="pqs">'+esc(q.q||'')+'</div>'+(q.fig?'<img src="'+esc(q.fig)+'" alt="">':''):'<p class="small">Question text could not be loaded.</p>';
+  h+=q?'<div class="pqs">'+stemHtml(q)+'</div>'+(q.fig?'<img src="'+esc(q.fig)+'" alt="">':''):'<p class="small">Question text could not be loaded.</p>';
   h+=ms.length?'<p><b>Marking points still to fix</b></p><ul class="ms">'+ms.map(p=>'<li>☐ '+esc(p[1])+(p[2]?' ('+esc(p[2])+')':'')+'</li>').join('')+'</ul>'
     :'<p class="ok">No points left to fix.</p>';
   if(fx.length) h+='<p class="small"><b>Fixed on a later try</b></p><ul class="done">'+fx.map(p=>'<li>'+esc(p[1])+'</li>').join('')+'</ul>';
@@ -2529,7 +2571,7 @@ function lqCard(q,i,src){
     +(ai?'<span class="pill understood">AI '+ai.t+'/'+esc(q.marks||'?')+'</span>':'')
     +(st.open&&tickTot!=null?'<span class="pill partly lq-pill">self-marked '+tickTot+'/'+esc(q.marks||'?')+'</span>':'')
     +(inAlb&&src!=='alb'?'<span class="pill lqtag">in your album · '+(inAlb.missing||[]).length+' to fix</span>':'')+'</div>'
-    +'<div class="stem" style="font-size:15px">'+esc(q.q||'')+'</div>'
+    +'<div class="stem" style="font-size:15px">'+stemHtml(q)+'</div>'
     +(q.fig?'<img src="'+esc(q.fig)+'" style="max-width:100%">':'')
     +chainHtml(q)
     +(dr.length?'<p class="score" style="margin:10px 0 0">'+(dr.length>1?'Your drafts: ':'')+dr.map(d=>'Draft '+d.n+': <b>'+d.t+'/'+esc(q.marks||'?')+'</b>').join(' → ')+'</p>':'')
