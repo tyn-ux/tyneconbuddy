@@ -1,4 +1,4 @@
-var BUILD = '2026-10-13a';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-13b';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -715,7 +715,7 @@ function saveProfile_(sess, cls, num, nick) {
   if (!/^[0-9]{1,2}$/.test(num)) return { error: 'badnum' };
   // Once the Classes tab lists classes, only an open one can be picked.
   var classes = classMap_();
-  if (Object.keys(classes).length && classes[cls] !== 'open') return { error: 'noclass' };
+  if (Object.keys(classes).length && !clsOpen_(classes[cls])) return { error: 'noclass' };
 
   var lock = LockService.getScriptLock();
   try { lock.waitLock(8000); } catch (e) { return { error: 'busy' }; }
@@ -735,7 +735,7 @@ function saveProfile_(sess, cls, num, nick) {
     } else {
       sh.appendRow([sess.uid, sess.email, cls, num, nick, new Date(), new Date()]);
     }
-    try { CacheService.getScriptCache().removeAll(['ep_hidden', 'ep_cp_' + cls]); } catch (e) {}
+    try { CacheService.getScriptCache().remove('ep_hidden'); epDropClassCache_(cls); } catch (e) {}
     return { ok: true, cls: cls, num: num, nick: nick };
   } finally { try { lock.releaseLock(); } catch (e) {} }
 }
@@ -957,34 +957,37 @@ function importNew() {
 }
 
 /* =========================================================== CLASS TOP 20 == *
- * The twenty questions most students have cleared, tallied across every row of
- * the Cleared tab. Rescanning that on every Overview visit would be wasteful,
- * so the result is cached for five minutes — a class-wide statistic does not
- * need to be fresher than that.
+ * The twenty questions most students in a class have cleared, tallied from
+ * the Cleared tab. Same class rules as the leaderboard (classScope_ in
+ * EPoints.gs): the class asked for, else the student's own; an 'everyone'
+ * class counts every student; hidden and removed students never count.
+ * Cached for five minutes per class.
  * ========================================================================== */
-function top20_() {
-  var cache = CacheService.getScriptCache();
-  var hit = cache.get('top20');
+function top20_(sess, cls) {
+  var sc = classScope_(sess, cls);
+  if (!sc) return { items: [] };
+  var cache = CacheService.getScriptCache(), ck = 'top20_' + (sc.everyone ? '*' : sc.cls);
+  var hit = cache.get(ck);
   if (hit) { try { return JSON.parse(hit); } catch (e) {} }
 
   var tally = {};
   var cv = clearedSheet_().getDataRange().getValues();
   for (var i = 1; i < cv.length; i++) {
+    if (!sc.uids[String(cv[i][0])]) continue;
     var set; try { set = JSON.parse(cv[i][1]) || {}; } catch (e) { continue; }
     for (var k in set) tally[k] = (tally[k] || 0) + 1;
   }
-  var keys = Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; }).slice(0, 20);
 
   var where = {};
   var bv = bankSheet_().getDataRange().getValues();
-  for (var j = 1; j < bv.length; j++) {
-    var kk = String(bv[j][0]);
-    if (keys.indexOf(kk) >= 0) where[kk] = [String(bv[j][2]), String(bv[j][3])];
-  }
-  var out = { items: keys.map(function (k) {
-    return { key: k, page: (where[k] || ['', ''])[0], topic: (where[k] || ['', ''])[1], n: tally[k] };
+  for (var j = 1; j < bv.length; j++) where[String(bv[j][0])] = [String(bv[j][2]), String(bv[j][3])];
+  // questions no longer in the Bank are left out
+  var keys = Object.keys(tally).filter(function (k) { return where[k]; })
+    .sort(function (a, b) { return tally[b] - tally[a]; }).slice(0, 20);
+  var out = { cls: sc.everyone ? '' : sc.cls, items: keys.map(function (k) {
+    return { key: k, page: where[k][0], topic: where[k][1], n: tally[k] };
   }) };
-  cache.put('top20', JSON.stringify(out), 300);
+  cache.put(ck, JSON.stringify(out), 300);
   return out;
 }
 
@@ -1418,7 +1421,7 @@ function route_(p) {
     out = claimSession_(p.claim);
 
   } else if (p.lb === '1') {
-    out = leaderboard_(p.uid || '');
+    out = epBoard_(sessionOf_(p.t), p.cls);
 
   } else if (p.bank === '1' || p.mist === '1' || p.index === '1' || p.meta
              || p.prog === '1' || p.explain || p.cmt || p.setprof === '1'
@@ -1442,7 +1445,7 @@ function route_(p) {
     } else if (p.cpage) {
       out = epClassPage_(String(p.cpage));
     } else if (p.top20 === '1') {
-      out = top20_();
+      out = top20_(sess, p.cls);
     } else if (p.prof === '1') {
       out = profileOf_(sess) || { error: 'none' };
     } else if (p.setprof === '1') {
@@ -1470,57 +1473,8 @@ function route_(p) {
   return out;
 }
 
-/*
- * Fair denominator: a student who never opens a section should not score 100%.
- * The class-wide universe for each page is the LARGEST total anyone has
- * reported for that page; not opening a page simply scores 0 for it.
- */
-function leaderboard_(myUid) {
-  var sh = scoreSheet_(), vals = sh.getDataRange().getValues();
-  if (vals.length < 2) return { n: 0, top: [], you: null, total: 0 };
-
-  var pageMax = {}, byUid = {}, hidden = hiddenUids_();
-  for (var i = 1; i < vals.length; i++) {
-    var uid = String(vals[i][0]), nick = String(vals[i][2] || '');
-    var pageId = String(vals[i][3]);
-    var cleared = Number(vals[i][5]) || 0, total = Number(vals[i][6]) || 0;
-    if (!uid || !pageId) continue;
-    if (!pageMax[pageId] || total > pageMax[pageId]) pageMax[pageId] = total;
-    if (!byUid[uid]) byUid[uid] = { nick: '', cleared: 0, updated: 0 };
-    byUid[uid].cleared += cleared;
-    if (nick) byUid[uid].nick = nick;
-    var up = vals[i][8] ? new Date(vals[i][8]).getTime() : 0;
-    if (up > byUid[uid].updated) byUid[uid].updated = up;
-  }
-
-  var universe = 0;
-  for (var k in pageMax) universe += pageMax[k];
-  if (!universe) return { n: 0, top: [], you: null, total: 0 };
-
-  var rows = [];
-  for (var u in byUid) {
-    if (hidden[u]) continue;                 // hidden or removed by the teacher
-    var r = byUid[u];
-    var pc = Math.round((Math.min(r.cleared, universe) / universe) * 1000) / 10;
-    rows.push({ uid: u, nick: r.nick, pct: pc, lvl: levelOf_(pc) });
-  }
-  rows.sort(function (a, b) { return b.pct - a.pct; });
-
-  var you = null;
-  for (var j = 0; j < rows.length; j++) {
-    if (rows[j].uid === myUid) {
-      var gap = j === 0 ? 0 : Math.round((rows[j - 1].pct - rows[j].pct) * 10) / 10;
-      you = { rank: j + 1, pct: rows[j].pct, lvl: rows[j].lvl, gap: gap,
-              gapQ: Math.ceil(gap / 100 * universe) };
-      break;
-    }
-  }
-
-  var top = rows.slice(0, TOP_N).map(function (r) {
-    return { nick: r.nick, pct: r.pct, lvl: r.lvl };   // uid and email deliberately dropped
-  });
-  return { n: rows.length, total: universe, top: top, you: you };
-}
+/* The leaderboard is epBoard_() in EPoints.gs (2026-10-13): one class at a
+   time, counted from the Cleared tab against the MCQs in Bank. */
 
 /* ------------------------------------------------------------- utilities -- */
 

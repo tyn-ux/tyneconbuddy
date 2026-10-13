@@ -1,11 +1,30 @@
-# E-points, store and classes: deploy (BUILD 2026-10-13a)
+# E-points, store and classes: deploy (BUILD 2026-10-13b)
+
+## Update 2026-10-13b: accurate class leaderboard, classes that list everyone
+1. Apps Script: paste the new `Code.gs` and `EPoints.gs`, Save.
+2. Sheet: reload, then tyneconbuddy > **Show every student in a class…** and type `LKSCEC`
+   (or type `everyone` in that class's status cell in the Classes tab).
+3. Deploy > Manage deployments > pencil > New version > Deploy; `?ping=1` shows `2026-10-13b`.
+
+What changed:
+- The leaderboard is now per class: the class picked on Home, or your own class
+  in Account. It counts each student's cleared MCQs from the **Cleared** tab
+  against the MCQs in **Bank**, lists every member (0% included), and takes
+  nicknames from **Students**. The old count added up the Scores tab across
+  pages, so a student who also used an old chapter page was counted twice and
+  everyone's % was divided by a total that was too big.
+- "Top 20 most-cleared" counts only that class.
+- A class with status `everyone` shows every registered student on its class
+  page and leaderboard. Hidden and removed students still never show.
+- Numbers refresh every 2 minutes (Top 20 every 5).
+
 
 ## Update 2026-10-13: 20 items per store category
 If you already deployed 2026-10-12e, only this is needed:
 1. Apps Script: paste the new `Code.gs` (BUILD bump) and the new `EPoints.gs`, Save.
 2. Sheet: tyneconbuddy > **Set up E-point tabs**. It adds the 58 new items to the
    bottom of **EStore**. Rows already there, and any prices you changed, stay as they are.
-3. Deploy > Manage deployments > pencil > New version > Deploy; `?ping=1` shows `2026-10-13a`.
+3. Deploy > Manage deployments > pencil > New version > Deploy; `?ping=1` shows `2026-10-13a` (or later).
 
 To stop selling an item, set its "on sale" to `no`. Don't delete the row:
 the next "Set up E-point tabs" would add it back.
@@ -25,7 +44,7 @@ not pasted that one yet, this one includes it, so do these steps once.
    first time. This makes the new tabs; every class already in Students is
    added to **Classes** as open. Check that list.
 7. Apps Script: Deploy > Manage deployments > pencil > Version: **New version** > Deploy.
-8. Open `<your /exec URL>?ping=1` and check build `2026-10-13a`.
+8. Open `<your /exec URL>?ping=1` and check build `2026-10-13b`.
 
 Do **not** run `install()`.
 
@@ -43,6 +62,7 @@ Do **not** run `install()`.
 |---|---|
 | Open a class | Menu > Open a new class, or add a row `4C · open` in Classes |
 | Archive a class | Menu > Archive a class, or set its status to `archived`. It leaves the site; records stay |
+| List every student in one class | Menu > Show every student in a class, or set its status to `everyone`. Its class page and leaderboard show all registered students |
 | Hide / unhide a student | Menu > Hide or unhide, or type `hidden` in Students column H. Not on class pages or the leaderboard; can still practise |
 | Remove a student from a class | Menu > Remove, or type `removed` in Students column H. They keep points and history and pick a class again at next sign-in |
 | Give or take E | Menu > Give or take E-points (`5A-12, 30, reason`), or a row in EGive (applied from the menu, or when that student next opens the site) |

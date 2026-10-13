@@ -1267,7 +1267,8 @@ function drawGreeting(){
 
 /* --- class top 20, ranking, cheer wall --------------------------------- */
 function loadTop20(){
-  jsonp({top20:1,t:SESS}, r=>{
+  const q={top20:1,t:SESS}; if(EP_CLS) q.cls=EP_CLS;
+  jsonp(q, r=>{
     const items=(r&&r.items)||[];
     if(!items.length){ $('ovTop20').innerHTML='<li class="muted">Numbers appear once the class starts drilling.</li>'; return; }
     $('ovTop20').innerHTML=items.map(x=>{
@@ -2986,16 +2987,19 @@ $('saveNick').addEventListener('click',()=>{
 $('lbRefresh').addEventListener('click',()=>loadBoard('lb'));
 function loadBoard(target){
   const el=$(target); if(!el) return;
+  if(!SESS){ el.innerHTML='<p class="muted">Sign in to see your class.</p>'; return; }
   el.innerHTML='<p class="muted">Loading…</p>';
-  jsonp({lb:1, uid:djb2('tyn:'+String(EMAIL||'').trim().toLowerCase())}, r=>{
-    if(!r||!r.top){ el.innerHTML='<p class="muted">Leaderboard is unavailable right now.</p>'; return; }
-    if(!r.top.length){ el.innerHTML='<p class="muted">No one on the board yet.</p>'; return; }
-    let h='<table><tr><th>#</th><th>Nickname</th><th>Lv</th><th>%</th></tr>';
-    r.top.forEach((x,i)=>{ h+='<tr><td>'+(i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+x.pct+'%</td></tr>'; });
-    h+='</table>';
-    if(r.you) h+='<p class="mono" style="margin-top:10px">You are #'+r.you.rank+' of '+r.n
+  // Home follows the class picked above it; Account shows your own class.
+  const q={lb:1, t:SESS}; if(target==='ovLb'&&EP_CLS) q.cls=EP_CLS;
+  jsonp(q, r=>{
+    if(!r||!r.top){ el.innerHTML='<p class="muted">'+(r&&r.error==='closed'?'This class is not open.':'Leaderboard is unavailable right now.')+'</p>'; return; }
+    if(!r.top.length){ el.innerHTML='<p class="muted">No one in this class yet.</p>'; return; }
+    let h='<table><tr><th>#</th><th>Nickname</th><th>Lv</th><th>Cleared</th><th>%</th></tr>';
+    r.top.forEach((x,i)=>{ h+='<tr><td>'+(x.rank||i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+(x.c||0)+'</td><td>'+x.pct+'%</td></tr>'; });
+    h+='</table><p class="mono" style="margin-top:8px">'+(r.cls?'Class '+esc(r.cls)+' · ':'')+'out of '+r.total+' MCQs · updates every 2 minutes</p>';
+    if(r.you) h+='<p class="mono" style="margin-top:4px">You are #'+r.you.rank+' of '+r.n
       +'  ·  '+r.you.pct+'%  ·  Lv.'+r.you.lvl
-      +(r.you.gap?'  ·  '+r.you.gapQ+' questions behind the next rank':'')+'</p>';
+      +(r.you.gapQ?'  ·  '+r.you.gapQ+' questions behind the next rank':'')+'</p>';
     el.innerHTML=h;
   });
 }
@@ -3527,6 +3531,7 @@ function epClassDraw(){
   sel.classList.toggle('hide',EP_CLASSES.length<2);
   if(!EP_CLS){ $('ovMates').innerHTML='<p class="muted">No classes are open yet.</p>'; return; }
   $('ovClsName').textContent='Class '+EP_CLS;
+  loadBoard('ovLb'); loadTop20();
   jsonp({cpage:EP_CLS,t:SESS}, r=>{
     const items=(r&&r.items)||[];
     if(!items.length){ $('ovMates').innerHTML='<p class="muted">Nobody here yet.</p>'; return; }
