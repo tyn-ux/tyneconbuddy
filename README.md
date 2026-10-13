@@ -27,3 +27,19 @@ Every fixed line the characters say. Columns: id, where, original, text. Write y
 Stats and rarity of every EconMon. Columns: id, name, chapter, tier, atk, def, hp. Change `tier` (`basic` / `rare` / `epic` / `legendary`) or `atk` / `def` / `hp` (1–100) to rebalance an EconMon; do not change `id`. Blank or invalid cells keep the built-in value. In class mode the Mons sheet does the same (see GUIDE.md §F).
 
 Keep every field on one line and do not use `|` inside a text.
+
+
+## v0.23
+- SPELL / ULTIMATE buttons now show expected damage (`≈ −N HP`; trainers show stamina bars). Gold marker on the enemy HP bar = SPELL, red tick = ULTIMATE.
+- Party tab redesigned: summary line, collapsible “How stats work”, sort buttons, one card per EconMon (concept, HP, stats, moves with multipliers/effects, progress).
+- Small-landscape battle buttons tightened.
+- See `ECONMON_AUDIT.md` for the roster audit and design advice.
+
+## v0.24
+- **Grades**: ATK / DEF / HP and the overall rating are shown as S, A, B, C, D, E (S ≥ 95, A ≥ 85, B ≥ 72, C ≥ 60, D ≥ 48, E below) on battle cards, Party cards, the starter choice and catch messages.
+- **Short ULTIMATE keywords**: every EconMon's ULTIMATE keyword is now 1–2 words (e.g. `opportunity cost`, `demand shift`, `MR = MC`). The screen shows a clue and a letter mask. Exact = full power, one or two letters off = 80%, wrong = 50%. ULTIMATE base power adjusted for the new scoring.
+- **Battle text**: messages are split into short lines and full pages; numbers stay with their units (`≈ −24 HP`); the battle rules are only shown in the first 3 wild battles; the concept duel is now a 2-option MC.
+- **Chapter mastery**: when every EconMon in a chapter reaches Lv.3 you get $300 and that chapter's EconMon can follow you on the map (up to 3; START → Party → 🐾 Follow). All Lv.5 → $800, the title "Ch.N Master" and a gold glow under your followers. Progress is in START → Awards.
+- **📒 Correction album** (START → 📒 Album): wrong answers are saved automatically; tap 🔖 on any question to bookmark it. Filter by wrong / bookmarked / fixed and by chapter, see your answer next to the correct one with the explanation, and 🔁 Retry. Right on two different days removes the question.
+- **Question bank audit**: 2,099 → 1,772 questions. All sort (matching) questions removed (12 gym steps replaced by MC), 7 weak questions deleted, 40 rewritten, 3 dated examples replaced. Details in `QUESTION_AUDIT_v24.md`.
+- **Class mode**: if you imported a **Questions** sheet before, it still holds the old bank (with sort questions) and overrides this one. Run EconMon ▸ Import game content again, or delete the Questions sheet.
