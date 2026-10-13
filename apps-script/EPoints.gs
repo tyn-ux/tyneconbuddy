@@ -240,39 +240,115 @@ function hiddenUids_() {
   return out;
 }
 
-/* Classes: {cls: 'open'|'archived'}. Empty when the tab has no rows, which
-   the page reads as "type your class" (the old behaviour). */
+/* Classes: {cls: 'open'|'archived'|'everyone'}. Empty when the tab has no
+   rows, which the page reads as "type your class" (the old behaviour).
+   'everyone' is an open class whose page and leaderboard list every
+   registered student, whatever class they picked. */
 function classMap_() {
   var c = CacheService.getScriptCache(), hit = c.get('ep_classes');
   if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   var v = classSheet_().getDataRange().getValues(), out = {};
   for (var i = 1; i < v.length; i++) {
     var k = String(v[i][0]).trim().toUpperCase();
-    if (k) out[k] = String(v[i][1]).trim().toLowerCase() === 'archived' ? 'archived' : 'open';
+    var st = String(v[i][1]).trim().toLowerCase();
+    if (k) out[k] = st === 'archived' ? 'archived' : st === 'everyone' ? 'everyone' : 'open';
   }
   c.put('ep_classes', JSON.stringify(out), 60);
   return out;
 }
+function clsOpen_(st) { return st === 'open' || st === 'everyone'; }
 function epFlushCache_() {
   CacheService.getScriptCache().removeAll(['ep_rules', 'ep_store', 'ep_hidden', 'ep_classes', 'ep_pct']);
 }
+/* Class pages are cached for a minute; a change to one student also changes
+   every 'everyone' class page. */
+function epDropClassCache_(cls) {
+  var keys = ['ep_cp_' + String(cls || '').toUpperCase()], m = classMap_();
+  for (var k in m) if (m[k] === 'everyone') keys.push('ep_cp_' + k);
+  CacheService.getScriptCache().removeAll(keys);
+}
 
-/* Cleared % per uid, the same sum the leaderboard uses, for the level badge. */
-function pctMap_() {
+/* Cleared % per uid, for the leaderboard and the level badges.
+   Counted from the Cleared tab (the server's merged record of every MCQ a
+   student has been credited for, across all devices), against the MCQs in
+   the Bank tab. Keys no longer in the Bank are ignored, so a deleted
+   question cannot push anyone past 100%. The old count summed the Scores
+   tab across pages, which counted a question twice when a student used both
+   app.html and an old chapter page, and grew the total by each old page's size. */
+function clearedStats_() {
   var c = CacheService.getScriptCache(), hit = c.get('ep_pct');
   if (hit) { try { return JSON.parse(hit); } catch (e) {} }
-  var v = scoreSheet_().getDataRange().getValues(), pageMax = {}, byUid = {}, out = {};
-  for (var i = 1; i < v.length; i++) {
-    var uid = String(v[i][0]), pg = String(v[i][3]);
-    if (!uid || !pg) continue;
-    var tot = Number(v[i][6]) || 0;
-    if (!pageMax[pg] || tot > pageMax[pg]) pageMax[pg] = tot;
-    byUid[uid] = (byUid[uid] || 0) + (Number(v[i][5]) || 0);
+  var mcq = {}, total = 0, bs = bankSheet_(), bn = bs.getLastRow() - 1;
+  if (bn > 0) bs.getRange(2, 1, bn, 2).getValues().forEach(function (r) {
+    var k = String(r[0]);
+    if (k && String(r[1]).toLowerCase() === 'mcq' && !mcq[k]) { mcq[k] = 1; total++; }
+  });
+  var by = {}, cv = clearedSheet_().getDataRange().getValues();
+  for (var i = 1; i < cv.length; i++) {
+    var uid = String(cv[i][0]), set;
+    if (!uid) continue;
+    try { set = JSON.parse(cv[i][1]) || {}; } catch (e) { set = {}; }
+    var n = 0;
+    for (var key in set) if (mcq[key]) n++;
+    by[uid] = { c: n, p: total ? Math.round(n / total * 1000) / 10 : 0 };
   }
-  var universe = 0; for (var k in pageMax) universe += pageMax[k];
-  for (var u in byUid) out[u] = universe ? Math.round(Math.min(byUid[u], universe) / universe * 1000) / 10 : 0;
+  var out = { total: total, by: by };
   c.put('ep_pct', JSON.stringify(out), 120);
   return out;
+}
+function pctMap_() {
+  var by = clearedStats_().by, out = {};
+  for (var u in by) out[u] = by[u].p;
+  return out;
+}
+
+/* GET ?lb=1 — the leaderboard.
+   With a session it ranks one class: ?cls= if given, else the student's own
+   class. An 'everyone' class ranks every student. Every member is listed,
+   0% included, by cleared count; ties share a rank. Without a session (the
+   old chapter pages) it ranks everyone, top TOP_N only.
+   Hidden and removed students never appear. Nicknames come from Students. */
+/* Who a class-wide number counts: the class asked for (else the student's
+   own), every student for an 'everyone' class or a caller without a
+   session, never hidden or removed students. null when the class is closed. */
+function classScope_(sess, cls) {
+  var m = classMap_(), stu = studentRows_(), me = null, uids = {}, list = [];
+  if (sess) stu.forEach(function (s) { if (s.uid === sess.uid && s.status !== 'removed') me = s; });
+  cls = String(cls || (me && me.cls) || '').trim().toUpperCase();
+  var everyone = !sess || m[cls] === 'everyone';
+  if (sess && !everyone && !clsOpen_(m[cls]) && Object.keys(m).length) return null;
+  stu.forEach(function (s) {
+    if (uids[s.uid] || s.status === 'hidden' || s.status === 'removed') return;
+    if (!everyone && s.cls !== cls) return;
+    uids[s.uid] = 1; list.push(s);
+  });
+  return { cls: cls, everyone: everyone, uids: uids, list: list };
+}
+
+function epBoard_(sess, cls) {
+  var st = clearedStats_(), sc = classScope_(sess, cls), rows = [];
+  if (!sc) return { error: 'closed', cls: String(cls || '').toUpperCase() };
+  var everyone = sc.everyone; cls = sc.cls;
+  sc.list.forEach(function (s) {
+    var x = st.by[s.uid] || { c: 0, p: 0 };
+    if (!sess && !x.c) return;
+    rows.push({ uid: s.uid, nick: s.nick || '—', c: x.c, pct: x.p, lvl: levelOf_(x.p) });
+  });
+  rows.sort(function (a, b) { return b.c - a.c || (a.nick < b.nick ? -1 : 1); });
+  for (var i = 0; i < rows.length; i++) rows[i].rank = i && rows[i].c === rows[i - 1].c ? rows[i - 1].rank : i + 1;
+  var you = null;
+  if (sess) for (var j = 0; j < rows.length; j++) {
+    if (rows[j].uid !== sess.uid) continue;
+    var ahead = null;
+    for (var a = j - 1; a >= 0; a--) if (rows[a].c > rows[j].c) { ahead = rows[a]; break; }
+    you = { rank: rows[j].rank, pct: rows[j].pct, lvl: rows[j].lvl,
+            gap: ahead ? Math.round((ahead.pct - rows[j].pct) * 10) / 10 : 0, gapQ: ahead ? ahead.c - rows[j].c : 0 };
+    break;
+  }
+  var top = (sess ? rows : rows.slice(0, TOP_N)).map(function (r) {
+    return { rank: r.rank, nick: r.nick, pct: r.pct, lvl: r.lvl, c: r.c };   // uid deliberately dropped
+  });
+  return { cls: everyone && !sess ? '' : cls, n: rows.length, total: st.total, top: top, you: you };
 }
 
 /* --------------------------------------------------------------- dates --- */
@@ -567,14 +643,14 @@ function epWear_(sess, b) {
     return [];
   });
   if (res.error) return res;
-  CacheService.getScriptCache().remove('ep_cp_' + res.w.cls);
+  epDropClassCache_(res.w.cls);
   return { ok: true, look: res.w.look };
 }
 
 /* GET ?classes=1 — open classes, for the seat form and the class switcher. */
 function epClasses_() {
   var m = classMap_(), out = [];
-  for (var k in m) if (m[k] === 'open') out.push(k);
+  for (var k in m) if (clsOpen_(m[k])) out.push(k);
   out.sort();
   return { classes: out };
 }
@@ -583,18 +659,21 @@ function epClasses_() {
    Hidden and removed students are left out; no email, number or score. */
 function epClassPage_(cls) {
   cls = String(cls || '').trim().toUpperCase();
-  if (classMap_()[cls] !== 'open') return { error: 'closed', cls: cls };
+  var st = classMap_()[cls];
+  if (!clsOpen_(st)) return { error: 'closed', cls: cls };
   var c = CacheService.getScriptCache(), hit = c.get('ep_cp_' + cls);
   if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   var looks = {}, wv = walletSheet_().getDataRange().getValues();
   for (var i = 1; i < wv.length; i++) looks[String(wv[i][0])] = pj_(wv[i][5], null);
   var pct = pctMap_(), items = [];
   studentRows_().forEach(function (s) {
-    if (s.cls !== cls || s.status === 'hidden' || s.status === 'removed') return;
-    items.push({ nick: s.nick || '—', look: looks[s.uid] || null, lv: levelOf_(pct[s.uid] || 0), n: Number(s.num) || 0 });
+    if (s.status === 'hidden' || s.status === 'removed') return;
+    if (st !== 'everyone' && s.cls !== cls) return;
+    items.push({ nick: s.nick || '—', look: looks[s.uid] || null, lv: levelOf_(pct[s.uid] || 0), n: Number(s.num) || 0, k: s.cls });
   });
-  items.sort(function (a, b) { return a.n - b.n; });
-  items.forEach(function (x) { delete x.n; });       // the order is by number; the number itself stays private
+  // by class, then number ('everyone' pages mix classes)
+  items.sort(function (a, b) { return a.k < b.k ? -1 : a.k > b.k ? 1 : a.n - b.n; });
+  items.forEach(function (x) { delete x.n; delete x.k; });       // the order is by number; the number itself stays private
   var out = { cls: cls, items: items };
   c.put('ep_cp_' + cls, JSON.stringify(out), 60);
   return out;
@@ -606,6 +685,7 @@ function onOpen() {
     .addItem('Open a new class…', 'epMenuOpenClass')
     .addItem('Archive a class…', 'epMenuArchiveClass')
     .addItem('Restore an archived class…', 'epMenuRestoreClass')
+    .addItem('Show every student in a class…', 'epMenuEveryone')
     .addSeparator()
     .addItem('Hide or unhide a student…', 'epMenuHide')
     .addItem('Remove a student from their class…', 'epMenuRemove')
@@ -653,6 +733,12 @@ function epMenuArchiveClass() {
   var cls = ask_('Archive a class', 'Class name, e.g. 6A. It disappears from the site; all records stay.').toUpperCase();
   if (!cls) return;
   tell_(setClassStatus_(cls, 'archived') ? 'Class ' + cls + ' is archived. Restore it any time from the menu.' : 'No class called ' + cls + ' in the Classes tab.');
+}
+function epMenuEveryone() {
+  var cls = ask_('Show every student in a class', 'Class name, e.g. LKSCEC (up to 6 characters). Its class page and leaderboard will list every registered student. Set its status back to open in the Classes tab to undo.').toUpperCase().slice(0, 6);
+  if (!cls) return;
+  if (!setClassStatus_(cls, 'everyone')) { classSheet_().appendRow([cls, 'everyone', new Date(), 'lists every student']); epFlushCache_(); }
+  tell_('Class ' + cls + ' now lists every registered student.');
 }
 function epMenuRestoreClass() {
   var cls = ask_('Restore a class', 'Class name, e.g. 6A').toUpperCase();
