@@ -1,4 +1,16 @@
-# E-points, store and classes: deploy (BUILD 2026-10-12e)
+# E-points, store and classes: deploy (BUILD 2026-10-13a)
+
+## Update 2026-10-13: 20 items per store category
+If you already deployed 2026-10-12e, only this is needed:
+1. Apps Script: paste the new `Code.gs` (BUILD bump) and the new `EPoints.gs`, Save.
+2. Sheet: tyneconbuddy > **Set up E-point tabs**. It adds the 58 new items to the
+   bottom of **EStore**. Rows already there, and any prices you changed, stay as they are.
+3. Deploy > Manage deployments > pencil > New version > Deploy; `?ping=1` shows `2026-10-13a`.
+
+To stop selling an item, set its "on sale" to `no`. Don't delete the row:
+the next "Set up E-point tabs" would add it back.
+
+## First-time deploy
 
 This builds on the Correction Album version (BUILD 2026-10-12a). If you have
 not pasted that one yet, this one includes it, so do these steps once.
@@ -13,7 +25,7 @@ not pasted that one yet, this one includes it, so do these steps once.
    first time. This makes the new tabs; every class already in Students is
    added to **Classes** as open. Check that list.
 7. Apps Script: Deploy > Manage deployments > pencil > Version: **New version** > Deploy.
-8. Open `<your /exec URL>?ping=1` and check build `2026-10-12e`.
+8. Open `<your /exec URL>?ping=1` and check build `2026-10-13a`.
 
 Do **not** run `install()`.
 

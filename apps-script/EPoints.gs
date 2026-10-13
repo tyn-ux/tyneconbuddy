@@ -105,13 +105,83 @@ var EP_STORE_DEFAULT = [
   ['coins',     'effect',     300, 'yes', 'Floating E coins',          'E 幣飄飄'],
   ['confetti',  'effect',     400, 'yes', 'Confetti',                  '彩紙'],
   ['curves',    'effect',     500, 'yes', 'Supply & demand halo',      '供求光環'],
-  ['aura',      'effect',     600, 'yes', 'Golden aura',               '金光']
+  ['aura',      'effect',     600, 'yes', 'Golden aura',               '金光'],
+  // added 2026-10-13: 10 + 10 more per category
+  ['frog',          'character', 350,  'yes', 'Frog',                    '青蛙'],
+  ['hamster',       'character', 400,  'yes', 'Hamster',                 '倉鼠'],
+  ['rabbit',        'character', 550,  'yes', 'Rabbit',                  '兔仔'],
+  ['corgi',         'character', 550,  'yes', 'Corgi',                   '哥基'],
+  ['koala',         'character', 600,  'yes', 'Koala',                   '樹熊'],
+  ['fox',           'character', 650,  'yes', 'Fox',                     '狐狸'],
+  ['otter',         'character', 650,  'yes', 'Otter',                   '水獺'],
+  ['owl',           'character', 700,  'yes', 'Owl',                     '貓頭鷹'],
+  ['alpaca',        'character', 700,  'yes', 'Alpaca',                  '羊駝'],
+  ['cow',           'character', 800,  'yes', 'Lantau cow',              '大嶼山牛'],
+  ['redpanda',      'character', 800,  'yes', 'Red panda',               '小熊貓'],
+  ['tiger',         'character', 950,  'yes', 'Tiger',                   '老虎'],
+  ['dragon',        'character', 1200, 'yes', 'Little dragon',           '小龍'],
+  ['pe',            'outfit',    100,  'yes', 'PE jersey',               '運動服'],
+  ['cardigan',      'outfit',    140,  'yes', 'Cardigan',                '冷衫'],
+  ['basketball',    'outfit',    160,  'yes', 'Basketball jersey',       '籃球衣'],
+  ['chef',          'outfit',    180,  'yes', 'Chef',                    '廚師服'],
+  ['puffer',        'outfit',    200,  'yes', 'Puffer jacket',           '羽絨'],
+  ['labcoat',       'outfit',    240,  'yes', 'Lab coat',                '實驗袍'],
+  ['dragonboat',    'outfit',    260,  'yes', 'Dragon boat vest',        '龍舟背心'],
+  ['kungfu',        'outfit',    300,  'yes', 'Kung fu suit',            '功夫服'],
+  ['trench',        'outfit',    320,  'yes', 'Detective coat',          '偵探褸'],
+  ['cheongsam',     'outfit',    380,  'yes', 'Cheongsam',               '長衫'],
+  ['suit',          'outfit',    400,  'yes', 'Business suit',           '西裝'],
+  ['pilot',         'outfit',    420,  'yes', 'Pilot',                   '機師'],
+  ['firefighter',   'outfit',    440,  'yes', 'Firefighter',             '消防員'],
+  ['cape',          'outfit',    500,  'yes', 'Hero cape',               '英雄披風'],
+  ['astronaut',     'outfit',    600,  'yes', 'Astronaut',               '太空人'],
+  ['chachaanteng',  'background', 180,  'yes', 'Cha chaan teng',          '茶餐廳'],
+  ['wetmarket',     'background', 200,  'yes', 'Wet market',              '街市'],
+  ['saikung',       'background', 220,  'yes', 'Sai Kung beach',          '西貢海灘'],
+  ['dimsum',        'background', 260,  'yes', 'Dim sum restaurant',      '酒樓飲茶'],
+  ['estate',        'background', 280,  'yes', 'Rainbow estate',          '彩虹邨'],
+  ['ferry',         'background', 300,  'yes', 'Star Ferry',              '天星小輪'],
+  ['taio',          'background', 300,  'yes', 'Tai O',                   '大澳棚屋'],
+  ['templestreet',  'background', 320,  'yes', 'Temple Street',           '廟街夜市'],
+  ['bigbuddha',     'background', 360,  'yes', 'Big Buddha',              '天壇大佛'],
+  ['peak',          'background', 380,  'yes', 'The Peak at night',       '山頂夜景'],
+  ['lionrock',      'background', 400,  'yes', 'Lion Rock',               '獅子山'],
+  ['containerport', 'background', 420,  'yes', 'Kwai Chung port',         '葵涌貨櫃碼頭'],
+  ['mongkok',       'background', 450,  'yes', 'Mong Kok neon',           '旺角霓虹'],
+  ['tradingfloor',  'background', 480,  'yes', 'Trading floor',           '交易大堂'],
+  ['galaxy',        'background', 600,  'yes', 'Galaxy',                  '銀河'],
+  ['rain',          'effect',    180,  'yes', 'Rain',                    '落雨'],
+  ['hearts',        'effect',    200,  'yes', 'Hearts',                  '心心'],
+  ['bubbles',       'effect',    220,  'yes', 'Bubbles',                 '泡泡'],
+  ['snow',          'effect',    240,  'yes', 'Snow',                    '雪花'],
+  ['sakura',        'effect',    260,  'yes', 'Sakura',                  '櫻花'],
+  ['notes',         'effect',    280,  'yes', 'Music notes',             '音符'],
+  ['butterflies',   'effect',    300,  'yes', 'Butterflies',             '蝴蝶'],
+  ['rainbow',       'effect',    380,  'yes', 'Rainbow',                 '彩虹'],
+  ['lightning',     'effect',    450,  'yes', 'Lightning',               '閃電'],
+  ['banknotes',     'effect',    550,  'yes', 'Money rain',              '鈔票雨'],
+  ['orbit',         'effect',    620,  'yes', 'Orbit',                   '星球環繞'],
+  ['stocks',        'effect',    650,  'yes', 'Stock rally',             '股市升'],
+  ['flames',        'effect',    680,  'yes', 'Flames',                  '火焰'],
+  ['fireworks',     'effect',    700,  'yes', 'Fireworks',               '煙花'],
+  ['dshift',        'effect',    750,  'yes', 'Demand shift',            '需求曲線右移']
 ];
 var EP_KIND = { character: 'base', outfit: 'outfit', background: 'bg', effect: 'fx' };
 function eStoreSheet_() {
   var sh = sheet_('EStore', ['item','kind','price','on sale','name','name (zh)']);
   if (sh.getLastRow() < 2) sh.getRange(2, 1, EP_STORE_DEFAULT.length, 6).setValues(EP_STORE_DEFAULT);
   return sh;
+}
+/* Adds store items this version knows about but the EStore tab does not have
+   yet, at the bottom. Rows already there (and any prices you changed) are
+   left alone. Runs from "Set up E-point tabs"; to stop selling an item, set
+   "on sale" to no rather than deleting its row, or the next setup adds it back. */
+function epAddNewItems_() {
+  var sh = eStoreSheet_(), v = sh.getDataRange().getValues(), have = {};
+  for (var i = 1; i < v.length; i++) have[String(v[i][0]).trim()] = true;
+  var add = EP_STORE_DEFAULT.filter(function (r) { return !have[r[0]]; });
+  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, 6).setValues(add);
+  return add.length;
 }
 
 /* ------------------------------------------------------------ reading ---- */
@@ -559,8 +629,11 @@ function tell_(s) { SpreadsheetApp.getUi().alert(s); }
    overwrites a tab that already has rows. */
 function epSetup() {
   classSheet_(); eRulesSheet_(); eStoreSheet_(); eGiveSheet_(); walletSheet_(); ledgerSheet_();
-  ensureStudentStatus_(); epFlushCache_();
-  try { tell_('E-point tabs are ready: Classes, ERules, EStore, EGive, Wallet, ELedger.'); } catch (e) { Logger.log('E-point tabs ready.'); }
+  ensureStudentStatus_();
+  var added = epAddNewItems_();
+  epFlushCache_();
+  var msg = 'E-point tabs are ready: Classes, ERules, EStore, EGive, Wallet, ELedger.' + (added ? ' Added ' + added + ' new store items to EStore.' : '');
+  try { tell_(msg); } catch (e) { Logger.log(msg); }
 }
 
 function setClassStatus_(cls, status) {
