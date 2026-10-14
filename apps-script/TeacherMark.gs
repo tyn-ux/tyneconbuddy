@@ -45,7 +45,7 @@ function tmarkReply_(sess, body) {
     if (!tmIsTeacher_(sess.email)) return tmJson_({ error: 'teacher', teacher: false });
     var act = String(body.act || '');
     if (act === 'who') return tmJson_({ teacher: true, model: aiModel_(),
-      key: !!PropertiesService.getScriptProperties().getProperty('GEMINI_KEY') });
+      key: !!PropertiesService.getScriptProperties().getProperty('GEMINI_KEY') || !!PropertiesService.getScriptProperties().getProperty('CA_KEY') });
     if (act === 'scheme') return tmJson_(tmScheme_(body));
     if (act === 'split')  return tmJson_(tmSplit_(body));
     if (act === 'read')   return tmJson_(tmRead_(body));
@@ -93,11 +93,11 @@ function tmParse_(res) {
    busy or has used up its free quota (each model has its own); when every
    model is rate limited the page waits and retries. */
 function tmCall_(system, parts, opt) {
-  var gk = tmKey_();
-  if (!gk) return [{ err: 'nokey' }];
+  var gk = tmKey_(), props = PropertiesService.getScriptProperties();
+  if (!gk && !props.getProperty('CA_KEY')) return [{ err: 'nokey' }];
   opt = opt || {};
-  var n = opt.n || 1, props = PropertiesService.getScriptProperties();
-  var models = aiModels_(), out = null, rated = null;
+  var n = opt.n || 1;
+  var models = gk ? aiModels_() : [], out = [{ err: 'no Gemini key' }], rated = null;
   for (var m = 0; m < models.length; m++) {
     for (var pass = 0; pass < 2; pass++) {
       var reqs = [];
@@ -111,16 +111,71 @@ function tmCall_(system, parts, opt) {
     if (out.some(function (r) { return r.json; })) return out;
     if (out.some(function (r) { return r.rate; })) rated = out;   // this model's free quota is spent: try the next
   }
+  // Every Gemini model is limited, busy or failing: the teacher's backup.
+  var ca = tmCaCall_(system, parts, opt);
+  if (ca) {
+    if (ca.some(function (r) { return r.json; })) return ca;
+    if (ca.some(function (r) { return r.rate; })) rated = rated || ca;
+    else { out = ca; try { props.setProperty('AI_LAST_ERROR', new Date().toISOString() + '  tmark backup ' + String(ca[0].err).slice(0, 400)); } catch (e) {} }
+  }
   if (rated) return rated;
   try { props.setProperty('AI_LAST_ERROR', new Date().toISOString() + '  tmark ' + String(out[0].err).slice(0, 400)); } catch (e) {}
   return out;
+}
+
+/* ------------------------------------------------- ChatAnywhere backup -- */
+/* Used by teacher marking only, after every Gemini model has failed.
+   Script Properties: CA_KEY (required), CA_MODEL (default gpt-4o-mini; a
+   comma list is tried in order), CA_HOST (default https://api.chatanywhere.org).
+   It is an OpenAI-style relay run by a third party: page images still have
+   the name box blacked out before they leave the browser. */
+function tmCaCall_(system, parts, opt) {
+  var props = PropertiesService.getScriptProperties(), key = props.getProperty('CA_KEY');
+  if (!key) return null;
+  var host = String(props.getProperty('CA_HOST') || 'https://api.chatanywhere.org').replace(/\/+$/, '');
+  var models = String(props.getProperty('CA_MODEL') || 'gpt-4o-mini').split(',').map(function (m) { return m.trim(); }).filter(Boolean);
+  var content = parts.map(function (p) {
+    return p.inline_data ? { type: 'image_url', image_url: { url: 'data:' + p.inline_data.mime_type + ';base64,' + p.inline_data.data } }
+                         : { type: 'text', text: String(p.text || '') };
+  });
+  var n = opt.n || 1, out = null, rated = null;
+  for (var m = 0; m < models.length; m++) {
+    for (var pass = 0; pass < 2; pass++) {
+      var body = { model: models[m], temperature: opt.temp == null ? 0.2 : opt.temp, max_tokens: Math.min(opt.maxTok || 8192, 16384),
+                   messages: [{ role: 'system', content: system + '\nReply with JSON only.' }, { role: 'user', content: content }] };
+      if (pass === 0) body.response_format = { type: 'json_object' };
+      var reqs = [];
+      for (var i = 0; i < n; i++) reqs.push({ url: host + '/v1/chat/completions', method: 'post', contentType: 'application/json',
+        headers: { Authorization: 'Bearer ' + key }, muteHttpExceptions: true, payload: JSON.stringify(body) });
+      var res;
+      try { res = UrlFetchApp.fetchAll(reqs); } catch (e) { res = reqs.map(function () { return null; }); }
+      out = res.map(tmCaParse_);
+      // A model or relay that refuses JSON mode: ask once more without it.
+      if (!(out.every(function (r) { return r.err && /^400 /.test(r.err); }))) break;
+    }
+    if (out.some(function (r) { return r.json; })) return out;
+    if (out.some(function (r) { return r.rate; })) rated = out;
+  }
+  return rated || out;
+}
+
+function tmCaParse_(res) {
+  var code = res ? res.getResponseCode() : 0;
+  if (code === 429) return { rate: true };
+  if (code >= 500 && code <= 504) return { busy: true, err: 'ChatAnywhere ' + code + ' busy' };
+  if (code !== 200) return { err: code + ' ChatAnywhere ' + (res ? res.getContentText().slice(0, 300) : '') };
+  try {
+    var msg = ((JSON.parse(res.getContentText()).choices || [])[0] || {}).message || {};
+    var txt = String(msg.content || '').trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
+    return { json: JSON.parse(txt) };
+  } catch (e) { return { err: 'ChatAnywhere unreadable reply: ' + e }; }
 }
 
 function tmFail_(r) {
   if (r.err === 'nokey') return { error: 'No Gemini key: add GEMINI_KEY in Script Properties.' };
   if (r.rate) return { error: 'rate', wait: 30 };
   if (r.busy) return { error: 'busy', wait: 15 };
-  return { error: 'Gemini did not answer properly. Try again. (' + String(r.err || '').slice(0, 120) + ')' };
+  return { error: 'The AI did not answer properly. Try again. (' + String(r.err || '').slice(0, 120) + ')' };
 }
 
 function tmImages_(list) {

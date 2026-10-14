@@ -1,9 +1,9 @@
-# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14c)
+# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14d)
 
 `teacher.html` is a new page on the site for teachers only. You upload one PDF with the whole class's test, one Word marking scheme, and Gemini splits the scan by student, reads each script, and marks every question twice. Only the points the AI is unsure of come to you. The page is not linked from the student pages.
 
 ## Apps Script (one time)
-`Code.gs` 2026-10-14c already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
+`Code.gs` 2026-10-14d already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
 
 1. Sheet > Extensions > Apps Script.
 2. `Code.gs`: select all, paste the new `Code.gs`, Save.
@@ -14,8 +14,9 @@
      Nobody else can use the page: a student who signs in gets "teachers only" and nothing else.
    - `GEMINI_KEY` is the same key the students' AI already uses. Nothing new to add.
    - Recommended `AI_FALLBACK` = other Gemini model names, separated by commas. When the main model is busy (503) or out of free requests (429), marking tries each of them in order (each model has its own free limit). To get the list: in the editor pick `listModels` in the function menu > Run > View > Logs (Execution log), and copy the last line it prints.
+   - Optional backup `CA_KEY` = a ChatAnywhere key (see "ChatAnywhere backup" below). Used only after every Gemini model has failed.
 6. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
-7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14c` and `"teachers_set": true`.
+7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14d` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`).
 
 Do **not** run `install()`.
 
@@ -44,6 +45,16 @@ The job is kept in that browser (close the tab and come back later). Use the sam
 - **Follow-up lesson** (Dashboard): students grouped by tier with the points to reteach; copy it or download a PDF.
 - **Copy for mark book** (Export): marks in class-no. order, ready to paste into the school mark book.
 - **Remove scan** (All jobs) frees space in the browser but keeps the marks.
+
+## ChatAnywhere backup (optional)
+Teacher marking only. The students' AI explain never uses it.
+1. Get a free key from ChatAnywhere (github.com/chatanywhere/GPT_API_free, "领取免费Key"). Use a **new** key: never paste a key in a chat or a message.
+2. Script Properties > Add property `CA_KEY` = the key.
+3. Optional `CA_MODEL` (default `gpt-4o-mini`, which can read images). A comma list is tried in order.
+4. Optional `CA_HOST` (default `https://api.chatanywhere.org`; use `https://api.chatanywhere.tech` if you are in mainland China).
+5. Deploy a new version as above.
+
+Things to know: ChatAnywhere is a relay run by a third party, not OpenAI or Google. The name box is still blacked out before pages leave the browser, but the answers themselves go through them. The free key allows 200 requests a day, and that limit is per IP too: all Apps Script projects share Google's IPs, so the backup may also say "limit reached" when other people have used it. When that happens the page waits and retries as usual.
 
 ## Limits worth knowing
 - "High demand" (503) means Google's side is overloaded for a while, not that your limit is used up. The page waits 15–60 seconds and asks again by itself (and uses `AI_FALLBACK` first if you set it).

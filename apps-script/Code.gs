@@ -1,4 +1,4 @@
-var BUILD = '2026-10-14c';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-14d';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -1427,6 +1427,7 @@ function route_(p) {
             bank: (function () { try { return bankSheet_().getLastRow() - 1; } catch (e) { return -1; } })(),
             ai_key: !!props.getProperty('GEMINI_KEY'), ai_model: aiModel_(),
             teachers_set: !!props.getProperty('TEACHER_EMAILS'),
+            backup_ai_set: !!props.getProperty('CA_KEY'),
             auth_last_error: redact_(props.getProperty('AUTH_LAST_ERROR')),
             ai_last_error: redact_(props.getProperty('AI_LAST_ERROR')) };
   } else if (p.claim) {
