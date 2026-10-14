@@ -227,7 +227,7 @@ kbd{font:11px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px
             <div class="note">Paste from Excel: one student per line, "class no. name" or "no. name".</div>
             <textarea id="roster" rows="5" placeholder="1	陳大文&#10;2	李小明"></textarea>
           </details>
-          <div class="row"><button class="btn primary" id="splitGo" disabled>Find students</button><span class="note" id="splitMsg"></span></div>
+          <div class="row"><button class="btn primary" id="splitGo" disabled>Find students</button><span class="note" id="splitMsg"></span><button class="btn primary" data-go="scheme" id="splitNext" hidden>Next: marking scheme →</button></div>
           <div class="progress" id="splitBar" hidden><div></div></div>
           <div class="tablewrap"><table id="splitTbl"></table></div>
           <div class="row" id="splitActions" hidden><button class="btn sm" id="addStu">Add student</button><span class="note">Pages are 1-based, e.g. "1-4" or "5,6,9". Rows in amber need a look.</span></div>
@@ -239,15 +239,17 @@ kbd{font:11px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px
     <section id="v-scheme" class="panel" hidden>
       <div class="stack">
         <h2>2 · Marking scheme</h2>
-        <div class="note">Upload the Word file for the whole test. Gemini splits it into questions and marking points using only your scheme, then drafts a rationale and accept / reject examples for each point. Check them once: they set the standard for the whole class.</div>
+        <div class="note">Upload the Word file for the whole test, paste the scheme text, or type it in yourself. Gemini splits it into questions and marking points using only your scheme, then drafts a rationale and accept / reject examples for each point. Check them once: they set the standard for the whole class.</div>
         <div class="row">
           <input type="file" id="docFile" accept=".docx" hidden>
           <button class="btn primary" id="docPick">Choose Word file (.docx)</button>
           <span class="note" id="docInfo"></span>
         </div>
+        <label class="lb" for="schemeText">Or paste the marking scheme text here (from Word, a PDF or an email)</label>
+        <textarea id="schemeText" rows="5" placeholder="1(a) Full cost = market price + time cost (1)&#10;     On weekends the time cost is lower, so the full cost is not necessarily higher (1)"></textarea>
         <details class="small"><summary>Add the question paper text (optional, helps Gemini)</summary>
           <textarea id="qpaper" rows="4" placeholder="Paste the questions here"></textarea></details>
-        <div class="row"><button class="btn" id="schemeGo" disabled>Read the scheme</button><span class="note" id="schemeMsg"></span></div>
+        <div class="row"><button class="btn" id="schemeGo" disabled>Read the scheme</button><button class="btn" id="schemeManual">Type it in myself (no AI)</button><span class="note" id="schemeMsg"></span></div>
         <div class="row" id="libPick" hidden><label class="lb" for="libSel">Or use a saved scheme</label><select class="cell" id="libSel" style="max-width:320px"></select><button class="btn sm" id="libUse">Use it</button></div>
         <div id="schemeEd" class="stack"></div>
       </div>
@@ -484,6 +486,7 @@ function drawMask(){ const r=JOB.mask.r, el=$('maskRect'); if(!r){ el.hidden=tru
   box.addEventListener('pointerup', () => { if(start&&JOB.mask.r&&JOB.mask.r.w<0.01) JOB.mask.r=null; start=null; drawMask(); save(); });
 })();
 function renderSplitTbl(){
+  $('splitNext').hidden = !JOB.students.length;
   const S=JOB.students; $('splitActions').hidden=!S.length;
   if(!S.length){ $('splitTbl').innerHTML=''; return; }
   $('splitTbl').innerHTML = '<tr><th>Pages</th><th>Class</th><th class="num">No.</th><th>Name</th><th class="num">AI sure</th><th></th></tr>' +
@@ -498,39 +501,51 @@ function renderSplitTbl(){
     s.conf=1; s.lines=null; s.res=null; s.status='todo'; save(); renderSplitTbl(); renderSteps(); });
   $('splitTbl').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { JOB.students.splice(+b.dataset.del,1); save(); renderSplitTbl(); renderSteps(); });
 }
-/* "5A 1 陳大文 1-4" per line (tabs from Excel or spaces). Class and pages are
-   optional; with no pages anywhere, the scan is shared out evenly in order. */
+/* One student per line, copied from Excel (tabs) or typed (spaces), in any
+   column order: class (5A, S5A), class no., name, pages (1-4 or 5,6,9).
+   Class and pages are optional; with no pages anywhere, the scan is shared
+   out evenly in order. Header rows ("Class No. Name Pages") are skipped. */
 function parsePaste(text, n){
   const rows=[], bad=[];
-  String(text||'').split(/\n/).forEach((line,li)=>{ if(!line.trim()) return;
+  const isPages=x=>/^\d+\s*[-–~]\s*\d+(\s*,\s*\d+(\s*[-–~]\s*\d+)?)*$|^\d+(\s*,\s*\d+(\s*[-–~]\s*\d+)?)+$/.test(x);
+  const isCls=x=>/^(S|F)?[1-6][A-Za-z]{1,2}$/i.test(x);
+  String(text||'').replace(/\r/g,'').split('\n').forEach((line,li)=>{ if(!line.trim()) return;
     let t=line.split('\t').map(x=>x.trim()).filter(Boolean); if(t.length<2) t=line.trim().split(/\s+/);
-    let cls='', pages=null;
-    if(t.length>=3 && /^\d+(-\d+)?(,\s*\d+(-\d+)?)*$/.test(t[t.length-1])) pages=t.pop();
-    if(t.length>=2 && /[A-Za-z]/.test(t[0]) && /^[A-Za-z0-9]{1,4}$/.test(t[0]) && /^\d+$/.test(t[1])) cls=t.shift().toUpperCase();
-    if(!/^\d+$/.test(t[0]||'')){ bad.push(li+1); return; }
-    const no=+t.shift(); rows.push({cls, no, name:t.join(' '), pages});
+    t=t.map(x=>x.replace(/^(no\.?|#)/i,'').trim()).filter(Boolean);
+    if(!t.some(x=>/\d/.test(x))) return;                       // header row
+    let cls='', pages=null, no=null;
+    const pi=t.findIndex(isPages); if(pi>=0) pages=t.splice(pi,1)[0].replace(/[–~]/g,'-').replace(/\s+/g,'');
+    const ci=t.findIndex(isCls); if(ci>=0) cls=t.splice(ci,1)[0].toUpperCase();
+    const ni=t.findIndex(x=>/^\d{1,2}$/.test(x)); if(ni>=0) no=+t.splice(ni,1)[0];
+    // "2 陳大文 5": a lone number after the class no. is a single page
+    if(!pages && no!=null){ const qi=t.findIndex(x=>/^\d{1,3}$/.test(x)); if(qi>=0) pages=t.splice(qi,1)[0]; }
+    if(no==null){ bad.push(li+1); return; }
+    rows.push({cls, no, name:t.join(' '), pages});
   });
-  if(bad.length) return {error:`Line ${bad.join(', ')}: start with the class no. (or class, then class no.).`};
-  if(!rows.length) return {error:'Paste the list first: one student per line.'};
+  if(bad.length) return {error:`Line ${bad.join(', ')}: no class no. found. Each line needs the class no., e.g. "5A 1 陳大文 1-4".`};
+  if(!rows.length) return {error:'Paste the list first: one student per line, e.g. "5A 1 陳大文 1-4".'};
   if(rows.every(r=>!r.pages)){
-    if(n % rows.length) return {error:`The scan has ${n} pages, which does not split evenly over ${rows.length} students. Add the pages to each line.`};
+    if(n % rows.length) return {error:`The scan has ${n} pages, which does not split evenly over ${rows.length} students. Add the pages to each line, e.g. "5A 1 陳大文 1-4".`};
     const per=n/rows.length; rows.forEach((r,k)=>r.pages=(k*per+1)+'-'+(k*per+per));
   }
   const miss=rows.filter(r=>!r.pages).map(r=>r.no);
   if(miss.length) return {error:`Add pages for class no. ${miss.join(', ')} (or leave pages out on every line).`};
   const S=rows.map(r=>newStudent({cls:r.cls, no:r.no, name:r.name, conf:1, pages:parsePages(r.pages, n)}));
+  const empty=S.filter(x=>!x.pages.length).map(x=>x.no);
+  if(empty.length) return {error:`Class no. ${empty.join(', ')}: those pages are not in the scan (it has ${n} pages).`};
   const used=new Set(S.flatMap(x=>x.pages)), left=[]; for(let i=0;i<n;i++) if(!used.has(i)) left.push(i);
   const twice=S.flatMap(x=>x.pages).filter((v,i,a)=>a.indexOf(v)!==i);
   const note=[left.length?`Pages ${pagesStr(left)} belong to nobody.`:'', twice.length?`Pages ${pagesStr([...new Set(twice)])} are given twice.`:''].filter(Boolean).join(' ');
-  return {students:S, note: note ? note+' Fix them in the table if that is wrong.' : 'Set up the marking scheme next.'};
+  return {students:S, note: note ? note+' Fix them in the table if that is wrong, then go to the marking scheme.' : 'Next: the marking scheme.'};
 }
 function newStudent(o){ return Object.assign({sid:'s'+Math.random().toString(36).slice(2,9), cls:'', no:null, name:'', pages:[], conf:null, lines:null, res:null, ai:null, resolved:{}, status:'todo', err:''}, o); }
 async function doSplit(){
   const cx = CTX, JOB = cx.job, here = () => CTX === cx;
   JOB.split.mode = document.querySelector('input[name=splitMode]:checked').value; JOB.split.n = Math.max(1, +$('fixedN').value||4);
-  if(JOB.mask.on && !JOB.mask.r){ toast('Drag a box over the name first, or untick "Cover names".', 4000); return; }
+  const stop = m => { $('splitMsg').innerHTML=`<span style="color:var(--pen)">${esc(m)}</span>`; toast(m, 6000); };
+  if(JOB.mask.on && !JOB.mask.r){ stop('First drag a box over the name on the page on the left (or untick "Cover names").'); return; }
   if(JOB.split.mode==='paste'){ JOB.split.paste=$('pasteList').value;
-    const r=parsePaste(JOB.split.paste, JOB.pageCount); if(r.error){ toast(r.error, 6000); return; }
+    const r=parsePaste(JOB.split.paste, JOB.pageCount); if(r.error){ stop(r.error); return; }
     JOB.pageInfo=Array.from({length:JOB.pageCount},()=>({cls:null,no:null,header:false,conf:1}));
     return finishSplit(cx, r.students, r.note); }
   const n = JOB.pageCount, bar=$('splitBar'), fill=bar.firstElementChild; bar.hidden=false; fill.style.width='0';
@@ -592,6 +607,14 @@ $('docFile').onchange = async e => {
   catch(err){ toast('Could not read that Word file: '+err.message, 5000); return; }
   JOB.scheme.file=f.name; $('docInfo').textContent=`${f.name} · ${DOCTEXT.length.toLocaleString()} characters`; $('schemeGo').disabled=!DOCTEXT.trim(); save();
 };
+$('schemeText').oninput = e => { DOCTEXT = e.target.value; JOB.scheme.file = DOCTEXT.trim() ? 'Pasted text' : ''; $('docInfo').textContent = DOCTEXT.trim() ? `Pasted text · ${DOCTEXT.length.toLocaleString()} characters` : ''; $('schemeGo').disabled = !DOCTEXT.trim(); };
+const blankQ = qid => ({qid:String(qid), question:'', unclear:'', points:[{text:'', marks:1, rule:'', rationale:'', accept:[], reject:[]}]});
+$('schemeManual').onclick = () => { if(JOB.students.some(s=>s.res)){ toast('This job already has marks. Start a new job to use another scheme.', 4000); return; }
+  if(!JOB.scheme.questions.length){ JOB.scheme.questions=[blankQ(1)]; JOB.scheme.file=JOB.scheme.file||'Typed in'; }
+  else JOB.scheme.questions.push(blankQ(JOB.scheme.questions.length+1));
+  renumber(); JOB.scheme.confirmed=false; save(); renderSteps(); renderScheme();
+  $('schemeMsg').textContent='Type each question\'s label, marking points and marks below, then confirm at the bottom.';
+  const last=document.querySelectorAll('#schemeEd details.qsec'); if(last.length){ const d=last[last.length-1]; d.open=true; const i=d.querySelector('textarea'); if(i) i.focus(); } };
 $('libUse').onclick = () => { if(JOB.students.some(s=>s.res)){ toast('This job already has marks. Start a new job to use another scheme.', 4000); return; }
   const r=schemeFromLib($('libSel').value); if(!r) return; JOB.scheme=r.scheme; JOB.bank=r.bank; save(); renderSteps(); renderScheme(); toast('Saved scheme loaded and confirmed'); };
 $('schemeGo').onclick = async () => {
@@ -627,13 +650,14 @@ function renderScheme(){
           <button class="btn sm danger" data-delp="${qi}_${pi}">Remove</button></div></div>
         <label class="lb" for="tx${qi}_${pi}">Marking point (from your scheme)</label><textarea id="tx${qi}_${pi}" rows="2" data-q="${qi}" data-p="${pi}" data-f="text">${esc(p.text)}</textarea>
         <label class="lb" for="ru${qi}_${pi}">Rule (e.g. any one, max 2)</label><input class="cell" id="ru${qi}_${pi}" data-q="${qi}" data-p="${pi}" data-f="rule" value="${esc(p.rule||'')}">
-        <details class="small"><summary>Rationale and examples (AI-drafted, check once)</summary><div class="stack" style="margin-top:6px">
+        <details class="small"><summary>Rationale and examples (optional; AI-drafted when Gemini reads the scheme)</summary><div class="stack" style="margin-top:6px">
           <label class="lb" for="ra${qi}_${pi}">Why this point earns marks</label><textarea id="ra${qi}_${pi}" rows="2" data-q="${qi}" data-p="${pi}" data-f="rationale">${esc(p.rationale||'')}</textarea>
           <label class="lb" for="ac${qi}_${pi}">Accept, e.g. (one per line)</label><textarea id="ac${qi}_${pi}" rows="2" data-q="${qi}" data-p="${pi}" data-f="accept">${esc((p.accept||[]).join('\n'))}</textarea>
           <label class="lb" for="rj${qi}_${pi}">Do not accept, e.g. (one per line)</label><textarea id="rj${qi}_${pi}" rows="2" data-q="${qi}" data-p="${pi}" data-f="reject">${esc((p.reject||[]).join('\n'))}</textarea>
         </div></details></div>`).join('')}
       <div class="row"><button class="btn sm" data-addp="${qi}">Add point</button></div></div></details>`).join('') +
-    `<div class="row" style="justify-content:space-between"><span class="note">${Q.length} questions · ${maxT()} marks in total${marked?' · changing the scheme after marking means re-marking':''}</span>
+    `<div class="row"><button class="btn sm" id="addQ">Add question</button></div>
+     <div class="row" style="justify-content:space-between"><span class="note">${Q.length} questions · ${maxT()} marks in total${marked?' · changing the scheme after marking means re-marking':''}</span>
      <button class="btn primary" id="schemeOk">${JOB.scheme.confirmed?'Scheme confirmed ✓':'Confirm scheme'}</button></div>`;
   ed.querySelectorAll('[data-f]').forEach(el => el.onchange = () => {
     const q=Q[+el.dataset.q], f=el.dataset.f;
@@ -643,7 +667,9 @@ function renderScheme(){
   });
   ed.querySelectorAll('[data-delp]').forEach(b => b.onclick = () => { const [qi,pi]=b.dataset.delp.split('_').map(Number); Q[qi].points.splice(pi,1); if(!Q[qi].points.length) Q.splice(qi,1); renumber(); JOB.scheme.confirmed=false; save(); renderScheme(); renderSteps(); });
   ed.querySelectorAll('[data-addp]').forEach(b => b.onclick = () => { Q[+b.dataset.addp].points.push({text:'',marks:1,rule:'',rationale:'',accept:[],reject:[]}); renumber(); JOB.scheme.confirmed=false; save(); renderScheme(); });
+  $('addQ').onclick = () => $('schemeManual').click();
   $('schemeOk').onclick = () => { if(Q.some(q=>q.points.some(p=>!String(p.text).trim()))){ toast('Every point needs its text.'); return; }
+    if(Q.some(q=>!String(q.qid).trim())){ toast('Every question needs a label, e.g. 1(a).'); return; }
     JOB.scheme.confirmed=true; libSaveScheme(); save(); renderSteps(); renderScheme(); toast('Scheme confirmed and saved to your scheme library'); };
 }
 
