@@ -1,9 +1,9 @@
-# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14d)
+# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14e)
 
 `teacher.html` is a new page on the site for teachers only. You upload one PDF with the whole class's test, one Word marking scheme, and Gemini splits the scan by student, reads each script, and marks every question twice. Only the points the AI is unsure of come to you. The page is not linked from the student pages.
 
 ## Apps Script (one time)
-`Code.gs` 2026-10-14d already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
+`Code.gs` 2026-10-14e already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
 
 1. Sheet > Extensions > Apps Script.
 2. `Code.gs`: select all, paste the new `Code.gs`, Save.
@@ -16,7 +16,7 @@
    - Recommended `AI_FALLBACK` = other Gemini model names, separated by commas. When the main model is busy (503) or out of free requests (429), marking tries each of them in order (each model has its own free limit). To get the list: in the editor pick `listModels` in the function menu > Run > View > Logs (Execution log), and copy the last line it prints.
    - Optional backup `CA_KEY` = a ChatAnywhere key (see "ChatAnywhere backup" below). Used only after every Gemini model has failed.
 6. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
-7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14d` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`).
+7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14e` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`). `ai_models` lists every model it will try, in order: if a name you typed is missing there, it was not a valid model name.
 
 Do **not** run `install()`.
 
