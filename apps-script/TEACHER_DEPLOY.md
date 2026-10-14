@@ -13,7 +13,7 @@
    - `TEACHER_EMAILS` = the Google account(s) you sign in with, comma-separated.
      Nobody else can use the page: a student who signs in gets "teachers only" and nothing else.
    - `GEMINI_KEY` is the same key the students' AI already uses. Nothing new to add.
-   - Optional `AI_FALLBACK` = a second Gemini model name (run `listModels` in the editor to see them). When the main model says "high demand" (503) or its free limit is reached (429), marking switches to it. Recommended: each model has its own free limit.
+   - Recommended `AI_FALLBACK` = other Gemini model names, separated by commas. When the main model is busy (503) or out of free requests (429), marking tries each of them in order (each model has its own free limit). To get the list: in the editor pick `listModels` in the function menu > Run > View > Logs (Execution log), and copy the last line it prints.
 6. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
 7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14c` and `"teachers_set": true`.
 

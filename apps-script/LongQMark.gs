@@ -149,7 +149,7 @@ var LQ_SYSTEM = [
 
 function lqCallModel_(gk, parts) {
   var props = PropertiesService.getScriptProperties();
-  var models = [aiModel_(), props.getProperty('AI_FALLBACK')].filter(Boolean), firstErr = '';
+  var models = aiModels_(), firstErr = '';
   for (var m = 0; m < models.length; m++) {
     var cfg = { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' };
     cfg.thinkingConfig = models[m].indexOf('gemini-2.5') === 0 ? { thinkingBudget: 0 } : { thinkingLevel: 'minimal' };
