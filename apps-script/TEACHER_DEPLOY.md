@@ -7,7 +7,7 @@
 
 1. Sheet > Extensions > Apps Script.
 2. `Code.gs`: select all, paste the new `Code.gs`, Save.
-3. If you don't have them yet, add the files `EPoints` and `LongQMark` (click **+** > Script) and paste `EPoints.gs` and `LongQMark.gs`.
+3. `EPoints` and `LongQMark`: **always replace them too**, even if you already have them, with `EPoints.gs` and `LongQMark.gs` from this same folder (select all, paste, Save). The new `Code.gs` calls functions that only the new copies have; an old `EPoints` breaks the leaderboard and class lists. If a file is missing, click **+** > Script, name it `EPoints` or `LongQMark`, and paste.
 4. Click **+** > Script, name it `TeacherMark`, paste `TeacherMark.gs`, Save.
 5. Project Settings (gear) > Script Properties > Add property:
    - `TEACHER_EMAILS` = the Google account(s) you sign in with, comma-separated.
