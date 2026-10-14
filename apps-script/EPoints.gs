@@ -73,12 +73,29 @@ var EP_RULES_DEFAULT = [
   ['album_retry', 4,  0, 'yes', 'Get an album MC right a day or more after getting it wrong (once per question)'],
   ['comment',     3,  3, 'yes', 'Comment on a question (15+ characters). Taken back if the teacher hides it'],
   ['verified',   10,  0, 'yes', 'Teacher ticks your comment as verified'],
-  ['week5',      20,  0, 'yes', 'Practise on 5 different days in one week (Mon to Sun)']
+  ['week5',      20,  0, 'yes', 'Practise on 5 different days in one week (Mon to Sun)'],
+  // added 2026-10-14: welcome and come-back rewards
+  ['welcome',   150,  0, 'yes', 'Welcome gift, once: enough for your first outfit'],
+  ['checkin',     5,  1, 'yes', 'Open the site today (daily check-in)'],
+  ['streak3',    15,  0, 'yes', 'Check in 3 days in a row'],
+  ['streak7',    50,  0, 'yes', 'Check in 7 days in a row (again every 7 days)'],
+  ['first10',    30,  0, 'yes', 'Answer your first 10 MC questions, once'],
+  ['first_lq',   20,  0, 'yes', 'Send your first Long Q for AI marking, once'],
+  ['level_up',   25,  0, 'yes', 'Reach a new level (cleared % of all MCQs)']
 ];
 function eRulesSheet_() {
   var sh = sheet_('ERules', ['action','E','per_day','on','what it is for']);
   if (sh.getLastRow() < 2) sh.getRange(2, 1, EP_RULES_DEFAULT.length, 5).setValues(EP_RULES_DEFAULT);
   return sh;
+}
+/* Rules added after a school set up its ERules tab: appended by epSetup,
+   rows already there (and any E you changed) are left alone. */
+function epAddNewRules_() {
+  var sh = eRulesSheet_(), v = sh.getDataRange().getValues(), have = {};
+  for (var i = 1; i < v.length; i++) have[String(v[i][0]).trim()] = true;
+  var add = EP_RULES_DEFAULT.filter(function (r) { return !have[r[0]]; });
+  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, 5).setValues(add);
+  return add.length;
 }
 
 /* id must match a drawing in app.html (EP_ART). Price 0 = free for everyone. */
@@ -489,6 +506,8 @@ function epOne_(sess, w, aw, key, ok, page) {
     give_(w, aw, 'mc_answer', key);
     if (ok) give_(w, aw, 'mc_correct', key);
     if (st.n % 10 === 0) give_(w, aw, 'mc_ten', st.n + ' questions today');
+    st.ever = (st.ever || 0) + 1;
+    if (st.ever >= 10 && !st.once.first10 && give_(w, aw, 'first10', 'first 10 questions')) st.once.first10 = 1;
     active_(w, aw);
   }
   if (!ok) {
@@ -523,7 +542,10 @@ function oldMistake_(uid, key) {
 function epLqMarked_(sess, key, sum, words, photo) {
   var res = withWallet_(sess.uid, function (w) {
     var st = w.st, aw = [];
-    if (photo || words >= 40) { give_(w, aw, 'lq_submit', key); active_(w, aw); }
+    if (photo || words >= 40) {
+      give_(w, aw, 'lq_submit', key); active_(w, aw);
+      if (!st.once.first_lq && give_(w, aw, 'first_lq', key)) st.once.first_lq = 1;
+    }
     var prev = st.lqb[key];
     if (prev != null && sum > prev && !st.r['lb:' + key]) { st.r['lb:' + key] = 1; give_(w, aw, 'lq_better', key); }
     if (prev == null || sum > prev) st.lqb[key] = sum;
@@ -618,7 +640,9 @@ function epWallet_(sess) {
     var me = null;
     studentRows_().some(function (s) { if (s.uid === sess.uid) { me = s; return true; } return false; });
     if (me) { w.nick = me.nick; w.cls = me.cls; }
-    return epSyncComments_(w);
+    var aw = epSyncComments_(w);
+    epVisit_(w, aw);
+    return aw;
   });
   if (res.error) return res;
   var w = res.w, rules = epRules_(), list = [];
@@ -628,6 +652,26 @@ function epWallet_(sess) {
   });
   return { bal: w.bal, earned: w.earned, look: w.look, owned: w.owned, store: epStore_(), rules: list,
            recent: w.st.recent, e: brief_(res.aw) };
+}
+
+/* Opening the site: welcome gift once, daily check-in with 3- and 7-day
+   streaks, and a reward for each new level since the last visit. Levels
+   reached before this rule existed set the starting point and pay nothing. */
+function epVisit_(w, aw) {
+  var st = w.st, once = st.once, today = epDay_();
+  if (!once.welcome && give_(w, aw, 'welcome', 'welcome')) once.welcome = 1;
+  st.ck = st.ck || { d: '', n: 0 };
+  if (st.ck.d !== today) {
+    var yest = Utilities.formatDate(new Date(new Date(today + 'T12:00:00Z').getTime() - 86400000), 'UTC', 'yyyy-MM-dd');
+    st.ck.n = st.ck.d === yest ? st.ck.n + 1 : 1;
+    st.ck.d = today;
+    give_(w, aw, 'checkin', today);
+    if (st.ck.n === 3) give_(w, aw, 'streak3', '3 days in a row');
+    if (st.ck.n % 7 === 0) give_(w, aw, 'streak7', st.ck.n + ' days in a row');
+  }
+  var lv = levelOf_(pctMap_()[w.uid] || 0);
+  if (st.lv == null) st.lv = lv;
+  for (; st.lv < lv; st.lv++) give_(w, aw, 'level_up', 'Lv.' + (st.lv + 1));
 }
 
 /* POST {event:'ebuy', item} */
@@ -736,9 +780,10 @@ function tell_(s) { SpreadsheetApp.getUi().alert(s); }
 function epSetup() {
   classSheet_(); eRulesSheet_(); eStoreSheet_(); eGiveSheet_(); walletSheet_(); ledgerSheet_();
   ensureStudentStatus_();
-  var added = epAddNewItems_();
+  var added = epAddNewItems_(), rulesAdded = epAddNewRules_();
   epFlushCache_();
-  var msg = 'E-point tabs are ready: Classes, ERules, EStore, EGive, Wallet, ELedger.' + (added ? ' Added ' + added + ' new store items to EStore.' : '');
+  var msg = 'E-point tabs are ready: Classes, ERules, EStore, EGive, Wallet, ELedger.' + (added ? ' Added ' + added + ' new store items to EStore.' : '')
+          + (rulesAdded ? ' Added ' + rulesAdded + ' new ways to earn to ERules.' : '');
   try { tell_(msg); } catch (e) { Logger.log(msg); }
 }
 
