@@ -1,9 +1,9 @@
-# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14e)
+# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14f)
 
 `teacher.html` is a new page on the site for teachers only. You upload one PDF with the whole class's test, one Word marking scheme, and Gemini splits the scan by student, reads each script, and marks every question twice. Only the points the AI is unsure of come to you. The page is not linked from the student pages.
 
 ## Apps Script (one time)
-`Code.gs` 2026-10-14e already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
+`Code.gs` 2026-10-14f already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
 
 1. Sheet > Extensions > Apps Script.
 2. `Code.gs`: select all, paste the new `Code.gs`, Save.
@@ -16,7 +16,7 @@
    - Recommended `AI_FALLBACK` = other Gemini model names, separated by commas. When the main model is busy (503) or out of free requests (429), marking tries each of them in order (each model has its own free limit). To get the list: in the editor pick `listModels` in the function menu > Run > View > Logs (Execution log), and copy the last line it prints.
    - Optional backup `CA_KEY` = a ChatAnywhere key (see "ChatAnywhere backup" below). Used only after every Gemini model has failed.
 6. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
-7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14e` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`). `ai_models` lists every model it will try, in order: if a name you typed is missing there, it was not a valid model name.
+7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14f` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`). `ai_models` lists every model it will try, in order: if a name you typed is missing there, it was not a valid model name.
 
 Do **not** run `install()`.
 
@@ -45,6 +45,12 @@ The job is kept in that browser (close the tab and come back later). Use the sam
 - **Follow-up lesson** (Dashboard): students grouped by tier with the points to reteach; copy it or download a PDF.
 - **Copy for mark book** (Export): marks in class-no. order, ready to paste into the school mark book.
 - **Remove scan** (All jobs) frees space in the browser but keeps the marks.
+- **Personal answer sheets (QR)** (All jobs): type the class and paste the class list; every student gets their own pages with class, class no., name and a QR code. In step 1 choose **Personal QR answer sheets (no AI)**: the scan splits itself, the printed name strip is covered, and you are told about missing pages and missing students. Extra paper without a QR code joins the page before it.
+- **How sure before it asks you** (Review): the slider sets how sure the AI must be before a point skips you (default 70%). Disagreements and missing evidence always come to you.
+- **Mark once** (Mark): marks each script with one AI run instead of two, using half the free Gemini quota. Needs Code.gs/TeacherMark.gs 2026-10-14f; an older server still marks twice.
+- **By question** (Review): one question for the whole class, each student's answer with the marking points, and one button to accept the AI marks shown.
+- **Class handout** (Dashboard): one PDF for the whole class with the points most students missed and the comments they got most often. No names.
+- **Evidence for every point** (Review): the words that earned the mark, or the closest attempt when the mark was lost (needs 2026-10-14f; scripts marked before keep what they had).
 
 ## ChatAnywhere backup (optional)
 Teacher marking only. The students' AI explain never uses it.
