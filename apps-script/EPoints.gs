@@ -221,13 +221,22 @@ function studentRows_() {
   var v = studentSheet_().getDataRange().getValues(), out = [];
   for (var i = 1; i < v.length; i++) {
     out.push({ row: i + 1, uid: String(v[i][0]), cls: String(v[i][2] || '').toUpperCase(), num: String(v[i][3] || ''),
-               nick: String(v[i][4] || ''), status: String(v[i][7] || '').trim().toLowerCase() });
+               nick: String(v[i][4] || ''), status: String(v[i][7] || '').trim().toLowerCase(),
+               email: String(v[i][1] || '').trim().toLowerCase(), order: v[i][8] });
   }
   return out;
 }
 function ensureStudentStatus_() {
   var sh = studentSheet_();
   if (String(sh.getRange(1, 8).getValue()).trim() !== 'status') sh.getRange(1, 8).setValue('status');
+  if (String(sh.getRange(1, 9).getValue()).trim() !== 'order') sh.getRange(1, 9).setValue('order');
+}
+/* Accounts in the Script Property TEACHER_EMAILS (the same list teacher.html
+   uses) go first on class pages, with a Teacher tag. */
+function epTeachers_() {
+  var raw = PropertiesService.getScriptProperties().getProperty('TEACHER_EMAILS') || '', out = {};
+  raw.toLowerCase().split(/[\s,;]+/).forEach(function (e) { if (e) out[e] = 1; });
+  return out;
 }
 
 /* uids that must not appear on class pages or the leaderboard. */
@@ -676,15 +685,21 @@ function epClassPage_(cls) {
   if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   var looks = {}, wv = walletSheet_().getDataRange().getValues();
   for (var i = 1; i < wv.length; i++) looks[String(wv[i][0])] = pj_(wv[i][5], null);
-  var pct = pctMap_(), items = [];
+  var pct = pctMap_(), tch = epTeachers_(), items = [];
   studentRows_().forEach(function (s) {
     if (s.status === 'hidden' || s.status === 'removed') return;
     if (st !== 'everyone' && s.cls !== cls) return;
-    items.push({ nick: s.nick || '—', look: looks[s.uid] || null, lv: levelOf_(pct[s.uid] || 0), n: Number(s.num) || 0, k: s.cls });
+    var o = String(s.order === undefined ? '' : s.order).trim();
+    items.push({ nick: s.nick || '—', look: looks[s.uid] || null, lv: levelOf_(pct[s.uid] || 0), t: tch[s.email] ? 1 : 0,
+                 o: o !== '' && !isNaN(Number(o)) ? Number(o) : Infinity, n: Number(s.num) || 0, k: s.cls });
   });
-  // by class, then number ('everyone' pages mix classes)
-  items.sort(function (a, b) { return a.k < b.k ? -1 : a.k > b.k ? 1 : a.n - b.n; });
-  items.forEach(function (x) { delete x.n; delete x.k; });       // the order is by number; the number itself stays private
+  // Teacher first; then any number typed in the Students tab's 'order'
+  // column (smallest first); then highest level; then class and number.
+  items.sort(function (a, b) {
+    return b.t - a.t || (a.o === b.o ? 0 : a.o < b.o ? -1 : 1) || b.lv - a.lv
+        || (a.k < b.k ? -1 : a.k > b.k ? 1 : a.n - b.n);
+  });
+  items.forEach(function (x) { delete x.n; delete x.k; delete x.o; if (!x.t) delete x.t; });   // seat numbers and order stay private
   var out = { cls: cls, items: items };
   c.put('ep_cp_' + cls, JSON.stringify(out), 60);
   return out;

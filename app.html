@@ -629,7 +629,8 @@ rect.fx-flash{animation-name:fxflashbg}
     </div>
     <div class="card ac ac-blue" id="ovClass">
       <div class="meta" style="margin-bottom:10px"><h2 style="margin:0" id="ovClsName">Classmates</h2>
-        <select id="ovClsSel" class="hide" aria-label="Class"></select></div>
+        <select id="ovClsSel" class="hide" aria-label="Class"></select>
+        <button class="btn sm" id="ovMatesTog" aria-expanded="true" aria-controls="ovMates" style="margin-left:auto">Hide</button></div>
       <div id="ovMates"><p class="muted">Loading…</p></div>
     </div>
     <div class="ovthree">
@@ -3542,11 +3543,22 @@ function epClassDraw(){
     const items=(r&&r.items)||[];
     if(!items.length){ $('ovMates').innerHTML='<p class="muted">Nobody here yet.</p>'; return; }
     $('ovMates').innerHTML='<div class="mates">'+items.map(m=>
-      '<div class="mate">'+epArt(m.look,esc(m.nick)+'\'s character')+'<div class="nk">'+esc(m.nick)+'</div>'
+      '<div class="mate">'+epArt(m.look,esc(m.nick)+'\'s character')+'<div class="nk">'+esc(m.nick)+(m.t?' <span class="vtag">Teacher</span>':'')+'</div>'
       +'<div class="lv"><span class="lvb">Lv.'+m.lv+'</span> '+esc(LEVEL_NAMES[m.lv-1]||'')+'</div></div>').join('')+'</div>';
   });
 }
 $('ovClsSel').addEventListener('change',e=>{ EP_CLS=e.target.value; epClassDraw(); });
+/* The classmates panel folds away; the choice is kept on this device. */
+function epMatesFold(hide){
+  $('ovMates').classList.toggle('hide',hide);
+  $('ovMatesTog').textContent=hide?'Show':'Hide';
+  $('ovMatesTog').setAttribute('aria-expanded',String(!hide));
+}
+try{ epMatesFold(localStorage.getItem('tjx2:matesHidden')==='1'); }catch(e){}
+$('ovMatesTog').addEventListener('click',()=>{
+  const hide=!$('ovMates').classList.contains('hide'); epMatesFold(hide);
+  try{ localStorage.setItem('tjx2:matesHidden',hide?'1':'0'); }catch(e){}
+});
 
 /* -------------------------------------------------------------- store --- */
 function drawStore(){
