@@ -1,4 +1,4 @@
-var BUILD = '2026-10-14a';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-14b';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------

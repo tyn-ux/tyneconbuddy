@@ -76,6 +76,9 @@ function tmRequest_(model, gk, system, parts, temp, maxTok, noThink) {
 function tmParse_(res) {
   var code = res ? res.getResponseCode() : 0;
   if (code === 429) return { rate: true };
+  // 500/502/503/504: Google's side is overloaded ("high demand"); try the
+  // fallback model, then the page waits a little and asks again.
+  if (code >= 500 && code <= 504) return { busy: true, err: code + ' busy' };
   if (code !== 200) return { err: code + ' ' + (res ? res.getContentText().slice(0, 300) : '') };
   try {
     var c = (JSON.parse(res.getContentText()).candidates || [])[0];
@@ -86,8 +89,8 @@ function tmParse_(res) {
 }
 
 /* Runs n identical requests in parallel (n = 2 for the double marking).
-   Falls back to AI_FALLBACK if the main model errors (not on a rate limit,
-   which the page waits out and retries). */
+   Falls back to AI_FALLBACK if the main model errors or is busy (not on a
+   rate limit, which the page waits out and retries). */
 function tmCall_(system, parts, opt) {
   var gk = tmKey_();
   if (!gk) return [{ err: 'nokey' }];
@@ -113,6 +116,7 @@ function tmCall_(system, parts, opt) {
 function tmFail_(r) {
   if (r.err === 'nokey') return { error: 'No Gemini key: add GEMINI_KEY in Script Properties.' };
   if (r.rate) return { error: 'rate', wait: 30 };
+  if (r.busy) return { error: 'busy', wait: 15 };
   return { error: 'Gemini did not answer properly. Try again. (' + String(r.err || '').slice(0, 120) + ')' };
 }
 

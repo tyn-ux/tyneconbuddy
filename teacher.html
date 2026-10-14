@@ -380,15 +380,17 @@ async function tpost(body){
     try{ return JSON.parse(txt); }catch(e){ return {error:'The server is not set up for teacher marking yet (TeacherMark.gs missing?).'}; }
   }catch(e){ return {error:'Could not reach the server. Check your connection.'}; }
 }
-/* Retries a Gemini request through the free-tier rate limit. */
+/* Retries a Gemini request through the free-tier rate limit, and through
+   "high demand" (503) spells on Google's side. */
 async function gemini(body, onWait){
-  let wait = 20;
-  for(let i=0;i<7;i++){
+  let wait = 20, busy = 0;
+  for(let i=0;i<9;i++){
     const r = await tpost(body);
-    if(r && r.error==='rate'){ onWait && onWait(wait); await sleep(wait*1000); wait=Math.min(wait*2,120); continue; }
+    if(r && r.error==='rate'){ onWait && onWait(wait, 'Free Gemini limit reached'); await sleep(wait*1000); wait=Math.min(wait*2,120); continue; }
+    if(r && r.error==='busy'){ busy++; const w=Math.min(15*busy,60); onWait && onWait(w, 'Gemini is busy right now'); await sleep(w*1000); continue; }
     return r;
   }
-  return {error:'Gemini\'s free limit is used up for now. Your progress is saved: press Continue later (or tomorrow).'};
+  return {error:'Gemini is too busy or its free limit is used up for now. Your progress is saved: press Continue a bit later.'};
 }
 
 /* ---------------------------------------------------------------- PDF -- */
@@ -502,7 +504,7 @@ async function doSplit(){
   for(let b=0;b<todo.length;b+=10){
     const chunk = todo.slice(b,b+10); if(here()) $('splitMsg').textContent=`Reading page headers ${b+1}–${b+chunk.length} of ${todo.length}…`;
     const images = []; for(const i of chunk) images.push(await pageJpeg(cx, i, 1000, {top:0.3, mask:true}));
-    const r = await gemini({act:'split', images}, w => here() && ($('splitMsg').textContent=`Free Gemini limit reached, waiting ${w}s…`));
+    const r = await gemini({act:'split', images}, (w,why)=>here() && ($('splitMsg').textContent=`${why}, trying again in ${w}s…`));
     if(r.error){ if(here()){ $('splitMsg').textContent=r.error; $('splitGo').disabled=false; } return; }
     (r.pages||[]).forEach(p => { if(p.i>=0&&p.i<chunk.length) info[chunk[p.i]] = p; });
     done+=chunk.length; fill.style.width = (done/todo.length*100)+'%';
@@ -552,7 +554,7 @@ $('libUse').onclick = () => { if(JOB.students.some(s=>s.res)){ toast('This job a
   const r=schemeFromLib($('libSel').value); if(!r) return; JOB.scheme=r.scheme; JOB.bank=r.bank; save(); renderSteps(); renderScheme(); toast('Saved scheme loaded and confirmed'); };
 $('schemeGo').onclick = async () => {
   $('schemeGo').disabled=true; $('schemeMsg').textContent='Gemini is reading the scheme…';
-  const r = await gemini({act:'scheme', text:DOCTEXT, question:$('qpaper').value}, w=>$('schemeMsg').textContent=`Free Gemini limit reached, waiting ${w}s…`);
+  const r = await gemini({act:'scheme', text:DOCTEXT, question:$('qpaper').value}, (w,why)=>$('schemeMsg').textContent=`${why}, trying again in ${w}s…`);
   $('schemeGo').disabled=false;
   if(r.error){ $('schemeMsg').textContent=r.error; return; }
   JOB.scheme.questions = (r.questions||[]).map((q,qi)=>Object.assign(q,{points:q.points.map((p,pi)=>Object.assign(p,{id:(qi+1)+'.'+(pi+1)}))}));
@@ -610,7 +612,7 @@ async function readStudent(cx, s, say){
     const pg=s.pages.slice(k,k+READ_CHUNK), images=[];
     say(`${stuLabel(s)}: reading pages ${k+1}–${k+pg.length} of ${s.pages.length}`);
     for(const i of pg) images.push(await pageJpeg(cx, i, 1400, {mask:isHeaderPage(cx, i)}));
-    const r = await gemini({act:'read', images}, w=>say(`Free Gemini limit reached, waiting ${w}s…`));
+    const r = await gemini({act:'read', images}, (w,why)=>say(`${why}, trying again in ${w}s…`));
     if(r.error) throw new Error(r.error);
     (r.lines||[]).forEach(l => lines.push({p:pg[Math.min(l.p,pg.length-1)], y:l.y, t:l.t}));
     s.legib = r.legibility || s.legib;
@@ -629,7 +631,7 @@ function anchors(J){ return ownAnchors(J).concat(J.copiedAnchors||[]).slice(0,3)
 async function markStudent(cx, s, say){ const JOB = cx.job;
   say(`${stuLabel(s)}: marking (two AI runs)…`);
   const scheme = JOB.scheme.questions.map(q=>({qid:q.qid, question:q.question, points:q.points.map(p=>({id:p.id,text:p.text,marks:p.marks,rule:p.rule,accept:p.accept,reject:p.reject}))}));
-  const r = await gemini({act:'mark', scheme, lines:s.lines.map(l=>l.t), anchors:anchors(JOB)}, w=>say(`Free Gemini limit reached, waiting ${w}s…`));
+  const r = await gemini({act:'mark', scheme, lines:s.lines.map(l=>l.t), anchors:anchors(JOB)}, (w,why)=>say(`${why}, trying again in ${w}s…`));
   if(r.error) throw new Error(r.error);
   s.res = {points:r.points, tiers:r.tiers||[], qstart:r.qstart||{}, overall:r.overall||''};
   s.ai = {points:JSON.parse(JSON.stringify(r.points)), tiers:JSON.parse(JSON.stringify(r.tiers||[])), overall:r.overall||''};
