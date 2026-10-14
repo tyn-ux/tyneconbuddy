@@ -24,8 +24,8 @@ If you have not done the E-point steps from 2026-10-13b: Sheet > reload > tyneco
 ## Using it
 Open `https://<your GitHub Pages site>/teacher.html` and sign in.
 
-1. **Upload scan**: one PDF, every student's whole test. Drag a box over the name on page 1 (it is blacked out before anything goes to Gemini, because a free key may let Google use what it receives). Press **Find students**, fix any amber row (pages, class no.). Or pick **Paste a list (no AI)** and paste one line per student from Excel, e.g. `5A 1 陳大文 1-4` (class, class no., name, pages; leave pages out if everyone has the same number of pages).
-2. **Marking scheme**: choose the Word file. Gemini splits it into questions and points from your scheme only, and drafts a rationale and accept / reject examples. Check them, press **Confirm scheme**.
+1. **Upload scan**: one PDF, every student's whole test. Drag a box over the name on page 1 (it is blacked out before anything goes to Gemini, because a free key may let Google use what it receives). Press **Find students**, fix any amber row (pages, class no.). Or pick **Paste a list (no AI)** and paste one line per student from Excel, e.g. `5A 1 陳大文 1-4` (class, class no., name, pages in any column order; a header row is skipped; leave pages out if everyone has the same number of pages). Then press **Next: marking scheme**.
+2. **Marking scheme**: choose the Word file, or paste the scheme text, or press **Type it in myself (no AI)** to enter questions, points and marks by hand. Gemini splits it into questions and points from your scheme only, and drafts a rationale and accept / reject examples. Check them, press **Confirm scheme**.
 3. **Mark**: Step A marks 3 scripts. Check them in Review and press Confirm: your marks become the standard. Step B marks the rest using those 3 as examples.
 4. **Review**: "Need you" lists only scripts with uncertain points (the two AI runs disagree, no quote from the script, unclear handwriting, or the AI is not sure). Pick the mark, edit any comment or improvement tier.
 5. **Dashboard**: class mean, by question, most-missed points, the 3 tiers with class numbers.
