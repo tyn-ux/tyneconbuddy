@@ -217,6 +217,11 @@ kbd{font:11px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px
           <div class="row">
             <label class="row"><input type="radio" name="splitMode" value="ai" checked> AI reads class + no. on each page</label>
             <label class="row"><input type="radio" name="splitMode" value="fixed"> Every <input class="cell" id="fixedN" type="number" min="1" max="40" value="4" style="width:58px"> pages</label>
+            <label class="row"><input type="radio" name="splitMode" value="paste"> Paste a list (no AI)</label>
+          </div>
+          <div class="stack" id="pasteBox" hidden>
+            <div class="note">One student per line, copied from Excel: class, class no., name, pages, e.g. "5A 1 陳大文 1-4". Leave pages out if every student has the same number of pages, in class-no. order.</div>
+            <textarea id="pasteList" rows="6" placeholder="5A	1	陳大文	1-4&#10;5A	2	李小明	5-8"></textarea>
           </div>
           <details class="small"><summary>Class list (optional, for names in the export)</summary>
             <div class="note">Paste from Excel: one student per line, "class no. name" or "no. name".</div>
@@ -380,15 +385,17 @@ async function tpost(body){
     try{ return JSON.parse(txt); }catch(e){ return {error:'The server is not set up for teacher marking yet (TeacherMark.gs missing?).'}; }
   }catch(e){ return {error:'Could not reach the server. Check your connection.'}; }
 }
-/* Retries a Gemini request through the free-tier rate limit. */
+/* Retries a Gemini request through the free-tier rate limit, and through
+   "high demand" (503) spells on Google's side. */
 async function gemini(body, onWait){
-  let wait = 20;
-  for(let i=0;i<7;i++){
+  let wait = 20, busy = 0;
+  for(let i=0;i<9;i++){
     const r = await tpost(body);
-    if(r && r.error==='rate'){ onWait && onWait(wait); await sleep(wait*1000); wait=Math.min(wait*2,120); continue; }
+    if(r && r.error==='rate'){ onWait && onWait(wait, 'Free Gemini limit reached'); await sleep(wait*1000); wait=Math.min(wait*2,120); continue; }
+    if(r && r.error==='busy'){ busy++; const w=Math.min(15*busy,60); onWait && onWait(w, 'Gemini is busy right now'); await sleep(w*1000); continue; }
     return r;
   }
-  return {error:'Gemini\'s free limit is used up for now. Your progress is saved: press Continue later (or tomorrow).'};
+  return {error:'Gemini is too busy or its free limit is used up for now. Your progress is saved: press Continue a bit later.'};
 }
 
 /* ---------------------------------------------------------------- PDF -- */
@@ -464,6 +471,7 @@ async function renderScan(){
   if(!PDF && JOB.pdfName) $('pdfInfo').textContent = JOB.pdfName+' · scan removed from this browser';
   $('maskOn').checked = JOB.mask.on;
   document.querySelector(`input[name=splitMode][value=${JOB.split.mode}]`).checked = true; $('fixedN').value = JOB.split.n;
+  $('pasteList').value = JOB.split.paste||''; $('pasteBox').hidden = JOB.split.mode!=='paste';
   if(PDF){ $('maskImg').src = await pageShow(0); drawMask(); }
   renderSplitTbl();
 }
@@ -490,11 +498,41 @@ function renderSplitTbl(){
     s.conf=1; s.lines=null; s.res=null; s.status='todo'; save(); renderSplitTbl(); renderSteps(); });
   $('splitTbl').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { JOB.students.splice(+b.dataset.del,1); save(); renderSplitTbl(); renderSteps(); });
 }
+/* "5A 1 陳大文 1-4" per line (tabs from Excel or spaces). Class and pages are
+   optional; with no pages anywhere, the scan is shared out evenly in order. */
+function parsePaste(text, n){
+  const rows=[], bad=[];
+  String(text||'').split(/\n/).forEach((line,li)=>{ if(!line.trim()) return;
+    let t=line.split('\t').map(x=>x.trim()).filter(Boolean); if(t.length<2) t=line.trim().split(/\s+/);
+    let cls='', pages=null;
+    if(t.length>=3 && /^\d+(-\d+)?(,\s*\d+(-\d+)?)*$/.test(t[t.length-1])) pages=t.pop();
+    if(t.length>=2 && /[A-Za-z]/.test(t[0]) && /^[A-Za-z0-9]{1,4}$/.test(t[0]) && /^\d+$/.test(t[1])) cls=t.shift().toUpperCase();
+    if(!/^\d+$/.test(t[0]||'')){ bad.push(li+1); return; }
+    const no=+t.shift(); rows.push({cls, no, name:t.join(' '), pages});
+  });
+  if(bad.length) return {error:`Line ${bad.join(', ')}: start with the class no. (or class, then class no.).`};
+  if(!rows.length) return {error:'Paste the list first: one student per line.'};
+  if(rows.every(r=>!r.pages)){
+    if(n % rows.length) return {error:`The scan has ${n} pages, which does not split evenly over ${rows.length} students. Add the pages to each line.`};
+    const per=n/rows.length; rows.forEach((r,k)=>r.pages=(k*per+1)+'-'+(k*per+per));
+  }
+  const miss=rows.filter(r=>!r.pages).map(r=>r.no);
+  if(miss.length) return {error:`Add pages for class no. ${miss.join(', ')} (or leave pages out on every line).`};
+  const S=rows.map(r=>newStudent({cls:r.cls, no:r.no, name:r.name, conf:1, pages:parsePages(r.pages, n)}));
+  const used=new Set(S.flatMap(x=>x.pages)), left=[]; for(let i=0;i<n;i++) if(!used.has(i)) left.push(i);
+  const twice=S.flatMap(x=>x.pages).filter((v,i,a)=>a.indexOf(v)!==i);
+  const note=[left.length?`Pages ${pagesStr(left)} belong to nobody.`:'', twice.length?`Pages ${pagesStr([...new Set(twice)])} are given twice.`:''].filter(Boolean).join(' ');
+  return {students:S, note: note ? note+' Fix them in the table if that is wrong.' : 'Set up the marking scheme next.'};
+}
 function newStudent(o){ return Object.assign({sid:'s'+Math.random().toString(36).slice(2,9), cls:'', no:null, name:'', pages:[], conf:null, lines:null, res:null, ai:null, resolved:{}, status:'todo', err:''}, o); }
 async function doSplit(){
   const cx = CTX, JOB = cx.job, here = () => CTX === cx;
   JOB.split.mode = document.querySelector('input[name=splitMode]:checked').value; JOB.split.n = Math.max(1, +$('fixedN').value||4);
   if(JOB.mask.on && !JOB.mask.r){ toast('Drag a box over the name first, or untick "Cover names".', 4000); return; }
+  if(JOB.split.mode==='paste'){ JOB.split.paste=$('pasteList').value;
+    const r=parsePaste(JOB.split.paste, JOB.pageCount); if(r.error){ toast(r.error, 6000); return; }
+    JOB.pageInfo=Array.from({length:JOB.pageCount},()=>({cls:null,no:null,header:false,conf:1}));
+    return finishSplit(cx, r.students, r.note); }
   const n = JOB.pageCount, bar=$('splitBar'), fill=bar.firstElementChild; bar.hidden=false; fill.style.width='0';
   $('splitGo').disabled=true;
   const todo = JOB.split.mode==='fixed' ? Array.from({length:Math.ceil(n/JOB.split.n)},(_,k)=>k*JOB.split.n) : Array.from({length:n},(_,i)=>i);
@@ -502,7 +540,7 @@ async function doSplit(){
   for(let b=0;b<todo.length;b+=10){
     const chunk = todo.slice(b,b+10); if(here()) $('splitMsg').textContent=`Reading page headers ${b+1}–${b+chunk.length} of ${todo.length}…`;
     const images = []; for(const i of chunk) images.push(await pageJpeg(cx, i, 1000, {top:0.3, mask:true}));
-    const r = await gemini({act:'split', images}, w => here() && ($('splitMsg').textContent=`Free Gemini limit reached, waiting ${w}s…`));
+    const r = await gemini({act:'split', images}, (w,why)=>here() && ($('splitMsg').textContent=`${why}, trying again in ${w}s…`));
     if(r.error){ if(here()){ $('splitMsg').textContent=r.error; $('splitGo').disabled=false; } return; }
     (r.pages||[]).forEach(p => { if(p.i>=0&&p.i<chunk.length) info[chunk[p.i]] = p; });
     done+=chunk.length; fill.style.width = (done/todo.length*100)+'%';
@@ -518,6 +556,10 @@ async function doSplit(){
       if(starts || !last) S.push(newStudent({cls:String(p.cls||'').toUpperCase(), no:p.no, conf:p.header?p.conf:0, pages:[i]}));
       else { last.pages.push(i); if(p.header) last.conf=Math.min(last.conf==null?1:last.conf, p.conf); } });
   }
+  finishSplit(cx, S);
+}
+function finishSplit(cx, S, note){
+  const JOB = cx.job, here = () => CTX === cx;
   JOB.students=S; JOB.calib=JOB.calib&&JOB.calib.copiedFrom?{ids:[],done:false,skipped:true,copiedFrom:JOB.calib.copiedFrom}:{ids:[],done:false,skipped:false};
   /* The job's class = the class most students carry; its saved class list fills in by itself. */
   const cc={}; S.forEach(x=>{ if(x.cls) cc[x.cls]=(cc[x.cls]||0)+1; });
@@ -525,9 +567,11 @@ async function doSplit(){
   if(!String(JOB.roster||'').trim() && LIB.rosters[JOB.cls]) JOB.roster = LIB.rosters[JOB.cls];
   save(cx); if(!here()) return;
   $('roster').value = JOB.roster||'';
-  $('splitMsg').textContent=`Found ${S.length} students. Check the amber rows, then set up the marking scheme.`;
+  $('splitMsg').textContent=`Found ${S.length} students. ${note||'Check the amber rows, then set up the marking scheme.'}`;
   $('splitGo').disabled=false; renderSplitTbl(); renderSteps();
 }
+document.querySelectorAll('input[name=splitMode]').forEach(r => r.onchange = () => { $('pasteBox').hidden = r.value!=='paste' || !r.checked; });
+$('pasteList').oninput = e => { if(JOB){ JOB.split.paste=e.target.value; save(); } };
 $('pdfPick').onclick = () => $('pdfFile').click();
 $('pdfFile').onchange = e => { const f=e.target.files[0]; e.target.value=''; takePdf(f); };
 ['dragover','dragenter'].forEach(t => $('pdfDrop').addEventListener(t, e => { e.preventDefault(); $('pdfDrop').classList.add('over'); }));
@@ -552,7 +596,7 @@ $('libUse').onclick = () => { if(JOB.students.some(s=>s.res)){ toast('This job a
   const r=schemeFromLib($('libSel').value); if(!r) return; JOB.scheme=r.scheme; JOB.bank=r.bank; save(); renderSteps(); renderScheme(); toast('Saved scheme loaded and confirmed'); };
 $('schemeGo').onclick = async () => {
   $('schemeGo').disabled=true; $('schemeMsg').textContent='Gemini is reading the scheme…';
-  const r = await gemini({act:'scheme', text:DOCTEXT, question:$('qpaper').value}, w=>$('schemeMsg').textContent=`Free Gemini limit reached, waiting ${w}s…`);
+  const r = await gemini({act:'scheme', text:DOCTEXT, question:$('qpaper').value}, (w,why)=>$('schemeMsg').textContent=`${why}, trying again in ${w}s…`);
   $('schemeGo').disabled=false;
   if(r.error){ $('schemeMsg').textContent=r.error; return; }
   JOB.scheme.questions = (r.questions||[]).map((q,qi)=>Object.assign(q,{points:q.points.map((p,pi)=>Object.assign(p,{id:(qi+1)+'.'+(pi+1)}))}));
@@ -610,7 +654,7 @@ async function readStudent(cx, s, say){
     const pg=s.pages.slice(k,k+READ_CHUNK), images=[];
     say(`${stuLabel(s)}: reading pages ${k+1}–${k+pg.length} of ${s.pages.length}`);
     for(const i of pg) images.push(await pageJpeg(cx, i, 1400, {mask:isHeaderPage(cx, i)}));
-    const r = await gemini({act:'read', images}, w=>say(`Free Gemini limit reached, waiting ${w}s…`));
+    const r = await gemini({act:'read', images}, (w,why)=>say(`${why}, trying again in ${w}s…`));
     if(r.error) throw new Error(r.error);
     (r.lines||[]).forEach(l => lines.push({p:pg[Math.min(l.p,pg.length-1)], y:l.y, t:l.t}));
     s.legib = r.legibility || s.legib;
@@ -629,7 +673,7 @@ function anchors(J){ return ownAnchors(J).concat(J.copiedAnchors||[]).slice(0,3)
 async function markStudent(cx, s, say){ const JOB = cx.job;
   say(`${stuLabel(s)}: marking (two AI runs)…`);
   const scheme = JOB.scheme.questions.map(q=>({qid:q.qid, question:q.question, points:q.points.map(p=>({id:p.id,text:p.text,marks:p.marks,rule:p.rule,accept:p.accept,reject:p.reject}))}));
-  const r = await gemini({act:'mark', scheme, lines:s.lines.map(l=>l.t), anchors:anchors(JOB)}, w=>say(`Free Gemini limit reached, waiting ${w}s…`));
+  const r = await gemini({act:'mark', scheme, lines:s.lines.map(l=>l.t), anchors:anchors(JOB)}, (w,why)=>say(`${why}, trying again in ${w}s…`));
   if(r.error) throw new Error(r.error);
   s.res = {points:r.points, tiers:r.tiers||[], qstart:r.qstart||{}, overall:r.overall||''};
   s.ai = {points:JSON.parse(JSON.stringify(r.points)), tiers:JSON.parse(JSON.stringify(r.tiers||[])), overall:r.overall||''};

@@ -1,9 +1,9 @@
-# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14a)
+# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14b)
 
 `teacher.html` is a new page on the site for teachers only. You upload one PDF with the whole class's test, one Word marking scheme, and Gemini splits the scan by student, reads each script, and marks every question twice. Only the points the AI is unsure of come to you. The page is not linked from the student pages.
 
 ## Apps Script (one time)
-`Code.gs` 2026-10-14a already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
+`Code.gs` 2026-10-14b already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
 
 1. Sheet > Extensions > Apps Script.
 2. `Code.gs`: select all, paste the new `Code.gs`, Save.
@@ -13,8 +13,9 @@
    - `TEACHER_EMAILS` = the Google account(s) you sign in with, comma-separated.
      Nobody else can use the page: a student who signs in gets "teachers only" and nothing else.
    - `GEMINI_KEY` is the same key the students' AI already uses. Nothing new to add.
+   - Optional `AI_FALLBACK` = a second Gemini model name (run `listModels` in the editor to see them). When the main model says "high demand" (503), marking switches to it.
 6. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
-7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14a` and `"teachers_set": true`.
+7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14b` and `"teachers_set": true`.
 
 Do **not** run `install()`.
 
@@ -23,7 +24,7 @@ If you have not done the E-point steps from 2026-10-13b: Sheet > reload > tyneco
 ## Using it
 Open `https://<your GitHub Pages site>/teacher.html` and sign in.
 
-1. **Upload scan**: one PDF, every student's whole test. Drag a box over the name on page 1 (it is blacked out before anything goes to Gemini, because a free key may let Google use what it receives). Press **Find students**, fix any amber row (pages, class no.).
+1. **Upload scan**: one PDF, every student's whole test. Drag a box over the name on page 1 (it is blacked out before anything goes to Gemini, because a free key may let Google use what it receives). Press **Find students**, fix any amber row (pages, class no.). Or pick **Paste a list (no AI)** and paste one line per student from Excel, e.g. `5A 1 陳大文 1-4` (class, class no., name, pages; leave pages out if everyone has the same number of pages).
 2. **Marking scheme**: choose the Word file. Gemini splits it into questions and points from your scheme only, and drafts a rationale and accept / reject examples. Check them, press **Confirm scheme**.
 3. **Mark**: Step A marks 3 scripts. Check them in Review and press Confirm: your marks become the standard. Step B marks the rest using those 3 as examples.
 4. **Review**: "Need you" lists only scripts with uncertain points (the two AI runs disagree, no quote from the script, unclear handwriting, or the AI is not sure). Pick the mark, edit any comment or improvement tier.
@@ -45,6 +46,7 @@ The job is kept in that browser (close the tab and come back later). Use the sam
 - **Remove scan** (All jobs) frees space in the browser but keeps the marks.
 
 ## Limits worth knowing
+- "High demand" (503) means Google's side is overloaded for a while, not that your limit is used up. The page waits 15–60 seconds and asks again by itself (and uses `AI_FALLBACK` first if you set it).
 - Free Gemini has a per-minute and a per-day limit. The page waits and retries; if the daily limit runs out it stops and **Continue marking** picks up where it left off.
 - Each script costs about 1 request per 4 pages to read, plus 2 to mark (both runs go out together).
 - Handwriting the AI can't read shows as [?word?] in "What the AI read", and a mark resting on it is sent to you.
