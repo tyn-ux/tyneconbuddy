@@ -99,6 +99,15 @@ label.lb{font-size:12px;color:var(--muted);font-weight:500}
 .fbbox{border:1.5px solid var(--pen);border-radius:6px;padding:10px 12px;color:var(--pen);font-family:var(--f-pen);font-size:18px;line-height:1.2;display:grid;gap:5px;background:var(--surface)}
 .fbbox b{font-family:var(--f-ui);font-size:12.5px;font-weight:600}
 .mpanel{display:grid;gap:10px}
+.byq{grid-column:2/-1}
+@media (max-width:1100px){.byq{grid-column:1/-1}}
+.byq .card{border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:12px;display:grid;gap:8px}
+.byq .card.unsure{border-color:var(--warn)}
+.byq .ans{font-family:var(--f-mono);font-size:12.5px;white-space:pre-wrap;background:var(--surface2);padding:8px;border-radius:6px;max-height:220px;overflow:auto}
+.byq .ans mark{background:var(--accent-soft);color:var(--ink)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--surface);color:var(--ink);padding:5px 6px;font:12.5px var(--f-ui);cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
 details.qsec{border:1px solid var(--line);border-radius:9px;background:var(--surface)}
 details.qsec>summary{cursor:pointer;padding:9px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;font-weight:600;list-style:none}
 details.qsec>summary::-webkit-details-marker{display:none}
@@ -218,7 +227,9 @@ kbd{font:11px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px
             <label class="row"><input type="radio" name="splitMode" value="ai" checked> AI reads class + no. on each page</label>
             <label class="row"><input type="radio" name="splitMode" value="fixed"> Every <input class="cell" id="fixedN" type="number" min="1" max="40" value="4" style="width:58px"> pages</label>
             <label class="row"><input type="radio" name="splitMode" value="paste"> Paste a list (no AI)</label>
+            <label class="row"><input type="radio" name="splitMode" value="qr"> Personal QR answer sheets (no AI)</label>
           </div>
+          <div class="note" id="qrNote" hidden>For scans of the personal answer sheets (All jobs > Personal answer sheets). Each page's QR code says whose it is; a page without one (extra paper) joins the page before it. The printed name strip is covered automatically.</div>
           <div class="stack" id="pasteBox" hidden>
             <div class="note">One student per line, copied from Excel: class, class no., name, pages, e.g. "5A 1 陳大文 1-4". Leave pages out if every student has the same number of pages, in class-no. order.</div>
             <textarea id="pasteList" rows="6" placeholder="5A	1	陳大文	1-4&#10;5A	2	李小明	5-8"></textarea>
@@ -262,8 +273,9 @@ kbd{font:11px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px
     <section id="v-review" hidden>
       <div class="desk">
         <aside class="panel roster" id="roster2" aria-label="Students"></aside>
-        <div class="stack"><div class="row" style="justify-content:space-between"><h3 id="pageLbl">Script</h3><span class="note">This is how the exported PDF looks</span></div><div class="qbar" id="qbar"></div><div class="pages" id="pages"></div><div id="fb"></div></div>
+        <div class="stack" id="rmid"><div class="row" style="justify-content:space-between"><h3 id="pageLbl">Script</h3><span class="note">This is how the exported PDF looks</span></div><div class="qbar" id="qbar"></div><div class="pages" id="pages"></div><div id="fb"></div></div>
         <div class="panel mpanel" id="mpanel"></div>
+        <div class="stack byq" id="byq" hidden></div>
       </div>
     </section>
 
@@ -300,11 +312,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 /* The active tab's job lives in these globals (JOB, PDF, view…). Each open
    tab keeps its own copy in CTXS, so a job can keep marking in the
    background while the teacher works in another tab. */
-let SESS = null, JOB = null, PDF = null, PDFBYTES = null, view = 'scan', cur = 0, filt = 'need', RUN = {on:false, stop:false};
+let SESS = null, JOB = null, PDF = null, PDFBYTES = null, view = 'scan', cur = 0, filt = 'need', RUN = {on:false, stop:false}, rmode = 's', rq = 0;
 let IMG = new Map();        // page index -> display dataURL (active job)
 let CTX = null, ACTIVE = 'home', OPEN = [], INDEX = [], LIB = {schemes:[], rosters:{}};
 const CTXS = {};
-const HOME = {filt:'all', copy:null, confirm:null, histCls:''};
+const HOME = {filt:'all', copy:null, confirm:null, histCls:'', qrCls:'', qrN:2};
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -435,7 +447,12 @@ const maxT = () => JOB.scheme.questions.reduce((a,q)=>a+maxOf(q),0);
 const ptM = (s,id) => s.res && s.res.points[id] ? s.res.points[id].m : 0;
 const qGot = (s,q) => q.points.reduce((a,p)=>a+ptM(s,p.id),0);
 const tot = s => JOB.scheme.questions.reduce((a,q)=>a+qGot(s,q),0);
-const unsure = s => s.res ? Object.keys(s.res.points).filter(id => s.res.points[id].uncertain && !(s.resolved||{})[id]) : [];
+/* "Ask me when the AI is less than X% sure": the teacher's threshold replaces
+   the server's fixed 70%. Disagreements and missing evidence always ask. */
+const askT = () => { const v=(LIB.prefs||{}).askT; return v==null ? 0.7 : v; };
+function whyOf(a){ if(!a) return []; const w=(a.why||[]).filter(x=>!/^AI not sure/.test(x));
+  if(a.conf!=null && a.conf<askT()) w.push('AI not sure ('+Math.round(a.conf*100)+'%)'); return w; }
+const unsure = s => s.res ? Object.keys(s.res.points).filter(id => whyOf(s.res.points[id]).length && !(s.resolved||{})[id]) : [];
 const stuLabel = s => (s.cls||'?')+'-'+String(s.no==null?'?':s.no).padStart(2,'0');
 const pointLabel = (q,p) => { const i=q.points.indexOf(p); return 'P'+(i+1); };
 function parsePages(str, max){ const out=[]; String(str).split(/[,\s]+/).forEach(t=>{ const m=t.match(/^(\d+)(?:-(\d+))?$/); if(!m) return; const a=+m[1], b=m[2]?+m[2]:a; for(let x=Math.min(a,b);x<=Math.max(a,b);x++) if(x>=1&&x<=max) out.push(x-1); }); return [...new Set(out)].sort((a,b)=>a-b); }
@@ -481,7 +498,7 @@ async function renderScan(){
   if(!PDF && JOB.pdfName) $('pdfInfo').textContent = JOB.pdfName+' · scan removed from this browser';
   $('maskOn').checked = JOB.mask.on;
   document.querySelector(`input[name=splitMode][value=${JOB.split.mode}]`).checked = true; $('fixedN').value = JOB.split.n;
-  $('pasteList').value = JOB.split.paste||''; $('pasteBox').hidden = JOB.split.mode!=='paste';
+  $('pasteList').value = JOB.split.paste||''; $('pasteBox').hidden = JOB.split.mode!=='paste'; $('qrNote').hidden = JOB.split.mode!=='qr';
   if(PDF){ $('maskImg').src = await pageShow(0); drawMask(); }
   renderSplitTbl();
 }
@@ -551,7 +568,9 @@ async function doSplit(){
   const cx = CTX, JOB = cx.job, here = () => CTX === cx;
   JOB.split.mode = document.querySelector('input[name=splitMode]:checked').value; JOB.split.n = Math.max(1, +$('fixedN').value||4);
   const stop = m => { $('splitMsg').innerHTML=`<span style="color:var(--pen)">${esc(m)}</span>`; toast(m, 6000); };
+  if(JOB.split.mode==='qr' && JOB.mask.on && !JOB.mask.r){ JOB.mask.r = Object.assign({}, QR_MASK); if(here()) drawMask(); }
   if(JOB.mask.on && !JOB.mask.r){ stop('First drag a box over the name on the page on the left (or untick "Cover names").'); return; }
+  if(JOB.split.mode==='qr') return qrSplit(cx, stop);
   if(JOB.split.mode==='paste'){ JOB.split.paste=$('pasteList').value;
     const r=parsePaste(JOB.split.paste, JOB.pageCount); if(r.error){ stop(r.error); return; }
     JOB.pageInfo=Array.from({length:JOB.pageCount},()=>({cls:null,no:null,header:false,conf:1}));
@@ -581,6 +600,76 @@ async function doSplit(){
   }
   finishSplit(cx, S);
 }
+/* ------------------------------------------------ personal QR sheets -- */
+/* Each page of a personal answer sheet carries a QR code "TYN|class|no|page|of".
+   The scan is split by reading them here in the browser: no AI, no list. */
+const QR_MASK = {x:0, y:0, w:1, h:0.125};          // the printed header strip (class, no., name, QR)
+const loaded = {};
+function loadScript(src){ return loaded[src] || (loaded[src] = new Promise((ok, no) => { const sc=document.createElement('script'); sc.src=src; sc.onload=ok; sc.onerror=()=>{ delete loaded[src]; no(new Error('Could not load '+src)); }; document.head.appendChild(sc); })); }
+const JSQR = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js', QRGEN = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+function qrOf(c){ const d=c.getContext('2d').getImageData(0,0,c.width,c.height), r=jsQR(d.data, c.width, c.height, {inversionAttempts:'dontInvert'});
+  const m=r && /^TYN\|([^|]*)\|(\d+)\|(\d+)\|(\d+)$/.exec(r.data); return m ? {cls:m[1].toUpperCase(), no:+m[2], pg:+m[3], of:+m[4]} : null; }
+async function qrSplit(cx, stop){
+  const JOB=cx.job, here=()=>CTX===cx, n=JOB.pageCount, bar=$('splitBar'), fill=bar.firstElementChild;
+  try{ await loadScript(JSQR); }catch(e){ stop('Could not load the QR reader. Check the internet connection and try again.'); return; }
+  bar.hidden=false; fill.style.width='0'; $('splitGo').disabled=true;
+  const info=[];
+  for(let i=0;i<n;i++){
+    if(here()) $('splitMsg').textContent=`Reading QR codes: page ${i+1} of ${n}…`;
+    let q=qrOf(await pageCanvas(cx, i, 1200, {top:0.2}));
+    if(!q) q=qrOf(await pageCanvas(cx, i, 1700, {top:0.3}));
+    if(!q) q=qrOf(await pageCanvas(cx, i, 1400, {}));     // upside down or shifted
+    info.push(q); fill.style.width=((i+1)/n*100)+'%';
+  }
+  JOB.pageInfo = info.map(q=>q?{cls:q.cls,no:q.no,header:true,conf:1}:{cls:null,no:null,header:false,conf:1});
+  const S=[], by={}, loose=[], extra=[]; let last=null;
+  info.forEach((q,i)=>{
+    if(!q){ if(last){ last.pages.push(i); extra.push(i); } else loose.push(i); return; }
+    const k=q.cls+'|'+q.no; let st=by[k];
+    if(!st){ st=by[k]=newStudent({cls:q.cls, no:q.no, conf:1, pages:[]}); st.qr={of:q.of, seen:[]}; S.push(st); }
+    st.pages.push(i); st.qr.seen.push(q.pg); last=st; });
+  const short=S.filter(x=>x.qr.seen.length<x.qr.of).map(x=>`${stuLabel(x)} (${x.qr.seen.length} of ${x.qr.of} pages)`);
+  const cls=(Object.entries(S.reduce((m,x)=>(m[x.cls]=(m[x.cls]||0)+1,m),{})).sort((a,b)=>b[1]-a[1])[0]||[''])[0];
+  const roster=LIB.rosters[cls]||'', nos=[...String(roster).matchAll(/^\s*(?:\S+\s+)?(\d{1,2})\s/gm)].map(m=>+m[1]);
+  const absent=[...new Set(nos)].filter(no=>!S.some(x=>x.no===no&&x.cls===cls)).sort((a,b)=>a-b);
+  S.forEach(x=>delete x.qr);
+  const pl=(x,one,many)=>x.length===1?one.replace('#',pagesStr(x)):many.replace('#',pagesStr(x));
+  const note=[extra.length?pl(extra,'Page # has no QR code and was added to the student before it.','Pages # have no QR code and were added to the student before them.'):'',
+    loose.length?pl(loose,'Page # comes before any QR page and belongs to nobody.','Pages # come before any QR page and belong to nobody.'):'',
+    short.length?`Missing pages: ${short.join(', ')}.`:'', absent.length?`No script from class no. ${absent.join(', ')}.`:'',
+    !S.length?'No QR codes found. Were these the personal answer sheets?':''].filter(Boolean).join(' ');
+  bar.hidden=true;
+  finishSplit(cx, S, note || 'Every page matched. Next: the marking scheme.');
+}
+/* The personal sheets: the answer-sheet layout with class, no., name and the QR code filled in. */
+async function nameImage(doc, text){
+  const c=document.createElement('canvas'), x=c.getContext('2d'), font='600 40px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+  x.font=font; const w=Math.max(1,Math.ceil(x.measureText(text).width)+8); c.width=w; c.height=56;
+  x.font=font; x.fillStyle='#000'; x.textBaseline='middle'; x.fillText(text, 4, 29);
+  return {img: await doc.embedPng(c.toDataURL('image/png')), w, h:56};
+}
+async function personalSheets(list, per){
+  await loadScript(QRGEN);
+  const {PDFDocument, StandardFonts, rgb}=PDFLib, doc=await PDFDocument.create(), f=await doc.embedFont(StandardFonts.Helvetica), b=await doc.embedFont(StandardFonts.HelveticaBold), K=rgb(0,0,0), G=rgb(.6,.6,.6);
+  for(const st of list){ const nm = st.name ? await nameImage(doc, st.name) : null;
+    for(let k=1;k<=per;k++){
+      const pg=doc.addPage([595,842]);
+      pg.drawRectangle({x:36,y:752,width:440,height:60,borderColor:K,borderWidth:1.5});
+      pg.drawText('Class',{x:46,y:792,size:9,font:b,color:G}); pg.drawText(pdfText(st.cls),{x:46,y:764,size:18,font:b});
+      pg.drawText('Class no.',{x:112,y:792,size:9,font:b,color:G}); pg.drawText(String(st.no),{x:112,y:764,size:18,font:b});
+      pg.drawText('Name',{x:180,y:792,size:9,font:b,color:G});
+      if(nm){ const h=20, w=Math.min(nm.w*h/nm.h, 210); pg.drawImage(nm.img,{x:180,y:760,width:w,height:w*nm.h/nm.w}); }
+      pg.drawText('Page',{x:410,y:792,size:9,font:b,color:G}); pg.drawText(`${k} / ${per}`,{x:410,y:764,size:14,font:b});
+      const qr=qrcode(0,'M'); qr.addData(`TYN|${st.cls}|${st.no}|${k}|${per}`); qr.make();
+      const mc=qr.getModuleCount(), size=70, cell=size/mc, x0=488, y0=746;
+      for(let r=0;r<mc;r++) for(let c=0;c<mc;c++) if(qr.isDark(r,c)) pg.drawRectangle({x:x0+c*cell, y:y0+size-(r+1)*cell, width:cell+0.05, height:cell+0.05, color:K});
+      pg.drawText('Write the question number in the box where each answer starts. Leave the box empty to continue an answer.',{x:36,y:732,size:8.5,font:f,color:G});
+      pg.drawText('Q no.',{x:38,y:716,size:8,font:b,color:G});
+      for(let y=700;y>=50;y-=26){ pg.drawRectangle({x:36,y:y-4,width:34,height:20,borderColor:G,borderWidth:.7}); pg.drawLine({start:{x:78,y:y-4},end:{x:559,y:y-4},thickness:.5,color:G}); }
+      pg.drawText('Extra paper: write class and class no. at the top; it joins the page before it.',{x:36,y:30,size:7.5,font:f,color:G});
+    } }
+  return doc.save();
+}
 function finishSplit(cx, S, note){
   const JOB = cx.job, here = () => CTX === cx;
   JOB.students=S; JOB.calib=JOB.calib&&JOB.calib.copiedFrom?{ids:[],done:false,skipped:true,copiedFrom:JOB.calib.copiedFrom}:{ids:[],done:false,skipped:false};
@@ -593,7 +682,7 @@ function finishSplit(cx, S, note){
   $('splitMsg').textContent=`Found ${S.length} students. ${note||'Check the amber rows, then set up the marking scheme.'}`;
   $('splitGo').disabled=false; renderSplitTbl(); renderSteps();
 }
-document.querySelectorAll('input[name=splitMode]').forEach(r => r.onchange = () => { $('pasteBox').hidden = r.value!=='paste' || !r.checked; });
+document.querySelectorAll('input[name=splitMode]').forEach(r => r.onchange = () => { const m=document.querySelector('input[name=splitMode]:checked').value; $('pasteBox').hidden = m!=='paste'; $('qrNote').hidden = m!=='qr'; });
 $('pasteList').oninput = e => { if(JOB){ JOB.split.paste=e.target.value; save(); } };
 $('pdfPick').onclick = () => $('pdfFile').click();
 $('pdfFile').onchange = e => { const f=e.target.files[0]; e.target.value=''; takePdf(f); };
@@ -751,9 +840,9 @@ function ownAnchors(J){
 }
 function anchors(J){ return ownAnchors(J).concat(J.copiedAnchors||[]).slice(0,3); }
 async function markStudent(cx, s, say){ const JOB = cx.job;
-  say(`${stuLabel(s)}: marking (two AI runs)…`);
+  say(`${stuLabel(s)}: marking (${JOB.single?'one AI run':'two AI runs'})…`);
   const scheme = JOB.scheme.questions.map(q=>({qid:q.qid, question:q.question, points:q.points.map(p=>({id:p.id,text:p.text,marks:p.marks,rule:p.rule,accept:p.accept,reject:p.reject}))}));
-  const r = await gemini({act:'mark', scheme, lines:s.lines.map(l=>l.t), anchors:anchors(JOB)}, (w,why)=>say(`${why}, trying again in ${w}s…`));
+  const r = await gemini({act:'mark', scheme, lines:s.lines.map(l=>l.t), anchors:anchors(JOB), single:!!JOB.single}, (w,why)=>say(`${why}, trying again in ${w}s…`));
   if(r.error) throw new Error(r.error);
   s.res = {points:r.points, tiers:r.tiers||[], qstart:r.qstart||{}, overall:r.overall||''};
   s.ai = {points:JSON.parse(JSON.stringify(r.points)), tiers:JSON.parse(JSON.stringify(r.tiers||[])), overall:r.overall||''};
@@ -793,8 +882,11 @@ function renderMark(){
   el.innerHTML = `<div class="stack">
     <h2>3 · Mark</h2>
     <div class="progress"><div style="width:${doneN/S.length*100}%"></div></div>
-    <div class="row" style="justify-content:space-between"><span class="note">${doneN} of ${S.length} scripts marked · each is read, then marked twice; points the two runs disagree on, or cannot quote from the script, go to you.</span>
+    <div class="row" style="justify-content:space-between"><span class="note">${doneN} of ${S.length} scripts marked · each is read, then marked ${JOB.single?'once; points the AI is unsure of':'twice; points the two runs disagree on'}, or cannot quote from the script, go to you.</span>
       <span class="note" id="runMsg" aria-live="polite">${RUN.on?esc(RUN.msg||'Working…'):''}</span></div>
+    <div class="row" role="radiogroup" aria-label="How many AI runs per script"><b>Mark each script</b>
+      <label class="row" style="gap:6px"><input type="radio" name="runs" value="2" ${JOB.single?'':'checked'}> twice (safer: catches AI slips)</label>
+      <label class="row" style="gap:6px"><input type="radio" name="runs" value="1" ${JOB.single?'checked':''}> once (uses half the free Gemini quota)</label></div>
     <div class="grid2">
       <div class="panel stack" style="background:var(--surface2)">
         <h3>Step A · Set the standard (${cal.length} scripts)</h3>
@@ -824,6 +916,7 @@ function renderMark(){
         <td>${s.res?`<button class="btn sm" data-open="${i}">Open</button> `:''}${s.res&&!RUN.on?`<button class="btn sm" data-remark="${i}">Re-mark</button>`:''}</td></tr>`).join('')}
     </table></div></div>`;
   const b=(id,fn)=>{ const x=$(id); if(x) x.onclick=fn; };
+  el.querySelectorAll('input[name=runs]').forEach(r=>r.onchange=()=>{ JOB.single=r.value==='1'; save(); renderMark(); });
   b('runCal', ()=>runQueue(CTX, cal));
   b('skipCal', ()=>{ JOB.calib.skipped=true; save(); renderMark(); });
   b('runRest', ()=>runQueue(CTX, (copied&&!calChecked?S:rest).filter(s=>!s.res)));
@@ -853,12 +946,17 @@ function notesFor(s){
       else if(a.m>0) extra.push({kind:'ok', m:a.m, text:`Q${q.qid} ${lab} +${a.m} ${cm(a)}`.trim()});
       if(a.m<(+p.marks||0) && on('miss')){ const e=endOf(q); const t=`${lab} ${a.m}/${p.marks} ${cm(a)}`.trim();
         if(a.m>0 && a.line>=0 && on('ticks')) return;   // part marks: the comment already sits on the line
-        if(e>=0 && L[e]) notes.push({p:L[e].p, y:L[e].y, kind:'miss', text:t, li:e+0.2}); else extra.push({kind:'miss', text:`Q${q.qid} ${t}`}); }
+        const at = a.line>=0 && L[a.line] ? a.line : e;   // beside the closest attempt, else the end of the answer
+        if(at>=0 && L[at]) notes.push({p:L[at].p, y:L[at].y, kind:'miss', text:t, li:at+0.2}); else extra.push({kind:'miss', text:`Q${q.qid} ${t}`}); }
     });
   });
   notes.sort((a,b)=> s.pages.indexOf(a.p)-s.pages.indexOf(b.p) || a.li-b.li);
   return {notes, extra};
 }
+/* Evidence for every point: the words that earned it, or the closest attempt. */
+function evidenceHTML(a, p){
+  if(!a.quote) return '<div class="quote">No related answer found for this point.</div>';
+  return `<div class="quote"><span class="note">${a.m>=(+p.marks||0)?'Evidence':a.m>0?'Evidence (part marks)':'Closest attempt'}:</span> “${esc(a.quote)}”</div>`; }
 function tierGroups(s){
   return TIERS.map(t=>({t, items:(s.res?s.res.tiers:[]).filter(x=>x.k===t.k)})).filter(g=>g.items.length);
 }
@@ -866,12 +964,25 @@ function tierGroups(s){
 /* ----------------------------------------------------------- 4 review -- */
 function filtered(){ const S=JOB.students.map((s,i)=>({s,i})).filter(x=>x.s.res);
   return filt==='need'?S.filter(x=>unsure(x.s).length):filt==='done'?S.filter(x=>x.s.status==='checked'):S; }
+/* Top of the review list: by student / by question, and how sure the AI must be. */
+function reviewTop(){
+  return `<div class="stack" style="gap:6px;margin-bottom:8px"><div class="seg" role="group" aria-label="Review by"><button aria-pressed="${rmode==='s'}" data-rm="s">By student</button><button aria-pressed="${rmode==='q'}" data-rm="q">By question</button></div>
+    <label class="note" for="askT">Ask me when the AI is less than <b id="askV">${Math.round(askT()*100)}%</b> sure</label>
+    <input type="range" id="askT" min="50" max="95" step="5" value="${Math.round(askT()*100)}">
+    <div class="note" style="font-size:11.5px">Left: fewer points to check. Right: more. Disagreements and missing evidence always ask.</div></div>`; }
+function bindReviewTop(){
+  $('roster2').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ rmode=b.dataset.rm; renderReview(); });
+  const r=$('askT'); r.oninput=()=>$('askV').textContent=r.value+'%';
+  r.onchange=()=>{ LIB.prefs=LIB.prefs||{}; LIB.prefs.askT=+r.value/100; saveLib(); renderSteps(); renderReview(); };
+}
 function renderReview(){
   const list=filtered(), S=JOB.students;
-  if(!S.some(s=>s.res)){ $('roster2').innerHTML='<div class="note">Nothing marked yet. Go to step 3.</div>'; $('pages').innerHTML=''; $('mpanel').innerHTML=''; $('fb').innerHTML=''; return; }
+  $('byq').hidden = rmode!=='q'; $('rmid').hidden = $('mpanel').hidden = rmode==='q';
+  if(!S.some(s=>s.res)){ $('roster2').innerHTML='<div class="note">Nothing marked yet. Go to step 3.</div>'; $('pages').innerHTML=''; $('mpanel').innerHTML=''; $('fb').innerHTML=''; $('byq').innerHTML=''; return; }
+  if(rmode==='q') return renderByQ();
   if(!S[cur]||!S[cur].res) cur=(list[0]||S.map((s,i)=>({s,i})).find(x=>x.s.res)).i;
   const needN=S.filter(s=>unsure(s).length).length;
-  $('roster2').innerHTML = `<div class="filters"><button aria-pressed="${filt==='need'}" data-f="need">Need you (${needN})</button><button aria-pressed="${filt==='all'}" data-f="all">All</button><button aria-pressed="${filt==='done'}" data-f="done">Checked</button></div>` +
+  $('roster2').innerHTML = reviewTop() + `<div class="filters"><button aria-pressed="${filt==='need'}" data-f="need">Need you (${needN})</button><button aria-pressed="${filt==='all'}" data-f="all">All</button><button aria-pressed="${filt==='done'}" data-f="done">Checked</button></div>` +
     (list.length?list.map(({s,i})=>`<button aria-current="${i===cur}" data-s="${i}"><span class="no">${String(s.no==null?'?':s.no).padStart(2,'0')}</span><span>${esc(nameOf(s))||stuLabel(s)}<br>${s.status==='checked'?'<span class="chip ok">Checked</span>':unsure(s).length?`<span class="chip edit">${unsure(s).length} to check</span>`:'<span class="chip ai">AI sure</span>'}</span><span class="sc">${tot(s)}/${maxT()}</span></button>`).join('')
       :'<div class="note">Nothing here. '+(filt==='need'?'Every uncertain point is checked.':'')+'</div>')
     + (()=>{ const n=S.filter(x=>x.res&&!unsure(x).length&&x.status!=='checked').length; return n?`<button class="btn sm" id="approveAll" style="margin-top:6px">Approve ${n} AI-sure script${n>1?'s':''}</button>`:''; })()
@@ -879,7 +990,49 @@ function renderReview(){
   const ap=$('approveAll'); if(ap) ap.onclick=()=>{ let n=0; S.forEach(x=>{ if(x.res&&!unsure(x).length&&x.status!=='checked'){ Object.keys(x.res.points).forEach(id=>x.resolved[id]=true); x.status='checked'; n++; } }); save(); renderSteps(); renderReview(); toast(`Approved ${n} scripts the AI was sure of`); };
   $('roster2').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ filt=b.dataset.f; renderReview(); });
   $('roster2').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ cur=+b.dataset.s; renderReview(); });
+  bindReviewTop();
   renderQbar(); renderPages(); renderPanel();
+}
+/* By question: one question for the whole class, so the standard stays the same
+   from the first script to the last. */
+function qLines(s, q){ const L=s.lines||[], st=s.res.qstart?s.res.qstart[q.qid]:-1; if(st==null||st<0) return [];
+  const nx=JOB.scheme.questions.map(z=>s.res.qstart[z.qid]).filter(v=>v!=null&&v>st).sort((a,b)=>a-b)[0];
+  return L.slice(st, nx==null?L.length:nx).map((l,k)=>({i:st+k, t:l.t})); }
+function renderByQ(){
+  const Q=JOB.scheme.questions; if(rq>=Q.length) rq=0; const q=Q[rq], S=JOB.students.map((s,i)=>({s,i})).filter(x=>x.s.res);
+  const unsQ = s => { const u=new Set(unsure(s)); return q.points.filter(p=>u.has(p.id)).length; };
+  const shown = S.filter(x=> filt==='need'?unsQ(x.s):filt==='done'?x.s.status==='checked':true);
+  const bank=JOB.bank||(JOB.bank={});
+  $('roster2').innerHTML = reviewTop() + `<div class="filters"><button aria-pressed="${filt==='need'}" data-f="need">Need you</button><button aria-pressed="${filt==='all'}" data-f="all">All</button><button aria-pressed="${filt==='done'}" data-f="done">Checked</button></div>`
+    + Q.map((z,zi)=>{ const n=S.filter(x=>{ const u=new Set(unsure(x.s)); return z.points.some(p=>u.has(p.id)); }).length;
+      const avg=S.length?S.reduce((a,x)=>a+qGot(x.s,z),0)/S.length:0;
+      return `<button aria-current="${zi===rq}" data-qi="${zi}"><span class="no">Q</span><span>${esc(z.qid)}<br>${n?`<span class="chip edit">${n} to check</span>`:'<span class="chip ok">done</span>'}</span><span class="sc">${avg.toFixed(1)}/${maxOf(z)}</span></button>`; }).join('');
+  $('byq').innerHTML = `<div class="panel stack"><div class="row" style="justify-content:space-between"><div><h2>Q ${esc(q.qid)} · whole class</h2><div class="note">${shown.length} script${shown.length===1?'':'s'} shown · ${q.points.length} marking point${q.points.length===1?'':'s'}, ${maxOf(q)} marks</div></div>
+      ${shown.some(x=>unsQ(x.s))?`<button class="btn primary" id="qAllOk">Accept the AI marks shown for Q ${esc(q.qid)}</button>`:''}</div>
+      ${q.question?`<div class="note">${esc(q.question)}</div>`:''}</div>
+    ${shown.length?shown.map(({s,i})=>{ const u=new Set(unsure(s)), ql=qLines(s,q), qs=new Set();
+      q.points.forEach(p=>{ const a=s.res.points[p.id]; if(a&&a.line>=0) qs.add(a.line); });
+      return `<div class="card ${unsQ(s)?'unsure':''}"><div class="row" style="justify-content:space-between"><b>${esc(stuLabel(s))} ${esc(nameOf(s))}</b><span class="row"><span style="font-family:var(--f-mono)">${qGot(s,q)}/${maxOf(q)}</span><button class="btn sm" data-open="${i}">Open script</button></span></div>
+        <div class="ans">${ql.length?ql.map(l=>qs.has(l.i)?`<mark>${esc(l.t)}</mark>`:esc(l.t)).join('\n'):'No answer found for this question.'}</div>
+        ${q.points.map(p=>{ const a=s.res.points[p.id]||{m:0,comment:'',why:[]}, un=u.has(p.id);
+          return `<div class="pt ${un?'unsure':''}"><div class="hd"><div><span class="pid">${pointLabel(q,p)}</span>${esc(p.text)}</div>
+            <div class="stepper"><button aria-label="minus" data-qm="${i}|${p.id}" data-d="-1">−</button><output>${a.m} / ${p.marks}</output><button aria-label="plus" data-qm="${i}|${p.id}" data-d="1">+</button></div></div>
+            ${un?`<div class="why">${esc(whyOf(a).join(' · '))}</div><div class="row">${a.alt!=null&&a.alt!==a.m?`<button class="btn sm" data-qpick="${i}|${p.id}" data-v="${a.alt}">Use ${a.alt}</button>`:''}<button class="btn sm primary" data-qok="${i}|${p.id}">${a.m} is right</button></div>`:''}
+            ${pref('panel','quote')?evidenceHTML(a,p):''}
+            ${pref('panel','comment')?`<textarea rows="1" aria-label="Comment" data-qc="${i}|${p.id}" placeholder="Comment on the script">${esc(a.comment)}</textarea>`:''}
+            ${pref('panel','bank')&&(bank[p.id]||[]).filter(c=>c!==a.comment).length?`<div class="bank">${(bank[p.id]||[]).filter(c=>c!==a.comment).slice(0,4).map((c,k)=>`<button data-qbank="${i}|${p.id}" data-k="${k}" title="Use this comment">${esc(c)}</button>`).join('')}</div>`:''}</div>`; }).join('')}</div>`; }).join('')
+      :'<div class="panel note">Nothing to show here. '+(filt==='need'?'Every point of this question is checked.':'')+'</div>'}`;
+  const R=$('roster2'), B=$('byq'), touch=()=>{ save(); renderSteps(); }, sp=v=>{ const [i,pid]=v.split('|'); return [JOB.students[+i], pid]; };
+  bindReviewTop();
+  R.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ filt=b.dataset.f; renderReview(); });
+  R.querySelectorAll('[data-qi]').forEach(b=>b.onclick=()=>{ rq=+b.dataset.qi; renderReview(); window.scrollTo(0,0); });
+  B.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{ cur=+b.dataset.open; rmode='s'; filt='all'; renderReview(); window.scrollTo(0,0); });
+  B.querySelectorAll('[data-qm]').forEach(b=>b.onclick=()=>{ const [s,pid]=sp(b.dataset.qm), p=q.points.find(x=>x.id===pid), a=s.res.points[pid]; a.m=Math.max(0,Math.min(+p.marks,a.m+ +b.dataset.d)); s.resolved[pid]=true; touch(); renderReview(); });
+  B.querySelectorAll('[data-qpick]').forEach(b=>b.onclick=()=>{ const [s,pid]=sp(b.dataset.qpick); s.res.points[pid].m=+b.dataset.v; s.resolved[pid]=true; touch(); renderReview(); });
+  B.querySelectorAll('[data-qok]').forEach(b=>b.onclick=()=>{ const [s,pid]=sp(b.dataset.qok); s.resolved[pid]=true; touch(); renderReview(); });
+  B.querySelectorAll('[data-qc]').forEach(t=>t.onchange=()=>{ const [s,pid]=sp(t.dataset.qc); s.res.points[pid].comment=t.value; addBank(pid, t.value); touch(); });
+  B.querySelectorAll('[data-qbank]').forEach(b=>b.onclick=()=>{ const [s,pid]=sp(b.dataset.qbank), c=(bank[pid]||[]).filter(x=>x!==s.res.points[pid].comment)[+b.dataset.k]; s.res.points[pid].comment=c; s.resolved[pid]=true; touch(); renderReview(); });
+  const all=$('qAllOk'); if(all) all.onclick=()=>{ let n=0; shown.forEach(({s})=>q.points.forEach(p=>{ if(!s.resolved[p.id]&&whyOf(s.res.points[p.id]).length){ s.resolved[p.id]=true; n++; } })); touch(); renderReview(); toast(`Accepted ${n} AI mark${n===1?'':'s'} for Q${q.qid}`); };
 }
 /* The point the number keys act on: the first unchecked uncertain point. */
 function focusPid(s){ const u=new Set(unsure(s)); const p=allPoints().find(x=>u.has(x.id)); return p?p.id:null; }
@@ -930,9 +1083,9 @@ function renderPanel(){
       ${[...q.points].sort((a,b)=>uns.has(b.id)-uns.has(a.id)).map(p=>{ const a=s.res.points[p.id]||{m:0,comment:'',why:[]}, ai=(s.ai&&s.ai.points[p.id])||a, u=uns.has(p.id);
         return `<div class="pt ${u?'unsure':''} ${p.id===fpid?'focus':''}" data-pt="${p.id}"><div class="hd"><div><span class="pid">${pointLabel(q,p)}</span>${esc(p.text)}${p.rule?` <span class="note">(${esc(p.rule)})</span>`:''}</div>
           <div class="stepper"><button aria-label="minus" data-m="${p.id}" data-d="-1">−</button><output>${a.m} / ${p.marks}</output><button aria-label="plus" data-m="${p.id}" data-d="1">+</button></div></div>
-          ${u?`<div class="why">${esc((a.why||[]).join(' · '))}</div><div class="row">${a.alt!=null&&a.alt!==a.m?`<button class="btn sm" data-pick="${p.id}" data-v="${a.alt}">Use ${a.alt}</button>`:''}<button class="btn sm primary" data-ok="${p.id}">${a.m} is right</button></div>`
+          ${u?`<div class="why">${esc(whyOf(a).join(' · '))}</div><div class="row">${a.alt!=null&&a.alt!==a.m?`<button class="btn sm" data-pick="${p.id}" data-v="${a.alt}">Use ${a.alt}</button>`:''}<button class="btn sm primary" data-ok="${p.id}">${a.m} is right</button></div>`
             :(a.m!==ai.m?`<span class="chip edit">You changed it (AI gave ${ai.m})</span>`:(s.resolved||{})[p.id]?'<span class="chip ok">Checked</span>':'<span class="chip ai">AI sure</span>')}
-          ${a.quote&&pref('panel','quote')?`<div class="quote">“${esc(a.quote)}”</div>`:''}
+          ${pref('panel','quote')?evidenceHTML(a,p):''}
           ${pref('panel','comment')?`<label class="lb" for="cm${p.id}">Comment on the script</label><textarea id="cm${p.id}" rows="2" data-c="${p.id}">${esc(a.comment)}</textarea>`:''}
           ${pref('panel','bank')&&(bank[p.id]||[]).filter(c=>c!==a.comment).length?`<div class="bank">${(bank[p.id]||[]).filter(c=>c!==a.comment).map((c,k)=>`<button data-bank="${p.id}" data-k="${k}" title="Use this comment">${esc(c)}</button>`).join('')}</div>`:''}
           ${p.rationale&&pref('panel','rationale')?`<details class="small"><summary>Why this point earns marks</summary>${esc(p.rationale)}</details>`:''}</div>`; }).join('')}
@@ -974,7 +1127,7 @@ function addBank(pid, text){ text=String(text||'').trim(); if(!text) return; con
   b[pid]=[text].concat((b[pid]||[]).filter(x=>x!==text)).slice(0,8);
   const ls=LIB.schemes.find(x=>x.id===JOB.scheme.libId); if(ls){ ls.bank=ls.bank||{}; ls.bank[pid]=b[pid]; saveLib(); } }
 document.addEventListener('keydown', e => {
-  if(ACTIVE==='home' || view!=='review' || !JOB || e.ctrlKey || e.metaKey || e.altKey) return;
+  if(ACTIVE==='home' || view!=='review' || rmode!=='s' || !JOB || e.ctrlKey || e.metaKey || e.altKey) return;
   if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
   const s=JOB.students[cur]; if(!s||!s.res) return;
   if(/^[0-9]$/.test(e.key)){ const pid=focusPid(s); if(!pid) return; const p=allPoints().find(x=>x.id===pid);
@@ -1033,7 +1186,37 @@ function renderDash(){
   el.querySelectorAll('[data-open]').forEach(a=>a.onclick=e=>{ e.preventDefault(); cur=+a.dataset.open; filt='all'; go('review'); });
   $('fCopy').onclick=()=>copyText(followText(d), 'Lesson plan copied');
   $('fPdf').onclick=async()=>{ download(new Blob([await followPdf(d)],{type:'application/pdf'}), safeName(JOB.title)+'_groups.pdf'); };
+  $('hPdf').onclick=async()=>{ download(new Blob([await handoutPdf(d)],{type:'application/pdf'}), safeName(JOB.title)+'_class_handout.pdf'); };
 }
+/* Class handout: for each question, the marking points most of the class
+   missed and the comments those students were given most often. Built only
+   from the scheme and the marking; no names. */
+function handoutData(d){
+  return JOB.scheme.questions.map(q=>{ const mx=maxOf(q), avg=d.n?d.S.reduce((a,s)=>a+qGot(s,q),0)/d.n:0;
+    const pts=q.points.map(p=>{ const missed=d.S.filter(s=>ptM(s,p.id)<(+p.marks||0)); const cc={};
+      missed.forEach(s=>{ const c=String((s.res.points[p.id]||{}).comment||'').trim(); if(c) cc[c]=(cc[c]||0)+1; });
+      return {p, missed:missed.length, pct:d.n&&p.marks?d.S.reduce((a,s)=>a+ptM(s,p.id),0)/(p.marks*d.n):1, comments:Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0])}; })
+      .filter(x=>x.missed && x.pct<0.75).sort((a,b)=>a.pct-b.pct).slice(0,4);
+    const tc=TIERS.map(t=>({t, n:d.S.filter(s=>s.res.tiers.some(x=>x.k===t.k&&x.q===q.qid)).length})).filter(x=>x.n);
+    return {q, mx, avg, pts, tc}; });
+}
+async function handoutPdf(d){
+  const {PDFDocument, StandardFonts, rgb}=PDFLib, doc=await PDFDocument.create(), f=await doc.embedFont(StandardFonts.Helvetica), b=await doc.embedFont(StandardFonts.HelveticaBold);
+  const INK=rgb(.1,.15,.2), MUTE=rgb(.4,.45,.5); let pg=null, y=0;
+  const page=()=>{ pg=doc.addPage([595,842]); y=792; };
+  const line=(t,font,size,color,ind)=>wrap(pdfText(t),font,size,515-(ind||0)).forEach(l=>{ if(y<56) page(); pg.drawText(l,{x:40+(ind||0),y,size,font,color:color||INK}); y-=size*1.38; });
+  page();
+  line(JOB.title+' - class feedback', b, 17); line(`${d.n} scripts · class average ${d.avg.toFixed(1)} / ${d.M} (${Math.round(d.avg/d.M*100)}%)`, f, 10.5, MUTE); y-=10;
+  handoutData(d).forEach(h=>{ if(y<150) page();
+    pg.drawLine({start:{x:40,y:y+8},end:{x:555,y:y+8},thickness:.6,color:MUTE}); y-=6;
+    line(`Q${h.q.qid}   class average ${h.avg.toFixed(1)} / ${h.mx}`, b, 13);
+    if(h.tc.length) line('Where marks were lost: '+h.tc.map(x=>`${x.t.name} (${x.t.hint}) ${x.n}`).join(' · '), f, 9.5, MUTE);
+    y-=2;
+    if(!h.pts.length) line('Most of the class got these marks. Well done.', f, 11);
+    h.pts.forEach(x=>{ line(`Often missed (${x.missed} of ${d.n} students): ${x.p.text}`, b, 10.5, INK, 8);
+      x.comments.forEach(c=>line('- '+c, f, 10.5, INK, 20)); y-=3; });
+    y-=8; });
+  return doc.save(); }
 /* Follow-up lesson: one group per tier, with the questions and marking
    points that group lost most, so the next lesson is planned already. */
 function followGroups(d){
@@ -1043,7 +1226,7 @@ function followGroups(d){
     return {t:x.t, who:x.who.map(s=>s.no).sort((a,b)=>a-b), pts, adv}; }).filter(g=>g.who.length);
 }
 function followHTML(d){ const G=followGroups(d);
-  return `<div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Follow-up lesson</h3><div class="row"><button class="btn sm" id="fCopy">Copy plan</button><button class="btn sm" id="fPdf">Group sheets (PDF)</button></div></div>
+  return `<div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Follow-up lesson</h3><div class="row"><button class="btn sm" id="fCopy">Copy plan</button><button class="btn sm" id="fPdf">Group sheets (PDF)</button><button class="btn sm" id="hPdf" title="One page for the whole class: the points most of them missed and the feedback they got">Class handout (PDF)</button></div></div>
    ${G.length?G.map(g=>`<div><b>${g.t.name}</b> <span class="note">· ${g.t.hint}</span><div class="note">Class no.: ${g.who.join(', ')}</div>
      ${g.pts.map(x=>`<div class="note">Q${esc(x.q.qid)} ${pointLabel(x.q,x.p)} (${Math.round(x.pct*100)}% of marks): ${esc(x.p.text)}</div>`).join('')}</div>`).join(''):'<div class="note">No improvement tiers yet.</div>'}</div>`; }
 function followText(d){ return `${JOB.title} · follow-up lesson\n\n`+followGroups(d).map(g=>`${g.t.name} (${g.t.hint})\nClass no.: ${g.who.join(', ')}\n`+g.pts.map(x=>`- Q${x.q.qid} ${pointLabel(x.q,x.p)}: ${x.p.text} (${Math.round(x.pct*100)}% of marks)`).join('\n')+(g.adv.length?'\nExamples of advice given:\n'+g.adv.map(a=>'  '+a).join('\n'):'')).join('\n\n'); }
@@ -1123,7 +1306,7 @@ function xlsxBook(){
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([head, ...S.map(s=>[s.cls,s.no,nameOf(s),...Q.map(q=>qGot(s,q)),tot(s),Math.round(tot(s)/maxT()*1000)/10,tierQs(s,'concept'),tierQs(s,'structure'),tierQs(s,'reading'),s.res.overall,unsure(s).length,s.status==='checked'?'Checked':'AI only'])]), 'Marks');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Class','No.','Name',...P.map(p=>`Q${p.qid} P${p.id.split('.')[1]} (/${p.marks})`)], ...S.map(s=>[s.cls,s.no,nameOf(s),...P.map(p=>ptM(s,p.id))])]), 'By point');
   const rows=[['Class','No.','Name','Question','Point','Mark','Out of','Comment','Evidence quoted','AI unsure because']];
-  S.forEach(s=>Q.forEach(q=>q.points.forEach(p=>{ const a=s.res.points[p.id]||{}; rows.push([s.cls,s.no,nameOf(s),q.qid,pointLabel(q,p),a.m||0,p.marks,a.comment||'',a.quote||'',(a.why||[]).join('; ')]); })));
+  S.forEach(s=>Q.forEach(q=>q.points.forEach(p=>{ const a=s.res.points[p.id]||{}; rows.push([s.cls,s.no,nameOf(s),q.qid,pointLabel(q,p),a.m||0,p.marks,a.comment||'',a.quote||'',whyOf(a).join('; ')]); })));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Comments');
   const tr=[['Class','No.','Name','Question','Tier','Advice']]; S.forEach(s=>s.res.tiers.forEach(t=>tr.push([s.cls,s.no,nameOf(s),t.q,TIERS.find(x=>x.k===t.k).name,t.advice])));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tr), 'Improvement');
@@ -1257,6 +1440,11 @@ function renderHome(){
      ${histHTML(hc)}</section>
     <section class="panel stack"><h3>Printable answer sheet</h3><div class="note">A cover page with boxes for class, class no. and the question number of each answer. Scans made with it split almost perfectly.</div>
      <button class="btn sm" id="sheetDl">Download answer sheet (PDF)</button></section>
+    <section class="panel stack"><h3>Personal answer sheets (QR)</h3><div class="note">Every student gets their own pages with class, class no., name and a QR code. Split the scan with "Personal QR answer sheets": no AI and no list needed.</div>
+     <div class="row"><label class="lb" for="qrCls">Class</label><input class="cell" id="qrCls" list="qrClsList" style="width:70px" placeholder="5A" value="${esc(H.qrCls||'')}"><datalist id="qrClsList">${Object.keys(LIB.rosters).map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+      <label class="lb" for="qrN">Pages each</label><input class="cell" id="qrN" type="number" min="1" max="12" value="${H.qrN||2}" style="width:58px"></div>
+     <label class="lb" for="qrList">Class list: class no. and name, one per line</label><textarea id="qrList" rows="4" placeholder="1	陳大文&#10;2	李小明">${esc(LIB.rosters[H.qrCls]||'')}</textarea>
+     <div class="row"><button class="btn sm primary" id="qrDl">Download personal sheets (PDF)</button><span class="note" id="qrMsg"></span></div></section>
    </aside></div>`;
   el.querySelectorAll('[data-hf]').forEach(b=>b.onclick=()=>{ H.filt=b.dataset.hf; renderHome(); });
   el.querySelectorAll('[data-hcopy]').forEach(b=>b.onclick=()=>{ H.copy=b.dataset.hcopy; H.confirm=null; renderHome(); const i=$('copyCls'); if(i) i.focus(); });
@@ -1267,6 +1455,16 @@ function renderHome(){
   el.querySelectorAll('[data-ldel]').forEach(b=>b.onclick=()=>{ LIB.schemes=LIB.schemes.filter(x=>x.id!==b.dataset.ldel); saveLib(); renderHome(); });
   const hs=$('histCls'); if(hs) hs.onchange=()=>{ H.histCls=hs.value; renderHome(); };
   $('sheetDl').onclick=async()=>download(new Blob([await answerSheet()],{type:'application/pdf'}), 'answer_sheet.pdf');
+  $('qrCls').onchange=()=>{ H.qrCls=$('qrCls').value.trim().toUpperCase(); $('qrCls').value=H.qrCls; if(LIB.rosters[H.qrCls]) $('qrList').value=LIB.rosters[H.qrCls]; };
+  $('qrN').onchange=()=>{ H.qrN=Math.max(1,Math.min(12,+$('qrN').value||2)); };
+  $('qrDl').onclick=async()=>{ const cls=$('qrCls').value.trim().toUpperCase(), per=Math.max(1,Math.min(12,+$('qrN').value||2)), text=$('qrList').value, msg=t=>$('qrMsg').textContent=t;
+    if(!/^(S|F)?[1-6][A-Z]{1,2}$/.test(cls)){ msg('Type the class first, e.g. 5A.'); return; }
+    const list=[]; text.replace(/\r/g,'').split('\n').forEach(l=>{ const t=l.trim().split(/\t|\s+/).filter(Boolean); if(!t.length) return;
+      if(/^(S|F)?[1-6][A-Z]{1,2}$/i.test(t[0])) t.shift(); if(!/^\d{1,2}$/.test(t[0]||'')) return; list.push({cls, no:+t[0], name:t.slice(1).join(' ')}); });
+    if(!list.length){ msg('Paste the class list: class no. and name on each line.'); return; }
+    LIB.rosters[cls]=text; saveLib(); H.qrCls=cls; msg('Making the sheets…');
+    try{ download(new Blob([await personalSheets(list, per)],{type:'application/pdf'}), `answer_sheets_${cls}.pdf`); msg(`${list.length} students × ${per} pages. Print single-sided.`); }
+    catch(e){ msg('Could not make the sheets: '+e.message); } };
 }
 /* Each student of a class across every job: % by test, and tiers that recur. */
 function histHTML(cls){

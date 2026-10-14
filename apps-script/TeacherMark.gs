@@ -308,9 +308,11 @@ var TM_MARK_SYS = [
 '- Award by meaning, not wording. Same meaning in the student\'s own words earns',
 '  the mark. Look at the accept / reject examples for the teacher\'s standard.',
 '- Follow every rule exactly ("any one", "max", "second distinct reason").',
-'- EVIDENCE RULE: for every mark you award, copy the student\'s words that earn it',
-'  into "quote", EXACTLY as in the transcript (up to 30 words), and give the line',
-'  number "line". If you cannot quote it, award 0.',
+'- EVIDENCE RULE: give "quote" and "line" for EVERY point, copied EXACTLY from',
+'  the transcript (up to 30 words). For a mark you award: the words that earn it;',
+'  if you cannot quote them, award 0. For 0 or part marks: the student\'s closest',
+'  attempt at this point, so the teacher sees why it fell short. Use "" and line',
+'  -1 only when the student wrote nothing related to this point.',
 '- A point worth 2+ marks may get part marks only when the idea is there but',
 '  incomplete (e.g. named but not explained).',
 '- conf: 0-1, how sure you are of this point\'s mark. Below 0.7 if the handwriting',
@@ -392,7 +394,9 @@ function tmMark_(b) {
     + (anchors.length ? '\n\nTEACHER-MARKED EXAMPLES (follow this standard):\n' + anchors.join('\n\n') : '')
     + '\n\nSTUDENT TRANSCRIPT:\n<<<\n' + tr + '\n>>>' }];
 
-  var runs = tmCall_(TM_MARK_SYS, parts, { n: 2, temp: 0.3, maxTok: 16384 });
+  // Quota-saving mode: one run instead of two (no disagreement check).
+  var single = !!b.single;
+  var runs = tmCall_(TM_MARK_SYS, parts, { n: single ? 1 : 2, temp: 0.3, maxTok: 16384 });
   var good = runs.filter(function (r) { return r.json; });
   if (!good.length) return tmFail_(runs[0]);
 
@@ -416,7 +420,7 @@ function tmMark_(b) {
     if (B) {
       var bm = B[id] ? B[id].m : 0;
       if (bm !== a.m) why.push('Two AI runs disagree (' + a.m + ' vs ' + bm + ')');
-    } else why.push('Second check did not run');
+    } else if (!single) why.push('Second check did not run');
     if (a.m > 0 && !tmQuoteFound_(a.quote, all)) why.push('Evidence quote not found in the script');
     if (a.m > 0 && /\[\?/.test(a.quote)) why.push('Handwriting unclear in the evidence');
     if (a.conf < 0.7) why.push('AI not sure (' + Math.round(a.conf * 100) + '%)');
