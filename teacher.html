@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Long Q Marking Desk</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Caveat:wght@600&family=Noto+Sans+TC:wght@400;500&display=swap">
+<style>
+/* Teacher-only marking desk. Same look as the approved demo preview:
+   slate desk, red pen for anything that lands on a student's script. */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --surface2:#f6f8f9; --ink:#1b2a32; --muted:#5a6a73; --line:#d5dde1;
+  --accent:#1e5a6e; --accent-soft:#dcebf0; --pen:#c4232a; --pen-soft:#fbe6e6;
+  --ok:#2c7a47; --ok-soft:#e1f1e6; --warn:#a86300; --warn-soft:#fbefdc;
+  --f-ui:"IBM Plex Sans","Noto Sans TC",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --f-pen:"Caveat","Noto Sans TC",cursive;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#12191d; --surface:#1a2328; --surface2:#202b31; --ink:#e3eaed; --muted:#98a8b0; --line:#304048;
+  --accent:#7cc0d6; --accent-soft:#1d3a45; --pen:#ff6b6b; --pen-soft:#3d1f22;
+  --ok:#6fcf8f; --ok-soft:#1b3424; --warn:#f0b35a; --warn-soft:#3a2d17; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.5}
+.wrap{max-width:1400px;margin:0 auto;padding-inline:16px;padding-block:16px 60px;display:grid;gap:14px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;justify-content:space-between}
+h1{font-size:20px;margin:0;font-weight:600}
+h2{font-size:16px;margin:0 0 4px;font-weight:600}
+h3{font-size:12.5px;margin:0;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sub,.note{color:var(--muted);font-size:13px}
+nav.steps{display:flex;gap:4px;overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px}
+nav.steps button{flex:1 0 auto;border:0;background:transparent;color:var(--muted);font:500 13px var(--f-ui);padding:8px 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
+nav.steps button .n{font-family:var(--f-mono);font-size:11px;margin-right:6px;opacity:.7}
+nav.steps button[aria-selected="true"]{background:var(--accent);color:var(--surface)}
+nav.steps button .badge{margin-left:6px}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 13px var(--f-ui);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.danger{color:var(--pen)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:3px 8px;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stack{display:grid;gap:10px;align-content:start;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:2px 8px;border-radius:999px;font-weight:500;white-space:nowrap}
+.chip.ai{background:var(--accent-soft);color:var(--accent)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.edit{background:var(--warn-soft);color:var(--warn)}
+.chip.pen{background:var(--pen-soft);color:var(--pen)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono)}
+input.cell,select.cell,textarea{font:13px/1.45 var(--f-ui);padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);width:100%}
+textarea{resize:vertical}
+label.lb{font-size:12px;color:var(--muted);font-weight:500}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.msg{font-size:13px;padding:8px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--line)}
+.msg.err{background:var(--pen-soft);color:var(--pen);border-color:transparent}
+.msg.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.progress{height:10px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.progress>div{height:100%;background:var(--accent);width:0}
+/* mask picker */
+.maskbox{position:relative;display:inline-block;max-width:100%;cursor:crosshair;user-select:none;touch-action:none}
+.maskbox img{display:block;max-width:100%;border:1px solid var(--line)}
+.maskbox .rect{position:absolute;background:rgba(0,0,0,.85);outline:2px solid var(--pen)}
+/* review */
+.desk{display:grid;grid-template-columns:220px minmax(0,1.2fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:1100px){.desk{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.roster{grid-column:1/-1}}
+@media (max-width:760px){.desk{grid-template-columns:minmax(0,1fr)}}
+.roster{display:grid;gap:3px;align-content:start;max-height:80vh;overflow:auto}
+@media (max-width:1100px){.roster{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));max-height:none}}
+.roster button{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;color:var(--ink);padding:6px 8px;border-radius:7px;cursor:pointer;font:13px var(--f-ui)}
+.roster button[aria-current="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.roster .no{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.roster .sc{font-family:var(--f-mono);font-size:12px}
+.filters{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.filters button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;font:12px var(--f-ui);padding:3px 10px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.pages{display:grid;gap:14px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 36%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 18px rgba(0,0,0,.08);border-radius:3px;overflow:hidden}
+.sheet img{display:block;width:100%}
+.sheet .margin{position:relative;border-left:2px solid #c4232a;background:#fbf1f1}
+.note-pen{position:absolute;left:6px;right:6px;font-family:var(--f-pen);color:#c4232a;font-size:16px;line-height:1.08}
+.note-pen.q{font-weight:600;font-size:18px}
+.note-pen.total{font-size:26px;border:2.5px solid #c4232a;border-radius:50%;display:inline-grid;place-items:center;width:auto;min-width:70px;height:56px;left:auto;right:8px;padding-inline:6px;transform:rotate(-6deg)}
+.fbbox{border:1.5px solid var(--pen);border-radius:6px;padding:10px 12px;color:var(--pen);font-family:var(--f-pen);font-size:18px;line-height:1.2;display:grid;gap:5px;background:var(--surface)}
+.fbbox b{font-family:var(--f-ui);font-size:12.5px;font-weight:600}
+.mpanel{display:grid;gap:10px}
+details.qsec{border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+details.qsec>summary{cursor:pointer;padding:9px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;font-weight:600;list-style:none}
+details.qsec>summary::-webkit-details-marker{display:none}
+details.qsec .inner{padding:0 12px 12px;display:grid;gap:10px}
+.pt{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:6px}
+.pt.unsure{border-color:var(--warn);background:var(--warn-soft)}
+.pt .hd{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.pid{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-right:6px}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:none;background:var(--surface)}
+.stepper button{border:0;background:var(--surface2);color:var(--ink);width:28px;height:28px;font-size:16px;cursor:pointer}
+.stepper output{min-width:46px;text-align:center;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.quote{font-size:12.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:8px}
+.why{font-size:12.5px;color:var(--warn);font-weight:500}
+details.small{font-size:12.5px;color:var(--muted)}
+details.small summary{cursor:pointer;color:var(--accent);font-weight:500}
+.tierrow{display:grid;grid-template-columns:110px 90px 1fr auto;gap:6px;align-items:start}
+@media (max-width:560px){.tierrow{grid-template-columns:1fr 1fr}.tierrow textarea{grid-column:1/-1}}
+.transcript{font-family:var(--f-mono);font-size:12px;white-space:pre-wrap;max-height:300px;overflow:auto;background:var(--surface2);padding:8px;border-radius:6px}
+.transcript mark{background:var(--warn-soft);color:var(--warn)}
+.sticky{position:sticky;bottom:0;background:var(--surface);padding-block:8px;border-top:1px solid var(--line)}
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:9px;padding:12px;background:var(--surface)}
+.kpi .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12px;color:var(--muted)}
+.hbar{display:grid;grid-template-columns:minmax(0,1fr) 140px 50px;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+.track{height:10px;background:var(--surface2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;background:var(--accent)}
+.fill.low{background:var(--pen)}
+.hist{display:grid;gap:6px;align-items:end;height:150px}
+.hist .col{display:grid;grid-template-rows:1fr auto auto;gap:3px;height:100%;text-align:center;min-width:0}
+.hist .b{align-self:end;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px}
+.hist .c{font-family:var(--f-mono);font-size:12px}
+.hist .x{font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:3px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:20;max-width:90vw}
+.gate{max-width:520px;margin:40px auto;display:grid;gap:12px;text-align:center}
+.confirmbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--pen-soft);color:var(--pen);padding:8px 10px;border-radius:8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Long Q Marking Desk</h1>
+      <div class="sub" id="jobLine">Teacher only · AI marks, you check the uncertain points</div>
+    </div>
+    <div class="row"><span class="note" id="who"></span><button class="btn sm" id="newJob" hidden>New marking job</button></div>
+  </header>
+
+  <!-- sign-in gate -->
+  <section class="panel gate" id="gate">
+    <h2>Sign in with your teacher account</h2>
+    <div class="note">This page only works for Google accounts listed as teachers on the server. Students who sign in here get nothing.</div>
+    <div id="gbtn" style="justify-self:center"></div>
+    <div class="note" id="gateMsg"></div>
+  </section>
+
+  <div id="app" hidden style="display:grid;gap:14px">
+    <nav class="steps" role="tablist" id="steps"></nav>
+    <div class="confirmbar" id="newConfirm" hidden>Start a new job? This clears the current scan, scheme and marks from this browser (export or save first).
+      <button class="btn sm danger" id="newYes">Yes, clear it</button><button class="btn sm" id="newNo">Keep working</button></div>
+
+    <!-- 1 scan -->
+    <section id="v-scan" class="panel" hidden>
+      <div class="grid2">
+        <div class="stack">
+          <h2>1 · Upload the class scan</h2>
+          <div class="note">One PDF with every student's whole test. The PDF stays in this browser; only page images are sent to Gemini for reading, and nothing is stored on the server.</div>
+          <div class="drop" id="pdfDrop">
+            <input type="file" id="pdfFile" accept="application/pdf" hidden>
+            <button class="btn primary" id="pdfPick">Choose PDF</button>
+            <div id="pdfInfo" class="note">or drop it here</div>
+          </div>
+          <div class="row"><label class="lb" for="jobTitle">Job name</label><input class="cell" id="jobTitle" style="max-width:260px" placeholder="e.g. 5A Uniform Test 1"></div>
+          <div id="maskArea" hidden class="stack">
+            <h3>Hide student names from Gemini</h3>
+            <div class="note">Free Gemini keys may let Google use what is sent. Drag a box over the <b>name</b> on the first page. It is blacked out on every header page before anything leaves this browser. Leave class and class no. visible.</div>
+            <label class="row"><input type="checkbox" id="maskOn" checked> Cover names (recommended)</label>
+            <div class="maskbox" id="maskBox"><img id="maskImg" alt="First page of the scan"><div class="rect" id="maskRect" hidden></div></div>
+          </div>
+        </div>
+        <div class="stack">
+          <h3>Find each student's pages</h3>
+          <div class="row">
+            <label class="row"><input type="radio" name="splitMode" value="ai" checked> AI reads class + no. on each page</label>
+            <label class="row"><input type="radio" name="splitMode" value="fixed"> Every <input class="cell" id="fixedN" type="number" min="1" max="40" value="4" style="width:58px"> pages</label>
+          </div>
+          <details class="small"><summary>Class list (optional, for names in the export)</summary>
+            <div class="note">Paste from Excel: one student per line, "class no. name" or "no. name".</div>
+            <textarea id="roster" rows="5" placeholder="1	陳大文&#10;2	李小明"></textarea>
+          </details>
+          <div class="row"><button class="btn primary" id="splitGo" disabled>Find students</button><span class="note" id="splitMsg"></span></div>
+          <div class="progress" id="splitBar" hidden><div></div></div>
+          <div class="tablewrap"><table id="splitTbl"></table></div>
+          <div class="row" id="splitActions" hidden><button class="btn sm" id="addStu">Add student</button><span class="note">Pages are 1-based, e.g. "1-4" or "5,6,9". Rows in amber need a look.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 scheme -->
+    <section id="v-scheme" class="panel" hidden>
+      <div class="stack">
+        <h2>2 · Marking scheme</h2>
+        <div class="note">Upload the Word file for the whole test. Gemini splits it into questions and marking points using only your scheme, then drafts a rationale and accept / reject examples for each point. Check them once: they set the standard for the whole class.</div>
+        <div class="row">
+          <input type="file" id="docFile" accept=".docx" hidden>
+          <button class="btn primary" id="docPick">Choose Word file (.docx)</button>
+          <span class="note" id="docInfo"></span>
+        </div>
+        <details class="small"><summary>Add the question paper text (optional, helps Gemini)</summary>
+          <textarea id="qpaper" rows="4" placeholder="Paste the questions here"></textarea></details>
+        <div class="row"><button class="btn" id="schemeGo" disabled>Read the scheme</button><span class="note" id="schemeMsg"></span></div>
+        <div id="schemeEd" class="stack"></div>
+      </div>
+    </section>
+
+    <!-- 3 mark -->
+    <section id="v-mark" class="panel" hidden></section>
+
+    <!-- 4 review -->
+    <section id="v-review" hidden>
+      <div class="desk">
+        <aside class="panel roster" id="roster2" aria-label="Students"></aside>
+        <div class="stack"><div class="row" style="justify-content:space-between"><h3 id="pageLbl">Script</h3><span class="note">This is how the exported PDF looks</span></div><div class="pages" id="pages"></div><div id="fb"></div></div>
+        <div class="panel mpanel" id="mpanel"></div>
+      </div>
+    </section>
+
+    <!-- 5 dashboard -->
+    <section id="v-dash" hidden style="display:grid;gap:14px"></section>
+
+    <!-- 6 export -->
+    <section id="v-export" class="panel" hidden></section>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ======================================================================
+ * Long Q Marking Desk — teacher only.
+ * Everything heavy happens in this browser: the PDF is rendered with
+ * pdf.js, page images go to the Apps Script (TeacherMark.gs) which passes
+ * them to Gemini and keeps nothing. The job (scan, scheme, marks) is kept
+ * in this browser's IndexedDB so a closed tab loses nothing.
+ * ==================================================================== */
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwy3bPHzxQ-0Qj7c7aNdc2QtI36ir4UfxQDdgBQGhXbtoPzVUN5TKav11xsB8_Nhb5Z9A/exec';
+const GOOGLE_CLIENT_ID = '533999025151-qf44e4dp2k7stspp5r6g8050ererf6st.apps.googleusercontent.com';
+const SKEY = 'tjx2:tsess';
+const CALIB_N = 3;          // scripts the teacher checks before the rest are marked
+const READ_CHUNK = 4;       // pages per transcription request
+const GAP_MS = 2500;        // pause between Gemini requests (free-tier friendly)
+const TIERS = [
+  {k:'concept',   name:'Bottom · Concept',          short:'Concept',  hint:'check understanding with notes and textbook'},
+  {k:'structure', name:'Medium · Structure',        short:'Structure',hint:'recite answer structure and keywords'},
+  {k:'reading',   name:'High · Question reading',   short:'Question reading', hint:'mark the misread keyword'}
+];
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let SESS = null, JOB = null, PDF = null, PDFBYTES = null, view = 'scan', cur = 0, filt = 'need', RUN = {on:false, stop:false};
+const IMG = new Map();      // page index -> display dataURL
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function toast(m, ms){ const t=$('toast'); t.textContent=m; t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true, ms||2600); }
+
+/* ------------------------------------------------------------ storage -- */
+const idb = (() => {
+  let dbp = null;
+  function db(){ if(!dbp) dbp = new Promise((res, rej) => { const r = indexedDB.open('tmark', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); return dbp; }
+  async function op(mode, fn){ const d = await db(); return new Promise((res, rej) => { const tx = d.transaction('kv', mode), st = tx.objectStore('kv'); const r = fn(st); tx.oncomplete = () => res(r && r.result); tx.onerror = () => rej(tx.error); }); }
+  return { get: k => op('readonly', s => s.get(k)).catch(() => null), set: (k, v) => op('readwrite', s => s.put(v, k)).catch(() => null), del: k => op('readwrite', s => s.delete(k)).catch(() => null) };
+})();
+let saveT = null;
+function save(){ clearTimeout(saveT); saveT = setTimeout(() => idb.set('job', JSON.parse(JSON.stringify(JOB))), 300); }
+function blankJob(){ return { id:'job-'+Date.now().toString(36), title:'', created:Date.now(), pdfName:'', pageCount:0,
+  mask:{on:true, r:null}, split:{mode:'ai', n:4}, pageInfo:[], students:[], roster:'', scheme:{questions:[], confirmed:false, file:''},
+  calib:{ids:[], done:false, skipped:false} }; }
+
+/* --------------------------------------------------------------- auth -- */
+function jsonp(params, cb, ms){
+  let done=false; const finish=v=>{ if(done)return; done=true; clearTimeout(timer); cb(v); };
+  const timer=setTimeout(()=>finish(null), ms||15000);
+  const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');
+  function viaScript(){ if(done) return; const fn='__cb'+Math.random().toString(36).slice(2); window[fn]=v=>finish(v);
+    const s=document.createElement('script'); s.src=SYNC_URL+'?'+qs+'&callback='+fn; s.onerror=()=>finish(null); document.head.appendChild(s); }
+  fetch(SYNC_URL+'?'+qs,{credentials:'omit',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(r.status)).then(finish).catch(viaScript);
+}
+function gateMsg(m){ $('gateMsg').textContent=m; }
+function onCredential(resp){
+  const nonce=Math.random().toString(36).slice(2)+Date.now().toString(36);
+  gateMsg('Checking with Google…');
+  let email=''; try{ email=JSON.parse(atob(resp.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email; }catch(e){}
+  fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({event:'auth',idToken:resp.credential,nonce})}).catch(()=>{});
+  let tries=0;
+  (function claim(){ tries++;
+    jsonp({claim:nonce}, r=>{
+      if(r&&r.t){ SESS=r.t; try{ localStorage.setItem(SKEY, JSON.stringify({t:SESS,e:email,at:Date.now()})); }catch(e){} return checkTeacher(email); }
+      if(r&&r.error&&r.error!=='not ready') return gateMsg('Sign-in refused: '+r.error);
+      if(tries<15){ gateMsg('Checking with Google… ('+tries+')'); return setTimeout(claim,2000); }
+      gateMsg('The server never confirmed this sign-in. Open the site\'s ?ping=1 to check the deployment.');
+    }, 20000);
+  })();
+}
+async function checkTeacher(email){
+  gateMsg('Checking teacher access…');
+  const r = await tpost({act:'who'});
+  if(r && r.teacher){ $('who').textContent = email||''; $('gate').hidden=true; $('app').hidden=false; $('newJob').hidden=false;
+    if(!r.key) toast('The server has no Gemini key yet (Script Property GEMINI_KEY).', 6000);
+    return boot(); }
+  if(r && r.error==='teacher') return gateMsg('This page is for teachers only. ('+(email||'this account')+' is not on the teacher list.)');
+  gateMsg(r && r.error ? r.error : 'Could not reach the server.');
+}
+function initGoogle(){
+  if(initGoogle.done) return; initGoogle.done=true;
+  let waited=0; const tm=setInterval(()=>{ waited+=200;
+    if(window.google&&google.accounts&&google.accounts.id){ clearInterval(tm);
+      google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onCredential,auto_select:false});
+      google.accounts.id.renderButton($('gbtn'),{theme:'outline',size:'large'}); return; }
+    if(waited>15000){ clearInterval(tm); gateMsg('Could not load Google Sign-In. Try a window without ad blockers.'); } },200);
+}
+/* Readable POST: Apps Script answers through a redirect that allows any origin. */
+async function tpost(body){
+  try{
+    const r = await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(Object.assign({event:'tmark',t:SESS},body))});
+    const txt = await r.text();
+    if(txt==='auth'){ SESS=null; try{localStorage.removeItem(SKEY);}catch(e){} $('app').hidden=true; $('gate').hidden=false; gateMsg('Your sign-in expired. Sign in again; your work is saved in this browser.'); initGoogle(); return {error:'Signed out'}; }
+    try{ return JSON.parse(txt); }catch(e){ return {error:'The server is not set up for teacher marking yet (TeacherMark.gs missing?).'}; }
+  }catch(e){ return {error:'Could not reach the server. Check your connection.'}; }
+}
+/* Retries a Gemini request through the free-tier rate limit. */
+async function gemini(body, onWait){
+  let wait = 20;
+  for(let i=0;i<7;i++){
+    const r = await tpost(body);
+    if(r && r.error==='rate'){ onWait && onWait(wait); await sleep(wait*1000); wait=Math.min(wait*2,120); continue; }
+    return r;
+  }
+  return {error:'Gemini\'s free limit is used up for now. Your progress is saved: press Continue later (or tomorrow).'};
+}
+
+/* ---------------------------------------------------------------- PDF -- */
+async function loadPdf(bytes){ PDFBYTES = bytes; PDF = await pdfjsLib.getDocument({data:bytes.slice(0)}).promise; IMG.clear(); return PDF; }
+/* Renders page i (0-based) to a canvas `width` px wide. opts.top = keep only
+   that fraction of the page from the top; opts.mask = black out the name box. */
+async function pageCanvas(i, width, opts){
+  opts = opts || {};
+  const pg = await PDF.getPage(i+1), v1 = pg.getViewport({scale:1}), sc = width / v1.width, vp = pg.getViewport({scale:sc});
+  const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+  const ctx = c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+  await pg.render({canvasContext:ctx, viewport:vp}).promise;
+  if(opts.mask && JOB.mask.on && JOB.mask.r){ const r=JOB.mask.r; ctx.fillStyle='#000'; ctx.fillRect(r.x*c.width, r.y*c.height, r.w*c.width, r.h*c.height); }
+  if(opts.top){ const h=Math.round(c.height*opts.top), c2=document.createElement('canvas'); c2.width=c.width; c2.height=h; c2.getContext('2d').drawImage(c,0,0); return c2; }
+  return c;
+}
+async function pageJpeg(i, width, opts){ return (await pageCanvas(i, width, opts)).toDataURL('image/jpeg', 0.72).split(',')[1]; }
+async function pageShow(i){ if(!IMG.has(i)) IMG.set(i, (await pageCanvas(i, 900, {})).toDataURL('image/jpeg', 0.8)); return IMG.get(i); }
+/* A page gets its name covered if it carries a header (AI split) or starts a script (fixed split). */
+function isHeaderPage(i){ const p=JOB.pageInfo[i]; if(p&&p.header) return true; return JOB.students.some(s=>s.pages[0]===i); }
+
+/* ------------------------------------------------------------ helpers -- */
+const allPoints = () => JOB.scheme.questions.flatMap(q => q.points.map(p => Object.assign({qid:q.qid}, p)));
+const maxOf = q => q.points.reduce((a,p)=>a+(+p.marks||0),0);
+const maxT = () => JOB.scheme.questions.reduce((a,q)=>a+maxOf(q),0);
+const ptM = (s,id) => s.res && s.res.points[id] ? s.res.points[id].m : 0;
+const qGot = (s,q) => q.points.reduce((a,p)=>a+ptM(s,p.id),0);
+const tot = s => JOB.scheme.questions.reduce((a,q)=>a+qGot(s,q),0);
+const unsure = s => s.res ? Object.keys(s.res.points).filter(id => s.res.points[id].uncertain && !(s.resolved||{})[id]) : [];
+const stuLabel = s => (s.cls||'?')+'-'+String(s.no==null?'?':s.no).padStart(2,'0');
+const pointLabel = (q,p) => { const i=q.points.indexOf(p); return 'P'+(i+1); };
+function parsePages(str, max){ const out=[]; String(str).split(/[,\s]+/).forEach(t=>{ const m=t.match(/^(\d+)(?:-(\d+))?$/); if(!m) return; const a=+m[1], b=m[2]?+m[2]:a; for(let x=Math.min(a,b);x<=Math.max(a,b);x++) if(x>=1&&x<=max) out.push(x-1); }); return [...new Set(out)].sort((a,b)=>a-b); }
+function pagesStr(arr){ const out=[]; let i=0; while(i<arr.length){ let j=i; while(j+1<arr.length&&arr[j+1]===arr[j]+1) j++; out.push(j>i?(arr[i]+1)+'-'+(arr[j]+1):String(arr[i]+1)); i=j+1; } return out.join(','); }
+function rosterMap(){ const m={}; String(JOB.roster||'').split(/\n/).forEach(l=>{ const t=l.trim().split(/\t|\s{2,}|\s/).filter(Boolean); if(t.length<2) return;
+  let cls='', no, name; if(/^\d+$/.test(t[0])){ no=+t[0]; name=t.slice(1).join(' '); } else if(/^\d+$/.test(t[1])){ cls=t[0].toUpperCase(); no=+t[1]; name=t.slice(2).join(' '); } else return;
+  m[(cls||'*')+'|'+no]=name; }); return m; }
+function nameOf(s){ const m=rosterMap(); return m[(String(s.cls||'').toUpperCase())+'|'+s.no] || m['*|'+s.no] || s.name || ''; }
+
+/* ---------------------------------------------------------------- nav -- */
+const VIEWS=[['scan','Upload scan'],['scheme','Marking scheme'],['mark','Mark'],['review','Review'],['dash','Dashboard'],['export','Export']];
+function renderSteps(){
+  const need = JOB.students.filter(s=>unsure(s).length).length;
+  $('steps').innerHTML = VIEWS.map((v,i)=>`<button role="tab" aria-selected="${v[0]===view}" data-go="${v[0]}"><span class="n">${i+1}</span>${v[1]}${v[0]==='review'&&need?`<span class="chip edit badge">${need} need you</span>`:''}${v[0]==='scheme'&&JOB.scheme.confirmed?'<span class="chip ok badge">✓</span>':''}</button>`).join('');
+  VIEWS.forEach(v => $('v-'+v[0]).hidden = v[0]!==view);
+  $('jobLine').textContent = (JOB.title||'Untitled job') + (JOB.pdfName?' · '+JOB.pdfName:'') + (JOB.students.length?' · '+JOB.students.length+' students':'') + (JOB.scheme.questions.length?' · '+JOB.scheme.questions.length+' questions, '+maxT()+' marks':'');
+}
+function go(v){ view=v; renderSteps(); render(); window.scrollTo(0,0); }
+document.addEventListener('click', e => { const g=e.target.closest('[data-go]'); if(g){ e.preventDefault(); go(g.dataset.go); } });
+function render(){ ({scan:renderScan, scheme:renderScheme, mark:renderMark, review:renderReview, dash:renderDash, export:renderExport})[view](); }
+
+/* ------------------------------------------------------------- 1 scan -- */
+async function takePdf(file){
+  if(!file || file.type!=='application/pdf'){ toast('Choose a PDF file.'); return; }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  try{ await loadPdf(bytes); }catch(e){ toast('That PDF could not be opened: '+e.message, 5000); return; }
+  const keep = JOB.scheme.confirmed ? JOB.scheme : null, title = $('jobTitle').value, roster = JOB.roster;
+  JOB = blankJob(); if(keep) JOB.scheme = keep; JOB.title = title || file.name.replace(/\.pdf$/i,''); JOB.roster = roster;
+  JOB.pdfName = file.name; JOB.pageCount = PDF.numPages;
+  await idb.set('pdf', bytes); save(); renderSteps(); renderScan();
+}
+async function renderScan(){
+  $('jobTitle').value = JOB.title||''; $('roster').value = JOB.roster||'';
+  $('pdfInfo').textContent = JOB.pdfName ? `${JOB.pdfName} · ${JOB.pageCount} pages` : 'or drop it here';
+  $('splitGo').disabled = !PDF; $('maskArea').hidden = !PDF;
+  $('maskOn').checked = JOB.mask.on;
+  document.querySelector(`input[name=splitMode][value=${JOB.split.mode}]`).checked = true; $('fixedN').value = JOB.split.n;
+  if(PDF){ $('maskImg').src = await pageShow(0); drawMask(); }
+  renderSplitTbl();
+}
+function drawMask(){ const r=JOB.mask.r, el=$('maskRect'); if(!r){ el.hidden=true; return; } el.hidden=false; Object.assign(el.style,{left:r.x*100+'%',top:r.y*100+'%',width:r.w*100+'%',height:r.h*100+'%'}); }
+(function maskDrag(){
+  let start=null; const box=$('maskBox');
+  const pt = e => { const b=$('maskImg').getBoundingClientRect(); return {x:Math.min(1,Math.max(0,(e.clientX-b.left)/b.width)), y:Math.min(1,Math.max(0,(e.clientY-b.top)/b.height))}; };
+  box.addEventListener('pointerdown', e => { start=pt(e); box.setPointerCapture(e.pointerId); e.preventDefault(); });
+  box.addEventListener('pointermove', e => { if(!start) return; const p=pt(e); JOB.mask.r={x:Math.min(start.x,p.x),y:Math.min(start.y,p.y),w:Math.abs(p.x-start.x),h:Math.abs(p.y-start.y)}; drawMask(); });
+  box.addEventListener('pointerup', () => { if(start&&JOB.mask.r&&JOB.mask.r.w<0.01) JOB.mask.r=null; start=null; drawMask(); save(); });
+})();
+function renderSplitTbl(){
+  const S=JOB.students; $('splitActions').hidden=!S.length;
+  if(!S.length){ $('splitTbl').innerHTML=''; return; }
+  $('splitTbl').innerHTML = '<tr><th>Pages</th><th>Class</th><th class="num">No.</th><th>Name</th><th class="num">AI sure</th><th></th></tr>' +
+    S.map((s,i)=>{ const warn = s.conf<0.8 || s.no==null || S.some((t,j)=>j!==i&&t.no===s.no&&t.cls===s.cls);
+      return `<tr style="${warn?'background:var(--warn-soft)':''}"><td><input class="cell" id="sp${i}" data-k="pages" data-i="${i}" value="${pagesStr(s.pages)}" style="width:90px"></td>
+      <td><input class="cell" id="sc${i}" data-k="cls" data-i="${i}" value="${esc(s.cls||'')}" style="width:56px"></td>
+      <td class="num"><input class="cell" id="sn${i}" data-k="no" data-i="${i}" value="${s.no==null?'':s.no}" style="width:56px;text-align:right"></td>
+      <td>${esc(nameOf(s))||'<span class="note">—</span>'}</td><td class="num">${s.conf==null?'—':Math.round(s.conf*100)+'%'}</td>
+      <td><button class="btn sm danger" data-del="${i}" aria-label="Remove">✕</button></td></tr>`; }).join('');
+  $('splitTbl').querySelectorAll('input[data-i]').forEach(inp => inp.onchange = () => { const s=JOB.students[inp.dataset.i];
+    if(inp.dataset.k==='pages') s.pages=parsePages(inp.value, JOB.pageCount); else if(inp.dataset.k==='no') s.no=inp.value===''?null:+inp.value; else s.cls=inp.value.trim().toUpperCase();
+    s.conf=1; s.lines=null; s.res=null; s.status='todo'; save(); renderSplitTbl(); renderSteps(); });
+  $('splitTbl').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { JOB.students.splice(+b.dataset.del,1); save(); renderSplitTbl(); renderSteps(); });
+}
+function newStudent(o){ return Object.assign({sid:'s'+Math.random().toString(36).slice(2,9), cls:'', no:null, name:'', pages:[], conf:null, lines:null, res:null, ai:null, resolved:{}, status:'todo', err:''}, o); }
+async function doSplit(){
+  JOB.split.mode = document.querySelector('input[name=splitMode]:checked').value; JOB.split.n = Math.max(1, +$('fixedN').value||4);
+  if(JOB.mask.on && !JOB.mask.r){ toast('Drag a box over the name first, or untick "Cover names".', 4000); return; }
+  const n = JOB.pageCount, bar=$('splitBar'), fill=bar.firstElementChild; bar.hidden=false; fill.style.width='0';
+  $('splitGo').disabled=true;
+  const todo = JOB.split.mode==='fixed' ? Array.from({length:Math.ceil(n/JOB.split.n)},(_,k)=>k*JOB.split.n) : Array.from({length:n},(_,i)=>i);
+  const info = Array(n).fill(null); let done=0;
+  for(let b=0;b<todo.length;b+=10){
+    const chunk = todo.slice(b,b+10); $('splitMsg').textContent=`Reading page headers ${b+1}–${b+chunk.length} of ${todo.length}…`;
+    const images = []; for(const i of chunk) images.push(await pageJpeg(i, 1000, {top:0.3, mask:true}));
+    const r = await gemini({act:'split', images}, w => $('splitMsg').textContent=`Free Gemini limit reached, waiting ${w}s…`);
+    if(r.error){ $('splitMsg').textContent=r.error; $('splitGo').disabled=false; return; }
+    (r.pages||[]).forEach(p => { if(p.i>=0&&p.i<chunk.length) info[chunk[p.i]] = p; });
+    done+=chunk.length; fill.style.width = (done/todo.length*100)+'%';
+    await sleep(GAP_MS);
+  }
+  JOB.pageInfo = info.map(p => p || {cls:null,no:null,header:false,conf:0});
+  const S=[];
+  if(JOB.split.mode==='fixed'){
+    for(let i=0;i<n;i+=JOB.split.n){ const p=JOB.pageInfo[i]; S.push(newStudent({cls:(p.cls||'').toUpperCase(), no:p.no, conf:p.conf, pages:Array.from({length:Math.min(JOB.split.n,n-i)},(_,k)=>i+k)})); }
+  } else {
+    JOB.pageInfo.forEach((p,i) => { const last=S[S.length-1];
+      const starts = p.header && (!last || p.no!==last.no || String(p.cls||'').toUpperCase()!==last.cls);
+      if(starts || !last) S.push(newStudent({cls:String(p.cls||'').toUpperCase(), no:p.no, conf:p.header?p.conf:0, pages:[i]}));
+      else { last.pages.push(i); if(p.header) last.conf=Math.min(last.conf==null?1:last.conf, p.conf); } });
+  }
+  JOB.students=S; JOB.calib={ids:[],done:false,skipped:false}; save();
+  $('splitMsg').textContent=`Found ${S.length} students. Check the amber rows, then set up the marking scheme.`;
+  $('splitGo').disabled=false; renderSplitTbl(); renderSteps();
+}
+$('pdfPick').onclick = () => $('pdfFile').click();
+$('pdfFile').onchange = e => takePdf(e.target.files[0]);
+['dragover','dragenter'].forEach(t => $('pdfDrop').addEventListener(t, e => { e.preventDefault(); $('pdfDrop').classList.add('over'); }));
+['dragleave','drop'].forEach(t => $('pdfDrop').addEventListener(t, e => { e.preventDefault(); $('pdfDrop').classList.remove('over'); if(t==='drop') takePdf(e.dataTransfer.files[0]); }));
+$('jobTitle').oninput = e => { JOB.title=e.target.value; save(); renderSteps(); };
+$('roster').oninput = e => { JOB.roster=e.target.value; save(); };
+$('roster').onchange = () => renderSplitTbl();
+$('maskOn').onchange = e => { JOB.mask.on=e.target.checked; save(); };
+$('splitGo').onclick = doSplit;
+
+/* ----------------------------------------------------------- 2 scheme -- */
+let DOCTEXT = '';
+$('docPick').onclick = () => $('docFile').click();
+$('docFile').onchange = async e => {
+  const f=e.target.files[0]; if(!f) return;
+  try{ const r = await mammoth.extractRawText({arrayBuffer: await f.arrayBuffer()}); DOCTEXT = r.value||''; }
+  catch(err){ toast('Could not read that Word file: '+err.message, 5000); return; }
+  JOB.scheme.file=f.name; $('docInfo').textContent=`${f.name} · ${DOCTEXT.length.toLocaleString()} characters`; $('schemeGo').disabled=!DOCTEXT.trim(); save();
+};
+$('schemeGo').onclick = async () => {
+  $('schemeGo').disabled=true; $('schemeMsg').textContent='Gemini is reading the scheme…';
+  const r = await gemini({act:'scheme', text:DOCTEXT, question:$('qpaper').value}, w=>$('schemeMsg').textContent=`Free Gemini limit reached, waiting ${w}s…`);
+  $('schemeGo').disabled=false;
+  if(r.error){ $('schemeMsg').textContent=r.error; return; }
+  JOB.scheme.questions = (r.questions||[]).map((q,qi)=>Object.assign(q,{points:q.points.map((p,pi)=>Object.assign(p,{id:(qi+1)+'.'+(pi+1)}))}));
+  JOB.scheme.confirmed=false; save();
+  $('schemeMsg').textContent=`Found ${JOB.scheme.questions.length} questions, ${maxT()} marks. Check each point, then confirm at the bottom.`;
+  renderSteps(); renderScheme();
+};
+function renumber(){ JOB.scheme.questions.forEach((q,qi)=>q.points.forEach((p,pi)=>p.id=(qi+1)+'.'+(pi+1))); }
+function renderScheme(){
+  const Q=JOB.scheme.questions, ed=$('schemeEd');
+  if(JOB.scheme.file) $('docInfo').textContent = JOB.scheme.file;
+  if(!Q.length){ ed.innerHTML=''; return; }
+  const marked = JOB.students.some(s=>s.res);
+  ed.innerHTML = Q.map((q,qi)=>`<details class="qsec" ${qi===0||q.unclear?'open':''}><summary><span>Q ${esc(q.qid)} <span class="note">· ${q.points.length} points</span></span><span class="chip ai">${maxOf(q)} marks</span></summary><div class="inner">
+      ${q.unclear?`<div class="msg err">Gemini was unsure: ${esc(q.unclear)}</div>`:''}
+      <div class="row"><label class="lb" for="qid${qi}">Label</label><input class="cell" id="qid${qi}" data-q="${qi}" data-f="qid" value="${esc(q.qid)}" style="width:100px"></div>
+      ${q.question?`<div class="note"><b>Question:</b> ${esc(q.question)}</div>`:''}
+      ${q.points.map((p,pi)=>`<div class="pt"><div class="hd"><span class="pid">P${pi+1}</span>
+          <div class="row"><label class="lb" for="mk${qi}_${pi}">Marks</label><input class="cell" type="number" min="0" max="20" id="mk${qi}_${pi}" data-q="${qi}" data-p="${pi}" data-f="marks" value="${p.marks}" style="width:60px">
+          <button class="btn sm danger" data-delp="${qi}_${pi}">Remove</button></div></div>
+        <label class="lb" for="tx${qi}_${pi}">Marking point (from your scheme)</label><textarea id="tx${qi}_${pi}" rows="2" data-q="${qi}" data-p="${pi}" data-f="text">${esc(p.text)}</textarea>
+        <label class="lb" for="ru${qi}_${pi}">Rule (e.g. any one, max 2)</label><input class="cell" id="ru${qi}_${pi}" data-q="${qi}" data-p="${pi}" data-f="rule" value="${esc(p.rule||'')}">
+        <details class="small"><summary>Rationale and examples (AI-drafted, check once)</summary><div class="stack" style="margin-top:6px">
+          <label class="lb" for="ra${qi}_${pi}">Why this point earns marks</label><textarea id="ra${qi}_${pi}" rows="2" data-q="${qi}" data-p="${pi}" data-f="rationale">${esc(p.rationale||'')}</textarea>
+          <label class="lb" for="ac${qi}_${pi}">Accept, e.g. (one per line)</label><textarea id="ac${qi}_${pi}" rows="2" data-q="${qi}" data-p="${pi}" data-f="accept">${esc((p.accept||[]).join('\n'))}</textarea>
+          <label class="lb" for="rj${qi}_${pi}">Do not accept, e.g. (one per line)</label><textarea id="rj${qi}_${pi}" rows="2" data-q="${qi}" data-p="${pi}" data-f="reject">${esc((p.reject||[]).join('\n'))}</textarea>
+        </div></details></div>`).join('')}
+      <div class="row"><button class="btn sm" data-addp="${qi}">Add point</button></div></div></details>`).join('') +
+    `<div class="row" style="justify-content:space-between"><span class="note">${Q.length} questions · ${maxT()} marks in total${marked?' · changing the scheme after marking means re-marking':''}</span>
+     <button class="btn primary" id="schemeOk">${JOB.scheme.confirmed?'Scheme confirmed ✓':'Confirm scheme'}</button></div>`;
+  ed.querySelectorAll('[data-f]').forEach(el => el.onchange = () => {
+    const q=Q[+el.dataset.q], f=el.dataset.f;
+    if(el.dataset.p==null){ q[f]=el.value.trim(); }
+    else { const p=q.points[+el.dataset.p]; p[f] = f==='marks' ? Math.max(0,+el.value||0) : (f==='accept'||f==='reject') ? el.value.split('\n').map(x=>x.trim()).filter(Boolean) : el.value; }
+    JOB.scheme.confirmed=false; save(); renderSteps(); if(f==='marks'||f==='qid') renderScheme(); else $('schemeOk').textContent='Confirm scheme';
+  });
+  ed.querySelectorAll('[data-delp]').forEach(b => b.onclick = () => { const [qi,pi]=b.dataset.delp.split('_').map(Number); Q[qi].points.splice(pi,1); if(!Q[qi].points.length) Q.splice(qi,1); renumber(); JOB.scheme.confirmed=false; save(); renderScheme(); renderSteps(); });
+  ed.querySelectorAll('[data-addp]').forEach(b => b.onclick = () => { Q[+b.dataset.addp].points.push({text:'',marks:1,rule:'',rationale:'',accept:[],reject:[]}); renumber(); JOB.scheme.confirmed=false; save(); renderScheme(); });
+  $('schemeOk').onclick = () => { if(Q.some(q=>q.points.some(p=>!String(p.text).trim()))){ toast('Every point needs its text.'); return; }
+    JOB.scheme.confirmed=true; save(); renderSteps(); renderScheme(); toast('Scheme confirmed'); };
+}
+
+/* ------------------------------------------------------------- 3 mark -- */
+async function readStudent(s, say){
+  const lines=[];
+  for(let k=0;k<s.pages.length;k+=READ_CHUNK){
+    const pg=s.pages.slice(k,k+READ_CHUNK), images=[];
+    say(`${stuLabel(s)}: reading pages ${k+1}–${k+pg.length} of ${s.pages.length}`);
+    for(const i of pg) images.push(await pageJpeg(i, 1400, {mask:isHeaderPage(i)}));
+    const r = await gemini({act:'read', images}, w=>say(`Free Gemini limit reached, waiting ${w}s…`));
+    if(r.error) throw new Error(r.error);
+    (r.lines||[]).forEach(l => lines.push({p:pg[Math.min(l.p,pg.length-1)], y:l.y, t:l.t}));
+    s.legib = r.legibility || s.legib;
+    await sleep(GAP_MS);
+  }
+  lines.sort((a,b)=> s.pages.indexOf(a.p)-s.pages.indexOf(b.p) || a.y-b.y);
+  s.lines = lines; s.status='read';
+}
+function anchors(){
+  return JOB.calib.ids.map(id=>JOB.students.find(s=>s.sid===id)).filter(s=>s&&s.res&&s.status==='checked').map(s=>({
+    text: s.lines.map((l,i)=>'L'+i+': '+l.t).join('\n'), marks: Object.fromEntries(Object.entries(s.res.points).map(([id,a])=>[id,a.m])) }));
+}
+async function markStudent(s, say){
+  say(`${stuLabel(s)}: marking (two AI runs)…`);
+  const scheme = JOB.scheme.questions.map(q=>({qid:q.qid, question:q.question, points:q.points.map(p=>({id:p.id,text:p.text,marks:p.marks,rule:p.rule,accept:p.accept,reject:p.reject}))}));
+  const r = await gemini({act:'mark', scheme, lines:s.lines.map(l=>l.t), anchors:anchors()}, w=>say(`Free Gemini limit reached, waiting ${w}s…`));
+  if(r.error) throw new Error(r.error);
+  s.res = {points:r.points, tiers:r.tiers||[], qstart:r.qstart||{}, overall:r.overall||''};
+  s.ai = {points:JSON.parse(JSON.stringify(r.points)), tiers:JSON.parse(JSON.stringify(r.tiers||[])), overall:r.overall||''};
+  s.resolved = {}; s.status='marked'; s.err='';
+  await sleep(GAP_MS);
+}
+async function runQueue(list){
+  if(RUN.on) return; RUN={on:true, stop:false}; renderMark();
+  const say = t => { const el=$('runMsg'); if(el) el.textContent=t; };
+  for(const s of list){
+    if(RUN.stop) break;
+    try{ if(!s.lines) await readStudent(s, say); save(); if(!s.res) await markStudent(s, say); }
+    catch(e){ s.err=e.message; save(); say(e.message); if(/free limit|sign-in|Signed out|reach the server/i.test(e.message)) break; }
+    save(); renderMark(); renderSteps();
+  }
+  RUN.on=false; renderMark(); renderSteps();
+}
+function agreement(){
+  let same=0, all=0;
+  JOB.calib.ids.forEach(id=>{ const s=JOB.students.find(x=>x.sid===id); if(!s||!s.ai||s.status!=='checked') return;
+    Object.keys(s.ai.points).forEach(pid=>{ all++; if(s.ai.points[pid].m===s.res.points[pid].m) same++; }); });
+  return {same, all};
+}
+function renderMark(){
+  const S=JOB.students, el=$('v-mark');
+  if(!S.length || !JOB.scheme.confirmed){ el.innerHTML=`<h2>3 · Mark</h2><div class="msg">${!S.length?'First upload the scan and find the students (step 1).':''} ${!JOB.scheme.confirmed?'Confirm the marking scheme (step 2).':''}</div>`; return; }
+  if(!JOB.calib.ids.length) JOB.calib.ids = S.slice(0,Math.min(CALIB_N,S.length)).map(s=>s.sid);
+  const cal = JOB.calib.ids.map(id=>S.find(s=>s.sid===id)).filter(Boolean);
+  const calMarked = cal.every(s=>s.res), calChecked = cal.every(s=>s.status==='checked');
+  const ready = JOB.calib.skipped || calChecked;
+  const rest = S.filter(s=>!JOB.calib.ids.includes(s.sid));
+  const doneN = S.filter(s=>s.res).length, ag = agreement();
+  el.innerHTML = `<div class="stack">
+    <h2>3 · Mark</h2>
+    <div class="progress"><div style="width:${doneN/S.length*100}%"></div></div>
+    <div class="row" style="justify-content:space-between"><span class="note">${doneN} of ${S.length} scripts marked · each is read, then marked twice; points the two runs disagree on, or cannot quote from the script, go to you.</span>
+      <span class="note" id="runMsg" aria-live="polite">${RUN.on?'Working…':''}</span></div>
+    <div class="grid2">
+      <div class="panel stack" style="background:var(--surface2)">
+        <h3>Step A · Set the standard (${cal.length} scripts)</h3>
+        <div class="note">The AI marks the first ${cal.length} scripts. You check them in Review and press "Confirm". Your marks become the standard for the rest of the class.</div>
+        <div class="row">${cal.map(s=>`<span class="chip ${s.status==='checked'?'ok':s.res?'edit':'ai'}">${stuLabel(s)} ${s.status==='checked'?'checked':s.res?'to check':'waiting'}</span>`).join('')}</div>
+        <div class="row">
+          ${!calMarked?`<button class="btn primary" id="runCal" ${RUN.on?'disabled':''}>Mark these ${cal.length}</button>`:''}
+          ${calMarked&&!calChecked&&!JOB.calib.skipped?`<button class="btn primary" data-go="review">Check them in Review</button>`:''}
+          ${!JOB.calib.skipped&&!calChecked?`<button class="btn sm" id="skipCal">Skip this step</button>`:''}
+        </div>
+        ${ag.all?`<div class="msg ${ag.same/ag.all>=0.85?'ok':''}">AI matched your marks on ${ag.same} of ${ag.all} points (${Math.round(ag.same/ag.all*100)}%).</div>`:''}
+      </div>
+      <div class="panel stack" style="background:var(--surface2)">
+        <h3>Step B · Mark the rest (${rest.length} scripts)</h3>
+        <div class="note">${ready?'Uses your checked scripts as examples. You can close the tab; progress is saved here.':'Unlocks when step A is checked (or skipped).'}</div>
+        <div class="row">
+          ${RUN.on?`<button class="btn" id="stopRun">Pause</button>`:`<button class="btn primary" id="runRest" ${ready&&rest.some(s=>!s.res)?'':'disabled'}>${rest.some(s=>s.res)?'Continue marking':'Mark the rest'}</button>`}
+          ${S.some(s=>s.err)&&!RUN.on?`<button class="btn sm" id="retryErr">Retry failed scripts</button>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="tablewrap"><table><tr><th>Student</th><th>Pages</th><th>Status</th><th class="num">Mark</th><th class="num">Need you</th><th></th></tr>
+      ${S.map((s,i)=>`<tr><td>${stuLabel(s)} ${esc(nameOf(s))}</td><td>${pagesStr(s.pages)}</td>
+        <td>${s.err?`<span class="chip pen" title="${esc(s.err)}">Failed</span>`:s.status==='checked'?'<span class="chip ok">Checked</span>':s.res?'<span class="chip ai">AI marked</span>':s.lines?'<span class="chip edit">Read</span>':'<span class="note">Waiting</span>'}${s.legib==='poor'?' <span class="chip edit">hard to read</span>':''}</td>
+        <td class="num">${s.res?tot(s)+'/'+maxT():'—'}</td><td class="num">${s.res?unsure(s).length||'—':'—'}</td>
+        <td>${s.res?`<button class="btn sm" data-open="${i}">Open</button> `:''}${s.res&&!RUN.on?`<button class="btn sm" data-remark="${i}">Re-mark</button>`:''}</td></tr>`).join('')}
+    </table></div></div>`;
+  const b=(id,fn)=>{ const x=$(id); if(x) x.onclick=fn; };
+  b('runCal', ()=>runQueue(cal));
+  b('skipCal', ()=>{ JOB.calib.skipped=true; save(); renderMark(); });
+  b('runRest', ()=>runQueue(rest.filter(s=>!s.res)));
+  b('stopRun', ()=>{ RUN.stop=true; toast('Pausing after this script…'); });
+  b('retryErr', ()=>{ const l=S.filter(s=>s.err); l.forEach(s=>s.err=''); runQueue(l); });
+  el.querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>{ cur=+x.dataset.open; filt='all'; go('review'); });
+  el.querySelectorAll('[data-remark]').forEach(x=>x.onclick=()=>{ const s=S[+x.dataset.remark]; s.res=null; s.ai=null; s.status='read'; runQueue([s]); });
+}
+
+/* ----------------------------------------------------- annotations ---- */
+/* One list of red-pen notes, used by the Review screen and the PDF export,
+   so what the teacher sees is what gets exported. */
+function notesFor(s){
+  const notes=[], extra=[], L=s.lines||[], res=s.res; if(!res) return {notes,extra};
+  const starts = JOB.scheme.questions.map(q=>({q, at: res.qstart && res.qstart[q.qid]!=null ? res.qstart[q.qid] : -1}));
+  const sorted = starts.filter(x=>x.at>=0).sort((a,b)=>a.at-b.at);
+  const endOf = q => { const i=sorted.findIndex(x=>x.q===q); if(i<0) return -1; return (i+1<sorted.length?sorted[i+1].at:L.length)-1; };
+  starts.forEach(({q,at})=>{
+    const got=qGot(s,q), mx=maxOf(q);
+    if(at<0){ extra.push({kind:'q', text:`Q${q.qid}: ${got}/${mx}${got===0?' (no answer found)':''}`}); }
+    else notes.push({p:L[at].p, y:L[at].y, kind:'q', text:`Q${q.qid}: ${got}/${mx}`, li:at});
+    q.points.forEach(p=>{ const a=res.points[p.id]; if(!a) return; const lab=pointLabel(q,p);
+      if(a.m>0 && a.line>=0 && L[a.line]) notes.push({p:L[a.line].p, y:L[a.line].y, kind:'ok', m:a.m, text:`${lab} +${a.m} ${a.comment||''}`.trim(), li:a.line+0.1});
+      else if(a.m>0) extra.push({kind:'ok', m:a.m, text:`Q${q.qid} ${lab} +${a.m} ${a.comment||''}`});
+      if(a.m<(+p.marks||0)){ const e=endOf(q); const t=`${lab} ${a.m}/${p.marks} ${a.comment||''}`;
+        if(a.m>0 && a.line>=0) return;            // part marks: the comment already sits on the line
+        if(e>=0 && L[e]) notes.push({p:L[e].p, y:L[e].y, kind:'miss', text:t, li:e+0.2}); else extra.push({kind:'miss', text:`Q${q.qid} ${t}`}); }
+    });
+  });
+  notes.sort((a,b)=> s.pages.indexOf(a.p)-s.pages.indexOf(b.p) || a.li-b.li);
+  return {notes, extra};
+}
+function tierGroups(s){
+  return TIERS.map(t=>({t, items:(s.res?s.res.tiers:[]).filter(x=>x.k===t.k)})).filter(g=>g.items.length);
+}
+
+/* ----------------------------------------------------------- 4 review -- */
+function filtered(){ const S=JOB.students.map((s,i)=>({s,i})).filter(x=>x.s.res);
+  return filt==='need'?S.filter(x=>unsure(x.s).length):filt==='done'?S.filter(x=>x.s.status==='checked'):S; }
+function renderReview(){
+  const list=filtered(), S=JOB.students;
+  if(!S.some(s=>s.res)){ $('roster2').innerHTML='<div class="note">Nothing marked yet. Go to step 3.</div>'; $('pages').innerHTML=''; $('mpanel').innerHTML=''; $('fb').innerHTML=''; return; }
+  if(!S[cur]||!S[cur].res) cur=(list[0]||S.map((s,i)=>({s,i})).find(x=>x.s.res)).i;
+  const needN=S.filter(s=>unsure(s).length).length;
+  $('roster2').innerHTML = `<div class="filters"><button aria-pressed="${filt==='need'}" data-f="need">Need you (${needN})</button><button aria-pressed="${filt==='all'}" data-f="all">All</button><button aria-pressed="${filt==='done'}" data-f="done">Checked</button></div>` +
+    (list.length?list.map(({s,i})=>`<button aria-current="${i===cur}" data-s="${i}"><span class="no">${String(s.no==null?'?':s.no).padStart(2,'0')}</span><span>${esc(nameOf(s))||stuLabel(s)}<br>${s.status==='checked'?'<span class="chip ok">Checked</span>':unsure(s).length?`<span class="chip edit">${unsure(s).length} to check</span>`:'<span class="chip ai">AI sure</span>'}</span><span class="sc">${tot(s)}/${maxT()}</span></button>`).join('')
+      :'<div class="note">Nothing here. '+(filt==='need'?'Every uncertain point is checked.':'')+'</div>');
+  $('roster2').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ filt=b.dataset.f; renderReview(); });
+  $('roster2').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ cur=+b.dataset.s; renderReview(); });
+  renderPages(); renderPanel();
+}
+async function renderPages(){
+  const s=JOB.students[cur], box=$('pages'), token=Symbol(); renderPages.tok=token;
+  $('pageLbl').textContent=`${stuLabel(s)} ${nameOf(s)} · pages ${pagesStr(s.pages)}`;
+  const {notes, extra}=notesFor(s);
+  box.innerHTML = s.pages.map((p,k)=>`<div class="sheet" data-pg="${p}"><img alt="Page ${p+1}" data-img="${p}"><div class="margin">${k===0?`<div class="note-pen total" style="top:6px">${tot(s)}/${maxT()}</div>`:''}
+    ${notes.filter(n=>n.p===p).map(n=>`<div class="note-pen ${n.kind==='q'?'q':''}" data-y="${n.y}">${n.kind==='ok'?'✓ ':n.kind==='miss'?'✗ ':''}${esc(n.text)}</div>`).join('')}</div></div>`).join('');
+  $('fb').innerHTML = fbHTML(s, extra);
+  for(const p of s.pages){ const url=await pageShow(p); if(renderPages.tok!==token) return; const im=box.querySelector(`[data-img="${p}"]`); if(im){ im.src=url; im.onload=()=>layoutNotes(im.closest('.sheet')); } }
+}
+function layoutNotes(sheet){
+  const h=sheet.querySelector('img').clientHeight; let floor=sheet.querySelector('.total')?64:0;
+  sheet.querySelectorAll('.note-pen[data-y]').forEach(n=>{ let top=Math.max(+n.dataset.y*h-8, floor); n.style.top=top+'px'; floor=top+n.offsetHeight+2; });
+  sheet.querySelector('.margin').style.minHeight=Math.max(h,floor)+'px';
+}
+window.addEventListener('resize',()=>document.querySelectorAll('.sheet').forEach(layoutNotes));
+function fbHTML(s, extra){
+  const groups=tierGroups(s);
+  return `<div class="fbbox"><b>Feedback · ${esc(stuLabel(s))} · ${tot(s)}/${maxT()}</b>
+    ${extra.map(n=>`<div>${n.kind==='ok'?'✓ ':n.kind==='miss'?'✗ ':''}${esc(n.text)}</div>`).join('')}
+    ${s.res.overall?`<div>${esc(s.res.overall)}</div>`:''}
+    <b>How to improve</b>
+    ${groups.length?groups.map(g=>`<div><u>${g.t.name}</u> (${g.t.hint})${g.items.map(x=>`<br>Q${esc(x.q)}: ${esc(x.advice)}`).join('')}</div>`).join(''):'<div>Full marks or nothing to fix. Well done.</div>'}
+  </div>`;
+}
+function renderPanel(){
+  const s=JOB.students[cur], P=$('mpanel'), Q=JOB.scheme.questions, uns=new Set(unsure(s));
+  const tr=(s.lines||[]).map((l,i)=>`L${i}  ${esc(l.t)}`).join('\n').replace(/\[\?([^\]]*)\?\]/g,'<mark>[?$1?]</mark>').replace(/\[\?\]/g,'<mark>[?]</mark>');
+  P.innerHTML = `<div class="row" style="justify-content:space-between"><div><h2>${esc(stuLabel(s))} ${esc(nameOf(s))}</h2><div class="note">${uns.size?`${uns.size} point${uns.size>1?'s':''} need you (amber). The rest the AI is sure of.`:'Nothing uncertain left.'}</div></div>
+    <div style="font:600 24px var(--f-mono)">${tot(s)}<span class="note">/${maxT()}</span></div></div>
+    ${Q.map((q,qi)=>{ const qUns=q.points.filter(p=>uns.has(p.id)).length;
+      return `<details class="qsec" ${qUns?'open':''}><summary><span>Q ${esc(q.qid)} ${qUns?`<span class="chip edit">${qUns} to check</span>`:''}</span><span class="note" style="font-family:var(--f-mono)">${qGot(s,q)}/${maxOf(q)}</span></summary><div class="inner">
+      ${[...q.points].sort((a,b)=>uns.has(b.id)-uns.has(a.id)).map(p=>{ const a=s.res.points[p.id]||{m:0,comment:'',why:[]}, ai=(s.ai&&s.ai.points[p.id])||a, u=uns.has(p.id);
+        return `<div class="pt ${u?'unsure':''}"><div class="hd"><div><span class="pid">${pointLabel(q,p)}</span>${esc(p.text)}${p.rule?` <span class="note">(${esc(p.rule)})</span>`:''}</div>
+          <div class="stepper"><button aria-label="minus" data-m="${p.id}" data-d="-1">−</button><output>${a.m} / ${p.marks}</output><button aria-label="plus" data-m="${p.id}" data-d="1">+</button></div></div>
+          ${u?`<div class="why">${esc((a.why||[]).join(' · '))}</div><div class="row">${a.alt!=null&&a.alt!==a.m?`<button class="btn sm" data-pick="${p.id}" data-v="${a.alt}">Use ${a.alt}</button>`:''}<button class="btn sm primary" data-ok="${p.id}">${a.m} is right</button></div>`
+            :(a.m!==ai.m?`<span class="chip edit">You changed it (AI gave ${ai.m})</span>`:(s.resolved||{})[p.id]?'<span class="chip ok">Checked</span>':'<span class="chip ai">AI sure</span>')}
+          ${a.quote?`<div class="quote">“${esc(a.quote)}”</div>`:''}
+          <label class="lb" for="cm${p.id}">Comment on the script</label><textarea id="cm${p.id}" rows="2" data-c="${p.id}">${esc(a.comment)}</textarea>
+          ${p.rationale?`<details class="small"><summary>Why this point earns marks</summary>${esc(p.rationale)}</details>`:''}</div>`; }).join('')}
+      </div></details>`; }).join('')}
+    <div class="stack"><h3>How to improve · 3 tiers (printed on the PDF)</h3>
+      ${(s.res.tiers||[]).map((t,i)=>`<div class="tierrow"><select class="cell" id="tq${i}" data-ti="${i}" data-tf="q">${Q.map(q=>`<option ${q.qid===t.q?'selected':''}>${esc(q.qid)}</option>`).join('')}</select>
+        <select class="cell" id="tk${i}" data-ti="${i}" data-tf="k">${TIERS.map(x=>`<option value="${x.k}" ${x.k===t.k?'selected':''}>${x.short}</option>`).join('')}</select>
+        <textarea id="ta${i}" rows="2" data-ti="${i}" data-tf="advice">${esc(t.advice)}</textarea><button class="btn sm danger" data-tdel="${i}" aria-label="Remove">✕</button></div>`).join('')}
+      <div class="row"><button class="btn sm" id="tAdd">Add advice</button><span class="note">Bottom: concept · Medium: structure + keywords · High: misread keyword</span></div>
+      <label class="lb" for="ov">Overall comment</label><textarea id="ov" rows="2">${esc(s.res.overall)}</textarea>
+      <details class="small"><summary>What the AI read (check handwriting)</summary><div class="transcript">${tr}</div></details>
+    </div>
+    <div class="row sticky" style="justify-content:space-between"><div class="row"><button class="btn" id="prev">← Prev</button><button class="btn" id="next">Next →</button><button class="btn" id="reset">Undo my changes</button></div>
+      <button class="btn primary" id="confirm">${s.status==='checked'?'Checked ✓ · Next':'Confirm & next'}</button></div>`;
+  const touch=()=>{ save(); renderSteps(); };
+  P.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ const p=allPoints().find(x=>x.id===b.dataset.m), a=s.res.points[p.id]; a.m=Math.max(0,Math.min(+p.marks,a.m+ +b.dataset.d)); s.resolved[p.id]=true; touch(); renderReview(); });
+  P.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{ s.res.points[b.dataset.pick].m=+b.dataset.v; s.resolved[b.dataset.pick]=true; touch(); renderReview(); });
+  P.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>{ s.resolved[b.dataset.ok]=true; touch(); renderReview(); });
+  P.querySelectorAll('[data-c]').forEach(t=>t.onchange=()=>{ s.res.points[t.dataset.c].comment=t.value; touch(); renderPages(); });
+  P.querySelectorAll('[data-ti]').forEach(t=>t.onchange=()=>{ s.res.tiers[+t.dataset.ti][t.dataset.tf]=t.value; touch(); renderPages(); });
+  P.querySelectorAll('[data-tdel]').forEach(b=>b.onclick=()=>{ s.res.tiers.splice(+b.dataset.tdel,1); touch(); renderReview(); });
+  $('tAdd').onclick=()=>{ s.res.tiers.push({q:Q[0].qid,k:'concept',advice:''}); touch(); renderPanel(); };
+  $('ov').onchange=e=>{ s.res.overall=e.target.value; touch(); renderPages(); };
+  const step=d=>{ const l=filtered(); if(!l.length) return; const k=l.findIndex(x=>x.i===cur); cur=l[(k+d+l.length)%l.length].i; renderReview(); window.scrollTo(0,0); };
+  $('prev').onclick=()=>step(-1); $('next').onclick=()=>step(1);
+  $('reset').onclick=()=>{ s.res.points=JSON.parse(JSON.stringify(s.ai.points)); s.res.tiers=JSON.parse(JSON.stringify(s.ai.tiers)); s.res.overall=s.ai.overall; s.resolved={}; s.status='marked'; touch(); renderReview(); toast('Back to the AI marks'); };
+  $('confirm').onclick=()=>{ Object.keys(s.res.points).forEach(id=>s.resolved[id]=true); s.status='checked'; touch(); toast(`Checked ${stuLabel(s)}: ${tot(s)}/${maxT()}`);
+    const l=filtered(); if(!l.length){ filt='all'; } const nx=filtered().find(x=>x.i!==cur&&x.s.status!=='checked'); if(nx) cur=nx.i; renderReview(); window.scrollTo(0,0); };
+}
+
+/* -------------------------------------------------------- 5 dashboard -- */
+function stats(){
+  const S=JOB.students.filter(s=>s.res), M=maxT(), n=S.length;
+  const tots=S.map(tot), avg=n?tots.reduce((a,b)=>a+b,0)/n:0, srt=[...tots].sort((a,b)=>a-b), med=n?(n%2?srt[(n-1)/2]:(srt[n/2-1]+srt[n/2])/2):0;
+  const qs=JOB.scheme.questions.map(q=>{ const mx=maxOf(q), got=S.reduce((a,s)=>a+qGot(s,q),0); return {q, mx, pct:n&&mx?got/(mx*n):0, zero:S.filter(s=>qGot(s,q)===0).length}; });
+  const pts=allPoints().map(p=>{ const got=S.reduce((a,s)=>a+ptM(s,p.id),0); return {p, pct:n&&p.marks?got/(p.marks*n):0, full:S.filter(s=>ptM(s,p.id)>=p.marks).length}; });
+  const tiers=TIERS.map(t=>{ const who=S.filter(s=>s.res.tiers.some(x=>x.k===t.k)); const qc={}; S.forEach(s=>s.res.tiers.filter(x=>x.k===t.k).forEach(x=>qc[x.q]=(qc[x.q]||0)+1));
+    return {t, who, top:Object.entries(qc).sort((a,b)=>b[1]-a[1]).slice(0,3)}; });
+  return {S,M,n,tots,avg,med,qs,pts,tiers};
+}
+function renderDash(){
+  const d=stats(), el=$('v-dash');
+  if(!d.n){ el.innerHTML='<div class="panel"><h2>5 · Dashboard</h2><div class="note">Nothing marked yet.</div></div>'; return; }
+  const bins=Array(10).fill(0); d.tots.forEach(t=>bins[Math.min(9,Math.floor(t/d.M*10))]++); const hm=Math.max(...bins,1);
+  const ag=agreement(), need=JOB.students.filter(s=>unsure(s).length).length, checked=JOB.students.filter(s=>s.status==='checked').length;
+  const weak=[...d.pts].sort((a,b)=>a.pct-b.pct).slice(0,8);
+  el.innerHTML = `
+   <div class="panel stack"><div class="row" style="justify-content:space-between"><div><h2>Class dashboard · ${esc(JOB.title||'')}</h2><div class="note">${d.n} of ${JOB.students.length} scripts marked · updates as you edit marks</div></div>
+     <div class="row"><span class="chip ${need?'edit':'ok'}">${need} need you</span><span class="chip ok">${checked} checked</span></div></div>
+    <div class="kpis">
+     <div class="kpi"><div class="v">${d.avg.toFixed(1)}<span class="note"> / ${d.M}</span></div><div class="l">Class mean (${Math.round(d.avg/d.M*100)}%)</div></div>
+     <div class="kpi"><div class="v">${d.med}<span class="note"> / ${d.M}</span></div><div class="l">Median</div></div>
+     <div class="kpi"><div class="v">${d.tots.filter(t=>t<d.M/2).length}</div><div class="l">Below half</div></div>
+     <div class="kpi"><div class="v">${ag.all?Math.round(ag.same/ag.all*100)+'%':'—'}</div><div class="l">AI matched you (step A)</div></div>
+    </div></div>
+   <div class="grid2">
+    <div class="panel"><h3 style="margin-bottom:8px">By question (class % of marks)</h3>
+     ${d.qs.map(x=>`<div class="hbar"><div style="min-width:0">Q ${esc(x.q.qid)} <span class="note">· ${x.mx} marks${x.zero?` · ${x.zero} got 0`:''}</span></div><div class="track"><div class="fill ${x.pct<.5?'low':''}" style="width:${Math.round(x.pct*100)}%"></div></div><div class="num" style="font-family:var(--f-mono);text-align:right">${Math.round(x.pct*100)}%</div></div>`).join('')}</div>
+    <div class="panel"><h3 style="margin-bottom:8px">Mark distribution (% of total)</h3>
+     <div class="hist" style="grid-template-columns:repeat(10,1fr)">${bins.map((c,k)=>`<div class="col"><div class="b" style="height:${c/hm*100}%"></div><div class="c">${c}</div><div class="x">${k*10}</div></div>`).join('')}</div>
+     <div class="note" style="margin-top:6px">Number of students in each 10% band</div></div>
+   </div>
+   <div class="grid2">
+    <div class="panel"><h3 style="margin-bottom:8px">Most-missed marking points</h3>
+     ${weak.map(x=>`<div class="hbar"><div style="min-width:0"><span class="pid">Q${esc(x.p.qid)} ${'P'+x.p.id.split('.')[1]}</span>${esc(x.p.text.length>80?x.p.text.slice(0,78)+'…':x.p.text)}<div class="note">${x.full}/${d.n} full marks</div></div><div class="track"><div class="fill ${x.pct<.5?'low':''}" style="width:${Math.round(x.pct*100)}%"></div></div><div class="num" style="font-family:var(--f-mono);text-align:right">${Math.round(x.pct*100)}%</div></div>`).join('')}</div>
+    <div class="panel"><h3 style="margin-bottom:8px">Improvement tiers</h3>
+     ${d.tiers.map(x=>`<div class="hbar" style="grid-template-columns:minmax(0,1fr) auto"><div style="min-width:0"><b>${x.t.name}</b> <span class="note">${x.t.hint}</span><div class="note">Most common: ${x.top.map(([q,c])=>'Q'+esc(q)+' ('+c+')').join(', ')||'none'}<br>Class no.: ${x.who.map(s=>s.no).join(', ')||'none'}</div></div><div style="font:600 18px var(--f-mono)">${x.who.length}</div></div>`).join('')}</div>
+   </div>
+   <div class="panel"><h3 style="margin-bottom:8px">Students</h3><div class="tablewrap"><table>
+     <tr><th class="num">No.</th><th>Name</th>${JOB.scheme.questions.map(q=>`<th class="num">Q${esc(q.qid)}</th>`).join('')}<th class="num">Total</th><th class="num">%</th><th>Tiers</th><th>Status</th></tr>
+     ${JOB.students.map((s,i)=>s.res?`<tr><td class="num">${s.no==null?'?':s.no}</td><td><a href="#" data-open="${i}" style="color:var(--accent)">${esc(nameOf(s))||stuLabel(s)}</a></td>${JOB.scheme.questions.map(q=>{const g=qGot(s,q),m=maxOf(q);return `<td class="num" style="${g<m/2?'color:var(--pen)':''}">${g}</td>`;}).join('')}<td class="num"><b>${tot(s)}</b></td><td class="num">${Math.round(tot(s)/d.M*100)}</td><td>${[...new Set(s.res.tiers.map(x=>x.k))].map(k=>TIERS.find(t=>t.k===k).short).join(', ')||'—'}</td><td>${s.status==='checked'?'<span class="chip ok">Checked</span>':unsure(s).length?'<span class="chip edit">Need you</span>':'<span class="chip ai">AI</span>'}</td></tr>`:'').join('')}
+   </table></div></div>`;
+  el.querySelectorAll('[data-open]').forEach(a=>a.onclick=e=>{ e.preventDefault(); cur=+a.dataset.open; filt='all'; go('review'); });
+}
+
+/* ----------------------------------------------------------- 6 export -- */
+function download(blob, name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+const safeName = s => String(s||'').replace(/[\\/:*?"<>|]+/g,'_').trim() || 'marking';
+/* Helvetica in a PDF only has Western characters; anything else becomes "?". */
+const pdfText = s => String(s||'').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...').replace(/✓/g,'').replace(/[^\x20-\x7E\xA0-\xFF]/g,'?');
+function wrap(text, font, size, width){ const out=[]; String(text).split('\n').forEach(par=>{ let line=''; par.split(' ').forEach(w=>{ const t=line?line+' '+w:w; if(font.widthOfTextAtSize(t,size)<=width||!line) line=t; else { out.push(line); line=w; } }); out.push(line); }); return out; }
+async function buildPdf(students){
+  const {PDFDocument, StandardFonts, rgb} = PDFLib;
+  const src = await PDFDocument.load(PDFBYTES), out = await PDFDocument.create();
+  const font = await out.embedFont(StandardFonts.Helvetica), bold = await out.embedFont(StandardFonts.HelveticaBold);
+  const RED = rgb(0.77,0.14,0.16), TINT = rgb(0.985,0.945,0.945);
+  const srcPages = src.getPages();
+  for(const s of students){
+    const {notes, extra} = notesFor(s);
+    let last=null, cursor=0, W=0, H=0, M=0, fs=9;
+    for(let k=0;k<s.pages.length;k++){
+      const sp = srcPages[s.pages[k]], sz = sp.getSize(); W=sz.width; H=sz.height; M=Math.round(W*0.45); fs=Math.max(9, W/58);
+      const emb = await out.embedPage(sp), pg = out.addPage([W+M, H]);
+      pg.drawPage(emb, {x:0, y:0, width:W, height:H});
+      pg.drawRectangle({x:W, y:0, width:M, height:H, color:TINT}); pg.drawLine({start:{x:W,y:0}, end:{x:W,y:H}, thickness:1.5, color:RED});
+      let floor = 8;            // distance from the top already used
+      if(k===0){ const t=`${tot(s)}/${maxT()}`, ts=fs*2.2, tw=bold.widthOfTextAtSize(t,ts);
+        pg.drawEllipse({x:W+M-tw/2-22, y:H-30, xScale:tw/2+14, yScale:ts*0.8, borderColor:RED, borderWidth:2});
+        pg.drawText(t, {x:W+M-tw-22, y:H-30-ts*0.35, size:ts, font:bold, color:RED}); floor=58; }
+      for(const n of notes.filter(n=>n.p===s.pages[k])){
+        const f = n.kind==='q'?bold:font, size = n.kind==='q'?fs*1.15:fs, ind = n.kind==='q'?0:fs*1.3;
+        const lines = wrap(pdfText(n.text), f, size, M-16-ind);
+        let top = Math.max(n.y*H - size, floor);
+        if(top + lines.length*size*1.2 > H-6) top = Math.max(floor, H-6-lines.length*size*1.2);
+        const x0 = W+8, yb = H-top-size;
+        if(n.kind==='ok'){ pg.drawLine({start:{x:x0,y:yb+size*0.45},end:{x:x0+size*0.35,y:yb+size*0.1},thickness:1.4,color:RED}); pg.drawLine({start:{x:x0+size*0.35,y:yb+size*0.1},end:{x:x0+size*0.9,y:yb+size*0.85},thickness:1.4,color:RED}); }
+        if(n.kind==='miss'){ pg.drawLine({start:{x:x0,y:yb+size*0.1},end:{x:x0+size*0.7,y:yb+size*0.8},thickness:1.4,color:RED}); pg.drawLine({start:{x:x0,y:yb+size*0.8},end:{x:x0+size*0.7,y:yb+size*0.1},thickness:1.4,color:RED}); }
+        lines.forEach((l,j)=>pg.drawText(l,{x:x0+ind, y:yb-j*size*1.2, size, font:f, color:RED}));
+        floor = top + lines.length*size*1.2 + 3;
+      }
+      last=pg; cursor=floor;
+    }
+    /* Feedback box: the rest of the last page's margin, or a new page. */
+    const fb=[]; const add=(t,b)=>fb.push({t:pdfText(t),b});
+    add(`Feedback ${stuLabel(s)}  ${tot(s)}/${maxT()}`, true);
+    extra.forEach(n=>add((n.kind==='ok'?'+ ':n.kind==='miss'?'x ':'')+n.text));
+    if(s.res.overall) add(s.res.overall);
+    add('How to improve', true);
+    const groups=tierGroups(s);
+    if(!groups.length) add('Full marks or nothing to fix. Well done.');
+    groups.forEach(g=>{ add(`${g.t.name} (${g.t.hint})`, true); g.items.forEach(x=>add(`Q${x.q}: ${x.advice}`)); });
+    const wrapped = fb.flatMap(r=>wrap(r.t, r.b?bold:font, fs, M-24).map((l,i)=>({l,b:r.b,gap:i===0})));
+    const need = wrapped.length*fs*1.25 + 20;
+    let pg=last, top=cursor+10, x=W+8, w=M-16;
+    if(top+need > H-8){ pg=out.addPage([W+M,H]); top=24; x=24; w=W+M-48; }
+    pg.drawRectangle({x, y:H-top-need, width:w, height:need, borderColor:RED, borderWidth:1.2, color:rgb(1,1,1)});
+    let y=H-top-fs-8;
+    const lines2 = w>M ? fb.flatMap(r=>wrap(r.t, r.b?bold:font, fs, w-16).map(l=>({l,b:r.b}))) : wrapped;
+    lines2.forEach(r=>{ pg.drawText(r.l,{x:x+8, y, size:fs, font:r.b?bold:font, color:RED}); y-=fs*1.25; });
+  }
+  return out.save();
+}
+function xlsxBook(){
+  const Q=JOB.scheme.questions, S=JOB.students.filter(s=>s.res), P=allPoints(), wb=XLSX.utils.book_new();
+  const head=['Class','No.','Name',...Q.map(q=>`Q${q.qid} (/${maxOf(q)})`),`Total (/${maxT()})`,'%','Bottom: Concept','Medium: Structure','High: Question reading','Overall comment','Needs check','Status'];
+  const tierQs=(s,k)=>s.res.tiers.filter(x=>x.k===k).map(x=>'Q'+x.q).join(', ');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([head, ...S.map(s=>[s.cls,s.no,nameOf(s),...Q.map(q=>qGot(s,q)),tot(s),Math.round(tot(s)/maxT()*1000)/10,tierQs(s,'concept'),tierQs(s,'structure'),tierQs(s,'reading'),s.res.overall,unsure(s).length,s.status==='checked'?'Checked':'AI only'])]), 'Marks');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Class','No.','Name',...P.map(p=>`Q${p.qid} P${p.id.split('.')[1]} (/${p.marks})`)], ...S.map(s=>[s.cls,s.no,nameOf(s),...P.map(p=>ptM(s,p.id))])]), 'By point');
+  const rows=[['Class','No.','Name','Question','Point','Mark','Out of','Comment','Evidence quoted','AI unsure because']];
+  S.forEach(s=>Q.forEach(q=>q.points.forEach(p=>{ const a=s.res.points[p.id]||{}; rows.push([s.cls,s.no,nameOf(s),q.qid,pointLabel(q,p),a.m||0,p.marks,a.comment||'',a.quote||'',(a.why||[]).join('; ')]); })));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Comments');
+  const tr=[['Class','No.','Name','Question','Tier','Advice']]; S.forEach(s=>s.res.tiers.forEach(t=>tr.push([s.cls,s.no,nameOf(s),t.q,TIERS.find(x=>x.k===t.k).name,t.advice])));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tr), 'Improvement');
+  const d=stats(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Question','Point','Marking point','Out of','Class % of marks','Full marks (students)'],
+    ...d.pts.map(x=>[x.p.qid,'P'+x.p.id.split('.')[1],x.p.text,x.p.marks,Math.round(x.pct*1000)/10,x.full])]), 'Class analysis');
+  return wb;
+}
+function renderExport(){
+  const S=JOB.students.filter(s=>s.res), need=S.filter(s=>unsure(s).length).length, el=$('v-export');
+  el.innerHTML = `<div class="stack"><h2>6 · Export</h2>
+    ${!S.length?'<div class="msg">Nothing marked yet.</div>':`
+    ${need?`<div class="msg">${need} script${need>1?'s still have':' still has'} uncertain points. They export with the AI's mark and are flagged in Excel.</div>`:'<div class="msg ok">Every uncertain point is checked.</div>'}
+    <div class="grid2">
+      <div class="stack"><h3>Annotated PDF</h3><div class="note">Each student's original pages with a red margin: ticks and marks beside the answer lines, question subtotals, missed points, the circled total and the 3-tier "How to improve" box.</div>
+        <div class="row"><button class="btn primary" id="xPdf">Class PDF</button><button class="btn" id="xZip">One PDF per student (.zip)</button></div></div>
+      <div class="stack"><h3>Excel</h3><div class="note">Sheets: Marks (per question, total, tiers), By point, Comments (with the evidence quoted), Improvement, Class analysis.</div>
+        <div class="row"><button class="btn primary" id="xXl">Download .xlsx</button></div></div>
+      <div class="stack"><h3>Google Sheet</h3><div class="note">Writes one row per student per question to the "LQ Marking" tab, for your records across tests. Saving again replaces this job's rows.</div>
+        <div class="row"><button class="btn" id="xSheet">Save to Google Sheet</button></div></div>
+    </div><div class="note" id="xMsg" aria-live="polite"></div>`}</div>`;
+  if(!S.length) return;
+  const msg=t=>$('xMsg').textContent=t, base=safeName(JOB.title);
+  $('xPdf').onclick=async()=>{ msg('Building the class PDF…'); try{ download(new Blob([await buildPdf(S)],{type:'application/pdf'}), base+'_marked.pdf'); msg('Class PDF downloaded.'); }catch(e){ msg('PDF failed: '+e.message); } };
+  $('xZip').onclick=async()=>{ const z=new JSZip(); for(let i=0;i<S.length;i++){ msg(`Building PDF ${i+1} of ${S.length}…`); z.file(safeName(`${stuLabel(S[i])}_${nameOf(S[i])}`)+'.pdf', await buildPdf([S[i]])); }
+    download(await z.generateAsync({type:'blob'}), base+'_students.zip'); msg('Zip downloaded.'); };
+  $('xXl').onclick=()=>{ XLSX.writeFile(xlsxBook(), base+'_marks.xlsx'); msg('Excel downloaded.'); };
+  $('xSheet').onclick=async()=>{ msg('Saving to the Sheet…');
+    const rows=[]; S.forEach(s=>JOB.scheme.questions.forEach(q=>rows.push({question:q.qid, cls:s.cls, no:s.no, name:nameOf(s), total:qGot(s,q), out_of:maxOf(q),
+      points:Object.fromEntries(q.points.map(p=>[pointLabel(q,p),ptM(s,p.id)])), comments:q.points.map(p=>pointLabel(q,p)+': '+((s.res.points[p.id]||{}).comment||'')).join(' | '),
+      tiers:s.res.tiers.filter(t=>t.q===q.qid).map(t=>TIERS.find(x=>x.k===t.k).short+': '+t.advice).join(' | '), needs_check:q.points.filter(p=>unsure(s).includes(p.id)).length, status:s.status==='checked'?'Checked':'AI only'})));
+    const r=await tpost({act:'save', job:(JOB.title||'')+' · '+JOB.id, rows}); msg(r.error?r.error:`Saved ${r.saved} rows to the "LQ Marking" tab.`); };
+}
+
+/* ---------------------------------------------------------------- boot -- */
+$('newJob').onclick=()=>{ $('newConfirm').hidden=false; };
+$('newNo').onclick=()=>{ $('newConfirm').hidden=true; };
+$('newYes').onclick=async()=>{ $('newConfirm').hidden=true; const roster=JOB.roster; JOB=blankJob(); JOB.roster=roster; PDF=null; PDFBYTES=null; IMG.clear(); await idb.del('pdf'); save(); go('scan'); };
+async function boot(){
+  JOB = (await idb.get('job')) || blankJob();
+  const bytes = await idb.get('pdf');
+  if(bytes){ try{ await loadPdf(bytes); }catch(e){ PDF=null; } }
+  view = !PDF||!JOB.students.length ? 'scan' : !JOB.scheme.confirmed ? 'scheme' : JOB.students.some(s=>unsure(s).length) ? 'review' : 'mark';
+  renderSteps(); render();
+}
+(function start(){
+  let v=null; try{ v=JSON.parse(localStorage.getItem(SKEY)); }catch(e){}
+  if(v&&v.t&&Date.now()-(v.at||0)<11*3600*1000){ SESS=v.t; checkTeacher(v.e).then(()=>{ if(!$('app').hidden) return; initGoogle(); }); }
+  else initGoogle();
+})();
+</script>
+</body>
+</html>

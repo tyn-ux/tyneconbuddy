@@ -1,4 +1,4 @@
-var BUILD = '2026-10-13b';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-14a';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -1309,6 +1309,8 @@ function doPost(e) {
     if (!sess) return ContentService.createTextOutput('auth');   // silently ignored
     // Long-question AI marking (LongQMark.gs) answers with JSON the page reads.
     if (body.event === 'lqmark') return lqMarkReply_(sess, body);
+    // Teacher AI marking (TeacherMark.gs): teacher accounts only, checked there.
+    if (body.event === 'tmark') return tmarkReply_(sess, body);
     // Correction Album saves answer with JSON too, so the page only says
     // "saved" once the row is really in the Sheet.
     if (body.event === 'lqalbum') {
@@ -1415,6 +1417,7 @@ function route_(p) {
     out = { ok: true, build: BUILD, client: CLIENT_ID.slice(0, 12) + '…',
             bank: (function () { try { return bankSheet_().getLastRow() - 1; } catch (e) { return -1; } })(),
             ai_key: !!props.getProperty('GEMINI_KEY'), ai_model: aiModel_(),
+            teachers_set: !!props.getProperty('TEACHER_EMAILS'),
             auth_last_error: redact_(props.getProperty('AUTH_LAST_ERROR')),
             ai_last_error: redact_(props.getProperty('AI_LAST_ERROR')) };
   } else if (p.claim) {
