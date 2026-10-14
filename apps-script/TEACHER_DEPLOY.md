@@ -15,12 +15,13 @@
    - `GEMINI_KEY` is the same key the students' AI already uses. Nothing new to add.
    - Recommended `AI_FALLBACK` = other Gemini model names, separated by commas. When the main model is busy (503) or out of free requests (429), marking tries each of them in order (each model has its own free limit). To get the list: in the editor pick `listModels` in the function menu > Run > View > Logs (Execution log), and copy the last line it prints.
    - Optional backup `CA_KEY` = a ChatAnywhere key (see "ChatAnywhere backup" below). Used only after every Gemini model has failed.
-6. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
-7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14f` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`). `ai_models` lists every model it will try, in order: if a name you typed is missing there, it was not a valid model name.
+6. Back in the Sheet: reload it, then menu **tyneconbuddy > Set up E-point tabs**. Do this every time you paste a new `EPoints.gs` (it adds the new E-point rules and columns).
+7. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
+8. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14f` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`). `ai_models` lists every model it will try, in order: if a name you typed is missing there, it was not a valid model name.
 
 Do **not** run `install()`.
 
-If you have not done the E-point steps from 2026-10-13b: Sheet > reload > tyneconbuddy > **Set up E-point tabs**, then **Show every student in a class…** with `LKSCEC`.
+If you have not done the E-point steps from 2026-10-13b: after step 6, also run tyneconbuddy > **Show every student in a class…** with `LKSCEC`.
 
 ## Using it
 Open `https://<your GitHub Pages site>/teacher.html` and sign in.
