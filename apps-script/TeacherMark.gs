@@ -89,14 +89,15 @@ function tmParse_(res) {
 }
 
 /* Runs n identical requests in parallel (n = 2 for the double marking).
-   Falls back to AI_FALLBACK if the main model errors or is busy (not on a
-   rate limit, which the page waits out and retries). */
+   Falls back to each AI_FALLBACK model in turn if the main model errors, is
+   busy or has used up its free quota (each model has its own); when every
+   model is rate limited the page waits and retries. */
 function tmCall_(system, parts, opt) {
   var gk = tmKey_();
   if (!gk) return [{ err: 'nokey' }];
   opt = opt || {};
   var n = opt.n || 1, props = PropertiesService.getScriptProperties();
-  var models = [aiModel_(), props.getProperty('AI_FALLBACK')].filter(Boolean), out = null;
+  var models = aiModels_(), out = null, rated = null;
   for (var m = 0; m < models.length; m++) {
     for (var pass = 0; pass < 2; pass++) {
       var reqs = [];
@@ -107,8 +108,10 @@ function tmCall_(system, parts, opt) {
       // A model that refuses the thinking setting: ask once more without it.
       if (!(out.every(function (r) { return r.err && /^400 .*thinking/i.test(r.err); }))) break;
     }
-    if (out.some(function (r) { return r.json; }) || out.some(function (r) { return r.rate; })) return out;
+    if (out.some(function (r) { return r.json; })) return out;
+    if (out.some(function (r) { return r.rate; })) rated = out;   // this model's free quota is spent: try the next
   }
+  if (rated) return rated;
   try { props.setProperty('AI_LAST_ERROR', new Date().toISOString() + '  tmark ' + String(out[0].err).slice(0, 400)); } catch (e) {}
   return out;
 }

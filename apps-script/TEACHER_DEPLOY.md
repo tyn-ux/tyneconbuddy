@@ -1,9 +1,9 @@
-# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14b)
+# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14c)
 
 `teacher.html` is a new page on the site for teachers only. You upload one PDF with the whole class's test, one Word marking scheme, and Gemini splits the scan by student, reads each script, and marks every question twice. Only the points the AI is unsure of come to you. The page is not linked from the student pages.
 
 ## Apps Script (one time)
-`Code.gs` 2026-10-14b already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
+`Code.gs` 2026-10-14c already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
 
 1. Sheet > Extensions > Apps Script.
 2. `Code.gs`: select all, paste the new `Code.gs`, Save.
@@ -13,9 +13,9 @@
    - `TEACHER_EMAILS` = the Google account(s) you sign in with, comma-separated.
      Nobody else can use the page: a student who signs in gets "teachers only" and nothing else.
    - `GEMINI_KEY` is the same key the students' AI already uses. Nothing new to add.
-   - Optional `AI_FALLBACK` = a second Gemini model name (run `listModels` in the editor to see them). When the main model says "high demand" (503), marking switches to it.
+   - Recommended `AI_FALLBACK` = other Gemini model names, separated by commas. When the main model is busy (503) or out of free requests (429), marking tries each of them in order (each model has its own free limit). To get the list: in the editor pick `listModels` in the function menu > Run > View > Logs (Execution log), and copy the last line it prints.
 6. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
-7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14b` and `"teachers_set": true`.
+7. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14c` and `"teachers_set": true`.
 
 Do **not** run `install()`.
 

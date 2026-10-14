@@ -1,4 +1,4 @@
-var BUILD = '2026-10-14b';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-14c';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -1015,6 +1015,13 @@ var AI_DAILY_CAP = 20;
 function aiModel_() {
   return PropertiesService.getScriptProperties().getProperty('AI_MODEL') || 'gemini-3.6-flash';
 }
+/* The main model, then every AI_FALLBACK model in order. AI_FALLBACK may hold
+   several names separated by commas; each Gemini model has its own free limit. */
+function aiModels_() {
+  var seen = {}, list = [aiModel_()].concat(String(PropertiesService.getScriptProperties().getProperty('AI_FALLBACK') || '').split(','));
+  return list.map(function (m) { return String(m).trim(); })
+    .filter(function (m) { if (!m || seen[m]) return false; seen[m] = 1; return true; });
+}
 
 /* The thinking control changed dialect between generations: 2.5 takes
    thinkingBudget (0 = off); the 3.x series takes thinkingLevel and will not
@@ -1117,7 +1124,7 @@ function askModel_(q, chose) {
   // filter(Boolean), not filter(String): String(null) is "null", which is
   // truthy, so the old code called a model literally named "null" whenever
   // AI_FALLBACK was unset — and that 404 overwrote the real error.
-  var models = [aiModel_(), props.getProperty('AI_FALLBACK')].filter(Boolean);
+  var models = aiModels_();
   var firstErr = '';
   for (var m = 0; m < models.length; m++) {
     var r = callModel_(models[m], key, user);
@@ -1290,7 +1297,9 @@ function listModels() {
   var names = (JSON.parse(res.getContentText()).models || []).filter(function (m) {
     return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && /flash/.test(m.name);
   }).map(function (m) { return m.name.replace('models/', ''); });
-  Logger.log('Flash models this key can use:\n' + names.join('\n'));
+  Logger.log('Flash models this key can use:\n' + names.join('\n')
+    + '\n\nTo try all of them when one is busy or out of free requests, copy this line into the Script Property AI_FALLBACK:\n'
+    + names.filter(function (n) { return n !== aiModel_() && !/preview|exp|tts|image|live|audio/i.test(n); }).join(','));
 }
 
 /* ------------------------------------------------------------------ POST -- */
