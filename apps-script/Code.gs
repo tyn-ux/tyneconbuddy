@@ -1,4 +1,4 @@
-var BUILD = '2026-10-14c';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-10-14e';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -1013,13 +1013,19 @@ var AI_DAILY_CAP = 20;
    Default follows Google's own redirect notice (Sep 2026): 2.5-flash is closed
    to new users; 3.6-flash is the replacement. */
 function aiModel_() {
-  return PropertiesService.getScriptProperties().getProperty('AI_MODEL') || 'gemini-3.6-flash';
+  return aiName_(PropertiesService.getScriptProperties().getProperty('AI_MODEL')) || 'gemini-3.6-flash';
+}
+/* A model name as typed into Script Properties: drop quotes, spaces and a
+   leading "models/"; anything that still isn't a plain name is ignored. */
+function aiName_(m) {
+  m = String(m || '').replace(/["'`\s]/g, '').replace(/^models\//, '');
+  return /^[a-z0-9][a-z0-9.\-]*$/i.test(m) ? m : '';
 }
 /* The main model, then every AI_FALLBACK model in order. AI_FALLBACK may hold
    several names separated by commas; each Gemini model has its own free limit. */
 function aiModels_() {
   var seen = {}, list = [aiModel_()].concat(String(PropertiesService.getScriptProperties().getProperty('AI_FALLBACK') || '').split(','));
-  return list.map(function (m) { return String(m).trim(); })
+  return list.map(aiName_)
     .filter(function (m) { if (!m || seen[m]) return false; seen[m] = 1; return true; });
 }
 
@@ -1425,8 +1431,9 @@ function route_(p) {
     var props = PropertiesService.getScriptProperties();
     out = { ok: true, build: BUILD, client: CLIENT_ID.slice(0, 12) + '…',
             bank: (function () { try { return bankSheet_().getLastRow() - 1; } catch (e) { return -1; } })(),
-            ai_key: !!props.getProperty('GEMINI_KEY'), ai_model: aiModel_(),
+            ai_key: !!props.getProperty('GEMINI_KEY'), ai_model: aiModel_(), ai_models: aiModels_(),
             teachers_set: !!props.getProperty('TEACHER_EMAILS'),
+            backup_ai_set: !!props.getProperty('CA_KEY'),
             auth_last_error: redact_(props.getProperty('AUTH_LAST_ERROR')),
             ai_last_error: redact_(props.getProperty('AI_LAST_ERROR')) };
   } else if (p.claim) {
