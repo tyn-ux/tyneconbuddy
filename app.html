@@ -3000,8 +3000,9 @@ function loadBoard(target){
     if(!r||!r.top){ el.innerHTML='<p class="muted">'+(r&&r.error==='closed'?'This class is not open.':'Leaderboard is unavailable right now.')+'</p>'; return; }
     if(!r.top.length){ el.innerHTML='<p class="muted">No one in this class yet.</p>'; return; }
     let h='<table><tr><th>#</th><th>Nickname</th><th>Lv</th><th>Cleared</th><th>%</th></tr>';
-    r.top.forEach((x,i)=>{ h+='<tr><td>'+(x.rank||i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+(x.c||0)+'</td><td>'+x.pct+'%</td></tr>'; });
-    h+='</table><p class="mono" style="margin-top:8px">'+(r.cls?'Class '+esc(r.cls)+' · ':'')+'out of '+r.total+' MCQs · updates every 2 minutes</p>';
+    // The top 15 only; anyone below sees their own rank in the line underneath.
+    r.top.slice(0,15).forEach((x,i)=>{ h+='<tr><td>'+(x.rank||i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+(x.c||0)+'</td><td>'+x.pct+'%</td></tr>'; });
+    h+='</table><p class="mono" style="margin-top:8px">'+(r.cls?'Class '+esc(r.cls)+' · ':'')+(r.top.length>15?'top 15 of '+r.top.length+' · ':'')+'out of '+r.total+' MCQs · updates every 2 minutes</p>';
     if(r.you) h+='<p class="mono" style="margin-top:4px">You are #'+r.you.rank+' of '+r.n
       +'  ·  '+r.you.pct+'%  ·  Lv.'+r.you.lvl
       +(r.you.gapQ?'  ·  '+r.you.gapQ+' questions behind the next rank':'')+'</p>';
