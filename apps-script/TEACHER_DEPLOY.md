@@ -32,6 +32,18 @@ Open `https://<your GitHub Pages site>/teacher.html` and sign in.
 
 The job is kept in that browser (close the tab and come back later). Use the same computer and browser to continue a job.
 
+## Saving admin time (added after the first version, no Apps Script change)
+- **All jobs** (first tab): every marking job with its progress, mean and status. Open several jobs as tabs; marking carries on in the background while you work in another tab (the tab's dot pulses).
+- **Copy for class**: same test for another class. The confirmed scheme, your comment bank and the 3 scripts you checked (the standard) come along, so you only upload the new scan.
+- **Scheme library**: each confirmed scheme is saved; pick it in step 2 next time instead of uploading the Word file again. Class lists are saved per class too.
+- **Review keys**: `0`–`9` sets the mark of the highlighted point, `Enter` confirms the script, `J` / `K` next / previous. The page jumps to where the uncertain point is. **Approve N AI-sure scripts** confirms every script with nothing uncertain in one click.
+- **Comment bank**: a comment you write once shows as a one-click chip on the same point for the next students.
+- **Student history** (All jobs): each student's % over the last jobs of a class and the improvement tier that keeps coming back.
+- **Printable answer sheet** (All jobs): boxes for class, class no. and question number, so the AI splits the scan almost perfectly.
+- **Follow-up lesson** (Dashboard): students grouped by tier with the points to reteach; copy it or download a PDF.
+- **Copy for mark book** (Export): marks in class-no. order, ready to paste into the school mark book.
+- **Remove scan** (All jobs) frees space in the browser but keeps the marks.
+
 ## Limits worth knowing
 - Free Gemini has a per-minute and a per-day limit. The page waits and retries; if the daily limit runs out it stops and **Continue marking** picks up where it left off.
 - Each script costs about 1 request per 4 pages to read, plus 2 to mark (both runs go out together).
