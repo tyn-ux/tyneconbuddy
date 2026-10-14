@@ -181,7 +181,7 @@ kbd{font:11px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px
 <body>
 <div class="wrap">
   <header class="appbar">
-    <div class="brand"><h1>Long Q Marking Desk</h1><div class="note" id="who">Teacher only</div></div>
+    <div class="brand"><h1>Long Q Marking Desk</h1><div class="note"><span id="who">Teacher only</span> <span id="syncSt" aria-live="polite"></span></div></div>
     <div class="tabs" role="tablist" id="tabs"></div>
     <div class="row" style="padding-bottom:6px"><button class="btn sm primary" id="newJob" hidden>+ New marking job</button></div>
   </header>
@@ -207,7 +207,7 @@ kbd{font:11px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px
       <div class="grid2">
         <div class="stack">
           <h2>1 · Upload the class scan</h2>
-          <div class="note">One PDF with every student's whole test. The PDF stays in this browser; only page images are sent to Gemini for reading, and nothing is stored on the server.</div>
+          <div class="note">One PDF with every student's whole test. The PDF is kept in this browser and in a private copy in your Google Drive (so it opens on your other devices); only page images, with the name covered, are sent to Gemini for reading.</div>
           <div class="drop" id="pdfDrop">
             <input type="file" id="pdfFile" accept="application/pdf" hidden>
             <button class="btn primary" id="pdfPick">Choose PDF</button>
@@ -331,9 +331,9 @@ const idb = (() => {
   return { get: k => op('readonly', s => s.get(k)).catch(() => null), set: (k, v) => op('readwrite', s => s.put(v, k)).catch(() => null), del: k => op('readwrite', s => s.delete(k)).catch(() => null) };
 })();
 const saveT = {};
-function save(c){ c = c || CTX; if(!c) return; const id = c.job.id;
-  clearTimeout(saveT[id]); saveT[id] = setTimeout(() => { idb.set('job:'+id, JSON.parse(JSON.stringify(c.job))); upsertIndex(c.job); }, 300); }
-function saveLib(){ idb.set('lib', JSON.parse(JSON.stringify(LIB))); }
+function save(c){ c = c || CTX; if(!c) return; const id = c.job.id; c.job.updated = Date.now();
+  clearTimeout(saveT[id]); saveT[id] = setTimeout(async () => { await idb.set('job:'+id, JSON.parse(JSON.stringify(c.job))); upsertIndex(c.job); syncMark('job:'+id); }, 300); }
+function saveLib(){ LIB.updated = Date.now(); idb.set('lib', JSON.parse(JSON.stringify(LIB))); syncMark('lib'); }
 /* The teacher's own choices, kept with the library: which parts of the marking
    panel show, and what goes on the annotated PDF (the Review preview follows it). */
 const PANEL_OPTS = [['comment','Comment boxes'],['bank','Saved comments'],['quote','Evidence quote'],['rationale','Why this point earns marks'],['tiers','How to improve (3 tiers)'],['overall','Overall comment'],['read','What the AI read']];
@@ -348,7 +348,7 @@ function summarize(j){ return withJob(j, () => { const S = j.students.filter(s=>
   return { id:j.id, title:j.title||'Untitled job', cls:j.cls||'', created:j.created, n:j.students.length, marked:S.length,
     checked:j.students.filter(s=>s.status==='checked').length, need:j.students.filter(s=>unsure(s).length).length,
     mean:S.length?Math.round(tots.reduce((a,b)=>a+b,0)/S.length*10)/10:null, out:M, qs:j.scheme.questions.length,
-    scheme:j.scheme.name||'', libId:j.scheme.libId||'', hasPdf:!!j.hasPdf,
+    scheme:j.scheme.name||'', libId:j.scheme.libId||'', hasPdf:!!(j.hasPdf||j.cloudPdf), updated:j.updated||j.created,
     stu:S.map(s=>({cls:s.cls, no:s.no, pct:M?Math.round(tot(s)/M*100):0, t:Object.fromEntries(TIERS.map(t=>[t.k, s.res.tiers.filter(x=>x.k===t.k).length]))})) }; }); }
 function upsertIndex(j){ const x = summarize(j), i = INDEX.findIndex(r=>r.id===j.id); if(i>=0) INDEX[i]=x; else INDEX.push(x);
   idb.set('index', INDEX); renderTabs(); if(ACTIVE==='home' && !HOME.copy && !HOME.confirm) renderHome(); }
@@ -489,7 +489,7 @@ async function takePdf(file){
   nj.title = $('jobTitle').value || file.name.replace(/\.pdf$/i,'');
   nj.pdfName = file.name; nj.pageCount = PDF.numPages; nj.hasPdf = true;
   JOB = CTX.job = nj;
-  await idb.set('pdf:'+JOB.id, bytes); save(); renderSteps(); renderScan();
+  JOB.cloudPdf = 0; await idb.set('pdf:'+JOB.id, bytes); save(); syncMark('pdf:'+JOB.id); renderSteps(); renderScan();
 }
 async function renderScan(){
   $('jobTitle').value = JOB.title||''; $('roster').value = JOB.roster||'';
@@ -1353,7 +1353,8 @@ async function loadCtx(id){
   if(CTXS[id]) return CTXS[id];
   const job=await idb.get('job:'+id); if(!job) return null;
   const c={job, pdf:null, bytes:null, img:new Map(), view:null, cur:0, filt:'need', run:{on:false, stop:false, msg:''}};
-  const bytes = job.hasPdf ? await idb.get('pdf:'+id) : null;
+  let bytes = job.hasPdf ? await idb.get('pdf:'+id) : null;
+  if(!bytes && job.cloudPdf){ bytes = await pullPdf(job); }
   if(bytes){ try{ c.bytes=bytes; c.pdf=await pdfjsLib.getDocument({data:bytes.slice(0)}).promise; }catch(e){ c.pdf=null; } }
   c.view=withJob(job, ()=>defaultView(job)); CTXS[id]=c; return c;
 }
@@ -1390,7 +1391,7 @@ document.addEventListener('click', e => {
 async function createJob(o){
   const j=Object.assign(blankJob(), o||{});
   CTXS[j.id]={job:j, pdf:null, bytes:null, img:new Map(), view:'scan', cur:0, filt:'need', run:{on:false, stop:false, msg:''}};
-  await idb.set('job:'+j.id, JSON.parse(JSON.stringify(j))); upsertIndex(j); show(j.id);
+  j.updated=Date.now(); await idb.set('job:'+j.id, JSON.parse(JSON.stringify(j))); upsertIndex(j); syncMark('job:'+j.id); show(j.id);
 }
 /* Same test, another class: the confirmed scheme, its comment bank and the
    scripts the teacher checked (the marking standard) come along. */
@@ -1404,8 +1405,10 @@ async function copyJob(id, cls){
 async function removeScan(id){ await idb.del('pdf:'+id); const c=CTXS[id]; const j=(c&&c.job)||await idb.get('job:'+id); if(!j) return;
   j.hasPdf=false; if(c){ c.pdf=null; c.bytes=null; c.img.clear(); if(CTX===c){ PDF=null; PDFBYTES=null; } } await idb.set('job:'+id, JSON.parse(JSON.stringify(j))); upsertIndex(j); }
 async function deleteJob(id){ if(CTXS[id]&&CTXS[id].run.on){ toast('Pause the marking first.'); return; }
-  await idb.del('pdf:'+id); await idb.del('job:'+id); INDEX=INDEX.filter(r=>r.id!==id); idb.set('index', INDEX);
-  OPEN=OPEN.filter(x=>x!==id); delete CTXS[id]; renderTabs(); renderHome(); }
+  await dropLocal(id); renderHome();
+  if(SY.on!==false){ const r=await tpost({act:'sync_del', id}); if(r&&r.ok) syncSay('Synced ✓'); } }
+async function dropLocal(id){ await idb.del('pdf:'+id); await idb.del('job:'+id); INDEX=INDEX.filter(r=>r.id!==id); idb.set('index', INDEX);
+  SY.q.delete('job:'+id); SY.q.delete('pdf:'+id); OPEN=OPEN.filter(x=>x!==id); delete CTXS[id]; if(ACTIVE===id) await show('home'); else renderTabs(); }
 
 /* ---------------------------------------------------------------- home -- */
 function renderHome(){
@@ -1511,6 +1514,78 @@ async function boot(){
   let saved=null; try{ saved=JSON.parse(localStorage.getItem('tmark:tabs')); }catch(e){}
   if(saved && Array.isArray(saved.open)) OPEN = saved.open.filter(id=>INDEX.some(r=>r.id===id));
   await show(saved && saved.active && (saved.active==='home' || OPEN.includes(saved.active)) ? saved.active : (OPEN[0] || 'home'));
+  syncPull();
+}
+window.addEventListener('focus', () => { if(SESS && Date.now()-(SY.pulled||0) > 60000) syncPull(); });
+
+/* --------------------------------------------------------------- sync -- */
+/* Every job, the scheme library and each scan are copied to a private folder
+   in Google Drive through the server, so the same work opens on any device.
+   The newest save wins; a job deleted on one device is deleted on the others. */
+const SY = {on:null, busy:false, q:new Set(), t:null, pulled:0};
+const PDF_PART = 3*1024*1024;
+function syncSay(t){ const el=$('syncSt'); if(el) el.textContent = t ? '· '+t : ''; }
+function syncMark(key){ if(SY.on===false) return; SY.q.add(key); clearTimeout(SY.t); SY.t=setTimeout(syncPush, 2500); }
+function b64(bytes){ let s=''; for(let i=0;i<bytes.length;i+=0x8000) s+=String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); return btoa(s); }
+function unb64(t){ const s=atob(t), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
+function syncOff(r){ if(r && /Unknown request/.test(r.error||'')){ SY.on=false; SY.q.clear(); syncSay('sync needs the new Apps Script'); return true; } return false; }
+async function syncPush(){
+  if(SY.busy || !SESS || SY.on===false){ if(SY.busy) { clearTimeout(SY.t); SY.t=setTimeout(syncPush, 3000); } return; }
+  SY.busy=true;
+  try{
+    while(SY.q.size){
+      const key=[...SY.q][0]; SY.q.delete(key); const [kind,id]=key.split(':');
+      syncSay('Saving to Drive…'); let r;
+      if(kind==='lib'){ r=await tpost({act:'sync_put', k:'lib_main', t:LIB.updated||Date.now(), data:JSON.stringify(LIB), ifOlder:true}); }
+      else if(kind==='job'){ const j=(CTXS[id]&&CTXS[id].job)||await idb.get('job:'+id); if(!j) continue;
+        r=await tpost({act:'sync_put', k:'job_'+id, t:j.updated||j.created, data:JSON.stringify(j), ifOlder:true});
+        if(r && r.newer){ SY.q.delete(key); await syncPull(); continue; } }
+      else if(kind==='pdf'){ const bytes=await idb.get('pdf:'+id), c=CTXS[id], j=(c&&c.job)||await idb.get('job:'+id); if(!bytes||!j) continue;
+        const n=Math.max(1, Math.ceil(bytes.length/PDF_PART)), stamp=Date.now();
+        for(let i=0;i<n;i++){ syncSay(`Saving the scan to Drive ${i+1}/${n}…`);
+          r=await tpost({act:'sync_put', k:`pdf_${id}.${i}of${n}`, t:stamp, data:b64(bytes.subarray(i*PDF_PART,(i+1)*PDF_PART))}); if(!r||!r.ok) break; }
+        if(r&&r.ok){ j.cloudPdf=n; if(c) save(c); else { j.updated=Date.now(); await idb.set('job:'+id, j); upsertIndex(j); SY.q.add('job:'+id); } } }
+      if(syncOff(r)) return;
+      if(!r || (r.error && r.error!=='missing')){ SY.q.add(key); syncSay('Drive sync paused: '+((r&&r.error)||'no connection')+'. It will try again.'); clearTimeout(SY.t); SY.t=setTimeout(syncPush, 30000); return; }
+      SY.on=true;
+    }
+    syncSay('Synced ✓');
+  } finally { SY.busy=false; }
+}
+async function syncPull(){
+  if(!SESS || SY.on===false) return; SY.pulled=Date.now();
+  const L=await tpost({act:'sync_list'}); if(syncOff(L)) return;
+  if(!L || !L.items){ syncSay('Drive sync paused: '+((L&&L.error)||'no connection')); return; }
+  SY.on=true; syncSay('Checking Drive…');
+  const cloud={}; L.items.forEach(x=>cloud[x.k]=x);
+  for(const x of L.items.filter(x=>x.k.startsWith('del_'))){ const id=x.k.slice(4); if(INDEX.some(r=>r.id===id) && !(CTXS[id]&&CTXS[id].run.on)) await dropLocal(id); }
+  let got=0;
+  for(const x of L.items.filter(x=>x.k.startsWith('job_'))){ const id=x.k.slice(4), mine=INDEX.find(r=>r.id===id);
+    if(cloud['del_'+id] || (mine && (mine.updated||0) >= x.t) || (CTXS[id]&&CTXS[id].run.on)) continue;
+    const r=await tpost({act:'sync_get', k:x.k}); if(!r||!r.data) continue;
+    let j; try{ j=JSON.parse(r.data); }catch(e){ continue; }
+    const local=await idb.get('pdf:'+id); j.hasPdf=!!local; j.updated=x.t;
+    await idb.set('job:'+id, j); got++;
+    const c=CTXS[id]; if(c){ c.job=j; if(CTX===c){ JOB=j; } }
+    upsertIndex(j); }
+  for(const r of INDEX){ if(!cloud['job_'+r.id]) SY.q.add('job:'+r.id);
+    const j=(CTXS[r.id]&&CTXS[r.id].job)||await idb.get('job:'+r.id); if(j && j.hasPdf && !j.cloudPdf) SY.q.add('pdf:'+r.id); }
+  const cl=cloud.lib_main;
+  if(cl && cl.t > (LIB.updated||0)){ const r=await tpost({act:'sync_get', k:'lib_main'});
+    if(r&&r.data){ try{ const c=JSON.parse(r.data), ids=new Set((c.schemes||[]).map(x=>x.id));
+      LIB = Object.assign({}, LIB, c, {schemes:(c.schemes||[]).concat((LIB.schemes||[]).filter(x=>!ids.has(x.id))), rosters:Object.assign({}, LIB.rosters, c.rosters), updated:cl.t});
+      idb.set('lib', JSON.parse(JSON.stringify(LIB))); }catch(e){} } }
+  else if(!cl || cl.t < (LIB.updated||0)) SY.q.add('lib');
+  if(got){ toast(`${got} job${got>1?'s':''} updated from your other device`); if(ACTIVE==='home') renderHome(); else renderShell(); }
+  if(SY.q.size) syncPush(); else syncSay('Synced ✓');
+}
+async function pullPdf(job){
+  const n=job.cloudPdf, parts=[]; if(!n || !SESS || SY.on===false) return null;
+  for(let i=0;i<n;i++){ syncSay(`Downloading the scan ${i+1}/${n}…`); toast('Downloading the scan from Drive…', 4000);
+    const r=await tpost({act:'sync_get', k:`pdf_${job.id}.${i}of${n}`}); if(!r||!r.data){ syncSay('Could not download the scan yet'); return null; } parts.push(unb64(r.data)); }
+  const all=new Uint8Array(parts.reduce((a,p)=>a+p.length,0)); let o=0; parts.forEach(p=>{ all.set(p,o); o+=p.length; });
+  await idb.set('pdf:'+job.id, all); job.hasPdf=true; await idb.set('job:'+job.id, JSON.parse(JSON.stringify(job))); syncSay('Synced ✓');
+  return all;
 }
 (function start(){
   let v=null; try{ v=JSON.parse(localStorage.getItem(SKEY)); }catch(e){}

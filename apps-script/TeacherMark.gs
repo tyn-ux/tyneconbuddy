@@ -51,6 +51,10 @@ function tmarkReply_(sess, body) {
     if (act === 'read')   return tmJson_(tmRead_(body));
     if (act === 'mark')   return tmJson_(tmMark_(body));
     if (act === 'save')   return tmJson_(tmSave_(body));
+    if (act === 'sync_list') return tmJson_(tmSyncList_(sess.email));
+    if (act === 'sync_get')  return tmJson_(tmSyncGet_(sess.email, body));
+    if (act === 'sync_put')  return tmJson_(tmSyncPut_(sess.email, body));
+    if (act === 'sync_del')  return tmJson_(tmSyncDel_(sess.email, body));
     return tmJson_({ error: 'Unknown request.' });
   } catch (err) {
     try { authErr_('tmark ' + (body && body.act) + ' threw: ' + err); } catch (e) {}
@@ -462,4 +466,81 @@ function tmSave_(b) {
     sh.getRange(sh.getLastRow() + 1, 1, out.length, out[0].length).setValues(out);
     return { ok: true, saved: out.length };
   } finally { try { lock.releaseLock(); } catch (e) {} }
+}
+
+/* --------------------------------------------------------------- sync -- */
+/* Copies of each teacher's marking jobs, scheme library and scans, so the
+   same work opens on any device. Kept in a private folder in the script
+   owner's Google Drive, one folder per teacher account; only reachable
+   through tmarkReply_, i.e. by an account in TEACHER_EMAILS, and each teacher
+   only ever sees their own folder. File name = key, description = the time
+   the browser last changed it (ms). */
+var TM_SYNC_KEY = /^(job|pdf|lib|del)_[A-Za-z0-9._-]{1,80}$/;
+
+function tmSyncFolder_(email) {
+  var props = PropertiesService.getScriptProperties(), pk = 'TM_SYNC_' + Utilities.base64EncodeWebSafe(String(email).toLowerCase()).replace(/=+$/, '');
+  var id = props.getProperty(pk);
+  if (id) { try { var f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (e) {} }
+  var folder = DriveApp.createFolder('tyneconbuddy marking sync - ' + email + ' (private)');
+  props.setProperty(pk, folder.getId());
+  return folder;
+}
+
+/* Run once from the editor after pasting: Google asks to allow Drive access,
+   and each teacher's sync folder is made. */
+function tmSyncSetup() {
+  var raw = PropertiesService.getScriptProperties().getProperty('TEACHER_EMAILS') || '';
+  raw.toLowerCase().split(/[\s,;]+/).filter(Boolean).forEach(function (e) { Logger.log(e + ': ' + tmSyncFolder_(e).getName()); });
+}
+
+function tmSyncFile_(folder, key) {
+  var it = folder.getFilesByName(key);
+  return it.hasNext() ? it.next() : null;
+}
+
+function tmSyncList_(email) {
+  var folder = tmSyncFolder_(email), it = folder.getFiles(), items = [];
+  while (it.hasNext()) {
+    var f = it.next(), k = f.getName();
+    if (TM_SYNC_KEY.test(k)) items.push({ k: k, t: Number(f.getDescription()) || 0, size: f.getSize() });
+  }
+  return { items: items };
+}
+
+function tmSyncGet_(email, b) {
+  var k = String(b.k || '');
+  if (!TM_SYNC_KEY.test(k)) return { error: 'Bad sync key.' };
+  var f = tmSyncFile_(tmSyncFolder_(email), k);
+  if (!f) return { error: 'missing' };
+  return { k: k, t: Number(f.getDescription()) || 0, data: f.getBlob().getDataAsString() };
+}
+
+function tmSyncPut_(email, b) {
+  var k = String(b.k || ''), data = String(b.data == null ? '' : b.data), t = Number(b.t) || Date.now();
+  if (!TM_SYNC_KEY.test(k)) return { error: 'Bad sync key.' };
+  if (data.length > 8 * 1024 * 1024) return { error: 'Too big for one piece.' };
+  var lock = LockService.getUserLock();
+  try { lock.waitLock(20000); } catch (e) { return { error: 'busy' }; }
+  try {
+    var folder = tmSyncFolder_(email), f = tmSyncFile_(folder, k);
+    if (f && b.ifOlder && (Number(f.getDescription()) || 0) > t) return { ok: false, newer: true };   // another device saved later
+    if (f) f.setContent(data); else f = folder.createFile(k, data, 'text/plain');
+    f.setDescription(String(t));
+    return { ok: true };
+  } finally { try { lock.releaseLock(); } catch (e) {} }
+}
+
+/* Deleting a job removes its files and leaves a small "del_" marker, so the
+   other devices delete it too. */
+function tmSyncDel_(email, b) {
+  var id = String(b.id || '');
+  if (!/^[A-Za-z0-9._-]{1,80}$/.test(id)) return { error: 'Bad id.' };
+  var folder = tmSyncFolder_(email), it = folder.getFiles(), n = 0;
+  while (it.hasNext()) {
+    var f = it.next(), k = f.getName();
+    if (k === 'job_' + id || k.indexOf('pdf_' + id + '.') === 0) { f.setTrashed(true); n++; }
+  }
+  var m = tmSyncFile_(folder, 'del_' + id) || folder.createFile('del_' + id, '1', 'text/plain');
+  m.setDescription(String(Date.now()));
+  return { ok: true, removed: n };
 }
