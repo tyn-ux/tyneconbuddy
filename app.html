@@ -968,6 +968,11 @@ function pullProgress(cb){
     if(r&&r.cleared){
       Object.keys(r.cleared).forEach(k=>{ if(!P.cleared[k]) P.cleared[k]=r.cleared[k]; });
       pSave();
+      // And the other way: a write lost to an expired session or a dropped
+      // connection left keys on this device only, so the class leaderboard
+      // (which counts the server's set) showed less than the student's page.
+      const up={}; Object.keys(P.cleared).forEach(k=>{ if(!r.cleared[k]) up[k]=P.cleared[k]; });
+      if(Object.keys(up).length) post({event:'cleared', items:up});
     }
     CLEARED_SYNCED=true;
     if(cb) cb();
