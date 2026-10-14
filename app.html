@@ -629,7 +629,8 @@ rect.fx-flash{animation-name:fxflashbg}
     </div>
     <div class="card ac ac-blue" id="ovClass">
       <div class="meta" style="margin-bottom:10px"><h2 style="margin:0" id="ovClsName">Classmates</h2>
-        <select id="ovClsSel" class="hide" aria-label="Class"></select></div>
+        <select id="ovClsSel" class="hide" aria-label="Class"></select>
+        <button class="btn sm" id="ovMatesTog" aria-expanded="true" aria-controls="ovMates" style="margin-left:auto">Hide</button></div>
       <div id="ovMates"><p class="muted">Loading…</p></div>
     </div>
     <div class="ovthree">
@@ -3000,8 +3001,9 @@ function loadBoard(target){
     if(!r||!r.top){ el.innerHTML='<p class="muted">'+(r&&r.error==='closed'?'This class is not open.':'Leaderboard is unavailable right now.')+'</p>'; return; }
     if(!r.top.length){ el.innerHTML='<p class="muted">No one in this class yet.</p>'; return; }
     let h='<table><tr><th>#</th><th>Nickname</th><th>Lv</th><th>Cleared</th><th>%</th></tr>';
-    r.top.forEach((x,i)=>{ h+='<tr><td>'+(x.rank||i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+(x.c||0)+'</td><td>'+x.pct+'%</td></tr>'; });
-    h+='</table><p class="mono" style="margin-top:8px">'+(r.cls?'Class '+esc(r.cls)+' · ':'')+'out of '+r.total+' MCQs · updates every 2 minutes</p>';
+    // The top 15 only; anyone below sees their own rank in the line underneath.
+    r.top.slice(0,15).forEach((x,i)=>{ h+='<tr><td>'+(x.rank||i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+(x.c||0)+'</td><td>'+x.pct+'%</td></tr>'; });
+    h+='</table><p class="mono" style="margin-top:8px">'+(r.cls?'Class '+esc(r.cls)+' · ':'')+(r.top.length>15?'top 15 of '+r.top.length+' · ':'')+'out of '+r.total+' MCQs · updates every 2 minutes</p>';
     if(r.you) h+='<p class="mono" style="margin-top:4px">You are #'+r.you.rank+' of '+r.n
       +'  ·  '+r.you.pct+'%  ·  Lv.'+r.you.lvl
       +(r.you.gapQ?'  ·  '+r.you.gapQ+' questions behind the next rank':'')+'</p>';
@@ -3443,7 +3445,9 @@ const EP_CATS=[['base','Characters'],['outfit','Outfits'],['bg','Backgrounds'],[
 const EP_ACT={mc_answer:'Answered an MC',mc_correct:'Correct',mc_fix:'Fixed a mistake',mc_ten:'10 questions today',
   lq_submit:'Long Q marked',lq_better:'Beat your Long Q score',album_point:'Album point marked',album_retry:'Album retry right',
   comment:'Comment posted',verified:'Teacher verified your comment',week5:'5 days this week',teacher:'From your teacher',
-  buy:'Bought',comment_hidden:'Comment hidden by your teacher'};
+  buy:'Bought',comment_hidden:'Comment hidden by your teacher',
+  welcome:'Welcome gift',checkin:'Daily check-in',streak3:'3 days in a row',streak7:'7 days in a row',
+  first10:'First 10 questions',first_lq:'First Long Q',level_up:'Level up'};
 const epItem=id=>(EPW&&EPW.store||[]).find(x=>x.id===id);
 const epName=id=>{ const it=epItem(id); return it?it.n:id; };
 const epOwns=id=>{ const it=epItem(id); return !!it&&(it.p===0||(EPW.owned||[]).indexOf(id)>=0); };
@@ -3541,11 +3545,22 @@ function epClassDraw(){
     const items=(r&&r.items)||[];
     if(!items.length){ $('ovMates').innerHTML='<p class="muted">Nobody here yet.</p>'; return; }
     $('ovMates').innerHTML='<div class="mates">'+items.map(m=>
-      '<div class="mate">'+epArt(m.look,esc(m.nick)+'\'s character')+'<div class="nk">'+esc(m.nick)+'</div>'
+      '<div class="mate">'+epArt(m.look,esc(m.nick)+'\'s character')+'<div class="nk">'+esc(m.nick)+(m.t?' <span class="vtag">Teacher</span>':'')+'</div>'
       +'<div class="lv"><span class="lvb">Lv.'+m.lv+'</span> '+esc(LEVEL_NAMES[m.lv-1]||'')+'</div></div>').join('')+'</div>';
   });
 }
 $('ovClsSel').addEventListener('change',e=>{ EP_CLS=e.target.value; epClassDraw(); });
+/* The classmates panel folds away; the choice is kept on this device. */
+function epMatesFold(hide){
+  $('ovMates').classList.toggle('hide',hide);
+  $('ovMatesTog').textContent=hide?'Show':'Hide';
+  $('ovMatesTog').setAttribute('aria-expanded',String(!hide));
+}
+try{ epMatesFold(localStorage.getItem('tjx2:matesHidden')==='1'); }catch(e){}
+$('ovMatesTog').addEventListener('click',()=>{
+  const hide=!$('ovMates').classList.contains('hide'); epMatesFold(hide);
+  try{ localStorage.setItem('tjx2:matesHidden',hide?'1':'0'); }catch(e){}
+});
 
 /* -------------------------------------------------------------- store --- */
 function drawStore(){
