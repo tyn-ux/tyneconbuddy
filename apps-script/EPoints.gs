@@ -290,8 +290,19 @@ function clearedStats_() {
     try { set = JSON.parse(cv[i][1]) || {}; } catch (e) { set = {}; }
     var n = 0;
     for (var key in set) if (mcq[key]) n++;
-    by[uid] = { c: n, p: total ? Math.round(n / total * 1000) / 10 : 0 };
+    by[uid] = { c: n };
   }
+  // app.html also reports its own count as the Scores row 'all'. When a
+  // Cleared write was lost (expired session, dropped connection) that count
+  // is higher, and it is what the student sees on their page, so take the
+  // larger. Old chapter pages use other pageIds and stay out.
+  var sv = scoreSheet_().getDataRange().getValues();
+  for (var j = 1; j < sv.length; j++) {
+    if (String(sv[j][3]) !== 'all') continue;
+    var su = String(sv[j][0]), sn = Math.min(Number(sv[j][5]) || 0, total);
+    if (su && sn > ((by[su] && by[su].c) || 0)) by[su] = { c: sn };
+  }
+  for (var u in by) by[u].p = total ? Math.round(by[u].c / total * 1000) / 10 : 0;
   var out = { total: total, by: by };
   c.put('ep_pct', JSON.stringify(out), 120);
   return out;
