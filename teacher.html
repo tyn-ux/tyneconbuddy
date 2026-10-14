@@ -322,6 +322,14 @@ const saveT = {};
 function save(c){ c = c || CTX; if(!c) return; const id = c.job.id;
   clearTimeout(saveT[id]); saveT[id] = setTimeout(() => { idb.set('job:'+id, JSON.parse(JSON.stringify(c.job))); upsertIndex(c.job); }, 300); }
 function saveLib(){ idb.set('lib', JSON.parse(JSON.stringify(LIB))); }
+/* The teacher's own choices, kept with the library: which parts of the marking
+   panel show, and what goes on the annotated PDF (the Review preview follows it). */
+const PANEL_OPTS = [['comment','Comment boxes'],['bank','Saved comments'],['quote','Evidence quote'],['rationale','Why this point earns marks'],['tiers','How to improve (3 tiers)'],['overall','Overall comment'],['read','What the AI read']];
+const PDF_OPTS = [['total','Circled total'],['qsub','Question subtotals'],['ticks','Ticks for points earned'],['miss','Missed points'],['comments','Comment text'],['overall','Overall comment'],['tiers','How to improve (3 tiers)']];
+const pref = (grp, k) => !(((LIB.prefs||{})[grp]||{})[k] === false);
+function setPref(grp, k, on){ LIB.prefs=LIB.prefs||{}; LIB.prefs[grp]=LIB.prefs[grp]||{}; LIB.prefs[grp][k]=!!on; saveLib(); }
+const prefBoxes = (grp, list) => list.map(([k,t])=>`<label class="row" style="gap:6px"><input type="checkbox" data-pref="${grp}" data-k="${k}" ${pref(grp,k)?'checked':''}> ${t}</label>`).join('');
+function bindPrefs(root, after){ root.querySelectorAll('[data-pref]').forEach(c=>c.onchange=()=>{ setPref(c.dataset.pref, c.dataset.k, c.checked); after(); }); }
 function withJob(j, fn){ const k = JOB; JOB = j; try{ return fn(); } finally { JOB = k; } }
 /* One line per job for the job list and the student history. */
 function summarize(j){ return withJob(j, () => { const S = j.students.filter(s=>s.res), M = maxT(), tots = S.map(tot);
@@ -830,18 +838,21 @@ function renderMark(){
    so what the teacher sees is what gets exported. */
 function notesFor(s){
   const notes=[], extra=[], L=s.lines||[], res=s.res; if(!res) return {notes,extra};
+  const on=k=>pref('pdf',k), cm=a=>on('comments')?(a.comment||''):'';
   const starts = JOB.scheme.questions.map(q=>({q, at: res.qstart && res.qstart[q.qid]!=null ? res.qstart[q.qid] : -1}));
   const sorted = starts.filter(x=>x.at>=0).sort((a,b)=>a.at-b.at);
   const endOf = q => { const i=sorted.findIndex(x=>x.q===q); if(i<0) return -1; return (i+1<sorted.length?sorted[i+1].at:L.length)-1; };
   starts.forEach(({q,at})=>{
     const got=qGot(s,q), mx=maxOf(q);
-    if(at<0){ extra.push({kind:'q', text:`Q${q.qid}: ${got}/${mx}${got===0?' (no answer found)':''}`}); }
+    if(!on('qsub')){}
+    else if(at<0){ extra.push({kind:'q', text:`Q${q.qid}: ${got}/${mx}${got===0?' (no answer found)':''}`}); }
     else notes.push({p:L[at].p, y:L[at].y, kind:'q', text:`Q${q.qid}: ${got}/${mx}`, li:at});
     q.points.forEach(p=>{ const a=res.points[p.id]; if(!a) return; const lab=pointLabel(q,p);
-      if(a.m>0 && a.line>=0 && L[a.line]) notes.push({p:L[a.line].p, y:L[a.line].y, kind:'ok', m:a.m, text:`${lab} +${a.m} ${a.comment||''}`.trim(), li:a.line+0.1});
-      else if(a.m>0) extra.push({kind:'ok', m:a.m, text:`Q${q.qid} ${lab} +${a.m} ${a.comment||''}`});
-      if(a.m<(+p.marks||0)){ const e=endOf(q); const t=`${lab} ${a.m}/${p.marks} ${a.comment||''}`;
-        if(a.m>0 && a.line>=0) return;            // part marks: the comment already sits on the line
+      if(!on('ticks')){}
+      else if(a.m>0 && a.line>=0 && L[a.line]) notes.push({p:L[a.line].p, y:L[a.line].y, kind:'ok', m:a.m, text:`${lab} +${a.m} ${cm(a)}`.trim(), li:a.line+0.1});
+      else if(a.m>0) extra.push({kind:'ok', m:a.m, text:`Q${q.qid} ${lab} +${a.m} ${cm(a)}`.trim()});
+      if(a.m<(+p.marks||0) && on('miss')){ const e=endOf(q); const t=`${lab} ${a.m}/${p.marks} ${cm(a)}`.trim();
+        if(a.m>0 && a.line>=0 && on('ticks')) return;   // part marks: the comment already sits on the line
         if(e>=0 && L[e]) notes.push({p:L[e].p, y:L[e].y, kind:'miss', text:t, li:e+0.2}); else extra.push({kind:'miss', text:`Q${q.qid} ${t}`}); }
     });
   });
@@ -884,7 +895,7 @@ async function renderPages(){
   const s=JOB.students[cur], box=$('pages'), token=Symbol(); renderPages.tok=token;
   $('pageLbl').textContent=`${stuLabel(s)} ${nameOf(s)} · pages ${pagesStr(s.pages)}`;
   const {notes, extra}=notesFor(s);
-  box.innerHTML = s.pages.map((p,k)=>`<div class="sheet" data-pg="${p}"><img alt="Page ${p+1}" data-img="${p}"><div class="margin">${k===0?`<div class="note-pen total" style="top:6px">${tot(s)}/${maxT()}</div>`:''}
+  box.innerHTML = s.pages.map((p,k)=>`<div class="sheet" data-pg="${p}"><img alt="Page ${p+1}" data-img="${p}"><div class="margin">${k===0&&pref('pdf','total')?`<div class="note-pen total" style="top:6px">${tot(s)}/${maxT()}</div>`:''}
     ${notes.filter(n=>n.p===p).map(n=>`<div class="note-pen ${n.kind==='q'?'q':''}" data-y="${n.y}">${n.kind==='ok'?'✓ ':n.kind==='miss'?'✗ ':''}${esc(n.text)}</div>`).join('')}</div></div>`).join('');
   $('fb').innerHTML = fbHTML(s, extra);
   if(!PDF){ box.querySelectorAll('img').forEach(im=>im.replaceWith(Object.assign(document.createElement('div'),{className:'note',style:'padding:20px',textContent:'Scan removed from this browser. Marks and comments are kept.'}))); return; }
@@ -898,12 +909,13 @@ function layoutNotes(sheet){
 }
 window.addEventListener('resize',()=>document.querySelectorAll('.sheet').forEach(layoutNotes));
 function fbHTML(s, extra){
-  const groups=tierGroups(s);
-  return `<div class="fbbox"><b>Feedback · ${esc(stuLabel(s))} · ${tot(s)}/${maxT()}</b>
+  const groups=tierGroups(s), ov=pref('pdf','overall')&&s.res.overall, ti=pref('pdf','tiers');
+  if(!extra.length && !ov && !ti) return '<div class="note">No feedback box: nothing in it is ticked under Export > PDF.</div>';
+  return `<div class="fbbox"><b>Feedback · ${esc(stuLabel(s))}${pref('pdf','total')?` · ${tot(s)}/${maxT()}`:''}</b>
     ${extra.map(n=>`<div>${n.kind==='ok'?'✓ ':n.kind==='miss'?'✗ ':''}${esc(n.text)}</div>`).join('')}
-    ${s.res.overall?`<div>${esc(s.res.overall)}</div>`:''}
-    <b>How to improve</b>
-    ${groups.length?groups.map(g=>`<div><u>${g.t.name}</u> (${g.t.hint})${g.items.map(x=>`<br>Q${esc(x.q)}: ${esc(x.advice)}`).join('')}</div>`).join(''):'<div>Full marks or nothing to fix. Well done.</div>'}
+    ${ov?`<div>${esc(s.res.overall)}</div>`:''}
+    ${ti?`<b>How to improve</b>
+    ${groups.length?groups.map(g=>`<div><u>${g.t.name}</u> (${g.t.hint})${g.items.map(x=>`<br>Q${esc(x.q)}: ${esc(x.advice)}`).join('')}</div>`).join(''):'<div>Full marks or nothing to fix. Well done.</div>'}`:''}
   </div>`;
 }
 function renderPanel(){
@@ -911,6 +923,8 @@ function renderPanel(){
   const tr=(s.lines||[]).map((l,i)=>`L${i}  ${esc(l.t)}`).join('\n').replace(/\[\?([^\]]*)\?\]/g,'<mark>[?$1?]</mark>').replace(/\[\?\]/g,'<mark>[?]</mark>');
   P.innerHTML = `<div class="row" style="justify-content:space-between"><div><h2>${esc(stuLabel(s))} ${esc(nameOf(s))}</h2><div class="note">${uns.size?`${uns.size} point${uns.size>1?'s':''} need you (amber). The rest the AI is sure of.`:'Nothing uncertain left.'}</div></div>
     <div style="font:600 24px var(--f-mono)">${tot(s)}<span class="note">/${maxT()}</span></div></div>
+    <details class="small" id="showOpts"><summary>Show or hide parts of this panel</summary><div class="row" style="flex-wrap:wrap;gap:4px 14px">${prefBoxes('panel', PANEL_OPTS)}</div>
+      <div class="row"><button class="btn sm" id="qOpen">Open all questions</button><button class="btn sm" id="qClose">Close all questions</button></div></details>
     ${Q.map((q,qi)=>{ const qUns=q.points.filter(p=>uns.has(p.id)).length;
       return `<details class="qsec" ${qUns?'open':''}><summary><span>Q ${esc(q.qid)} ${qUns?`<span class="chip edit">${qUns} to check</span>`:''}</span><span class="note" style="font-family:var(--f-mono)">${qGot(s,q)}/${maxOf(q)}</span></summary><div class="inner">
       ${[...q.points].sort((a,b)=>uns.has(b.id)-uns.has(a.id)).map(p=>{ const a=s.res.points[p.id]||{m:0,comment:'',why:[]}, ai=(s.ai&&s.ai.points[p.id])||a, u=uns.has(p.id);
@@ -918,18 +932,18 @@ function renderPanel(){
           <div class="stepper"><button aria-label="minus" data-m="${p.id}" data-d="-1">−</button><output>${a.m} / ${p.marks}</output><button aria-label="plus" data-m="${p.id}" data-d="1">+</button></div></div>
           ${u?`<div class="why">${esc((a.why||[]).join(' · '))}</div><div class="row">${a.alt!=null&&a.alt!==a.m?`<button class="btn sm" data-pick="${p.id}" data-v="${a.alt}">Use ${a.alt}</button>`:''}<button class="btn sm primary" data-ok="${p.id}">${a.m} is right</button></div>`
             :(a.m!==ai.m?`<span class="chip edit">You changed it (AI gave ${ai.m})</span>`:(s.resolved||{})[p.id]?'<span class="chip ok">Checked</span>':'<span class="chip ai">AI sure</span>')}
-          ${a.quote?`<div class="quote">“${esc(a.quote)}”</div>`:''}
-          <label class="lb" for="cm${p.id}">Comment on the script</label><textarea id="cm${p.id}" rows="2" data-c="${p.id}">${esc(a.comment)}</textarea>
-          ${(bank[p.id]||[]).filter(c=>c!==a.comment).length?`<div class="bank">${(bank[p.id]||[]).filter(c=>c!==a.comment).map((c,k)=>`<button data-bank="${p.id}" data-k="${k}" title="Use this comment">${esc(c)}</button>`).join('')}</div>`:''}
-          ${p.rationale?`<details class="small"><summary>Why this point earns marks</summary>${esc(p.rationale)}</details>`:''}</div>`; }).join('')}
+          ${a.quote&&pref('panel','quote')?`<div class="quote">“${esc(a.quote)}”</div>`:''}
+          ${pref('panel','comment')?`<label class="lb" for="cm${p.id}">Comment on the script</label><textarea id="cm${p.id}" rows="2" data-c="${p.id}">${esc(a.comment)}</textarea>`:''}
+          ${pref('panel','bank')&&(bank[p.id]||[]).filter(c=>c!==a.comment).length?`<div class="bank">${(bank[p.id]||[]).filter(c=>c!==a.comment).map((c,k)=>`<button data-bank="${p.id}" data-k="${k}" title="Use this comment">${esc(c)}</button>`).join('')}</div>`:''}
+          ${p.rationale&&pref('panel','rationale')?`<details class="small"><summary>Why this point earns marks</summary>${esc(p.rationale)}</details>`:''}</div>`; }).join('')}
       </div></details>`; }).join('')}
-    <div class="stack"><h3>How to improve · 3 tiers (printed on the PDF)</h3>
+    <div class="stack">${pref('panel','tiers')?`<h3>How to improve · 3 tiers (printed on the PDF)</h3>
       ${(s.res.tiers||[]).map((t,i)=>`<div class="tierrow"><select class="cell" id="tq${i}" data-ti="${i}" data-tf="q">${Q.map(q=>`<option ${q.qid===t.q?'selected':''}>${esc(q.qid)}</option>`).join('')}</select>
         <select class="cell" id="tk${i}" data-ti="${i}" data-tf="k">${TIERS.map(x=>`<option value="${x.k}" ${x.k===t.k?'selected':''}>${x.short}</option>`).join('')}</select>
         <textarea id="ta${i}" rows="2" data-ti="${i}" data-tf="advice">${esc(t.advice)}</textarea><button class="btn sm danger" data-tdel="${i}" aria-label="Remove">✕</button></div>`).join('')}
-      <div class="row"><button class="btn sm" id="tAdd">Add advice</button><span class="note">Bottom: concept · Medium: structure + keywords · High: misread keyword</span></div>
-      <label class="lb" for="ov">Overall comment</label><textarea id="ov" rows="2">${esc(s.res.overall)}</textarea>
-      <details class="small"><summary>What the AI read (check handwriting)</summary><div class="transcript">${tr}</div></details>
+      <div class="row"><button class="btn sm" id="tAdd">Add advice</button><span class="note">Bottom: concept · Medium: structure + keywords · High: misread keyword</span></div>`:''}
+      ${pref('panel','overall')?`<label class="lb" for="ov">Overall comment</label><textarea id="ov" rows="2">${esc(s.res.overall)}</textarea>`:''}
+      ${pref('panel','read')?`<details class="small"><summary>What the AI read (check handwriting)</summary><div class="transcript">${tr}</div></details>`:''}
     </div>
     <div class="row sticky" style="justify-content:space-between"><div class="row"><button class="btn" id="prev">← Prev</button><button class="btn" id="next">Next →</button><button class="btn" id="reset">Undo my changes</button></div>
       <button class="btn primary" id="confirm">${s.status==='checked'?'Checked ✓ · Next':'Confirm & next'}</button></div>`;
@@ -941,8 +955,11 @@ function renderPanel(){
   P.querySelectorAll('[data-bank]').forEach(b=>b.onclick=()=>{ const pid=b.dataset.bank, c=(bank[pid]||[]).filter(x=>x!==s.res.points[pid].comment)[+b.dataset.k]; s.res.points[pid].comment=c; s.resolved[pid]=true; touch(); renderPages(); renderPanel(); });
   P.querySelectorAll('[data-ti]').forEach(t=>t.onchange=()=>{ s.res.tiers[+t.dataset.ti][t.dataset.tf]=t.value; touch(); renderPages(); });
   P.querySelectorAll('[data-tdel]').forEach(b=>b.onclick=()=>{ s.res.tiers.splice(+b.dataset.tdel,1); touch(); renderReview(); });
-  $('tAdd').onclick=()=>{ s.res.tiers.push({q:Q[0].qid,k:'concept',advice:''}); touch(); renderPanel(); };
-  $('ov').onchange=e=>{ s.res.overall=e.target.value; touch(); renderPages(); };
+  if($('tAdd')) $('tAdd').onclick=()=>{ s.res.tiers.push({q:Q[0].qid,k:'concept',advice:''}); touch(); renderPanel(); };
+  if($('ov')) $('ov').onchange=e=>{ s.res.overall=e.target.value; touch(); renderPages(); };
+  bindPrefs(P, ()=>{ renderPanel(); $('showOpts').open=true; });
+  $('qOpen').onclick=()=>P.querySelectorAll('details.qsec').forEach(d=>d.open=true);
+  $('qClose').onclick=()=>P.querySelectorAll('details.qsec').forEach(d=>d.open=false);
   const step=d=>{ const l=filtered(); if(!l.length) return; const k=l.findIndex(x=>x.i===cur); cur=l[(k+d+l.length)%l.length].i; renderReview(); window.scrollTo(0,0); };
   renderPanel.step=step;
   $('prev').onclick=()=>step(-1); $('next').onclick=()=>step(1);
@@ -1061,7 +1078,7 @@ async function buildPdf(students){
       pg.drawPage(emb, {x:0, y:0, width:W, height:H});
       pg.drawRectangle({x:W, y:0, width:M, height:H, color:TINT}); pg.drawLine({start:{x:W,y:0}, end:{x:W,y:H}, thickness:1.5, color:RED});
       let floor = 8;            // distance from the top already used
-      if(k===0){ const t=`${tot(s)}/${maxT()}`, ts=fs*2.2, tw=bold.widthOfTextAtSize(t,ts);
+      if(k===0 && pref('pdf','total')){ const t=`${tot(s)}/${maxT()}`, ts=fs*2.2, tw=bold.widthOfTextAtSize(t,ts);
         pg.drawEllipse({x:W+M-tw/2-22, y:H-30, xScale:tw/2+14, yScale:ts*0.8, borderColor:RED, borderWidth:2});
         pg.drawText(t, {x:W+M-tw-22, y:H-30-ts*0.35, size:ts, font:bold, color:RED}); floor=58; }
       for(const n of notes.filter(n=>n.p===s.pages[k])){
@@ -1078,14 +1095,16 @@ async function buildPdf(students){
       last=pg; cursor=floor;
     }
     /* Feedback box: the rest of the last page's margin, or a new page. */
+    const ov=pref('pdf','overall')&&s.res.overall, ti=pref('pdf','tiers');
+    if(!extra.length && !ov && !ti) continue;   // nothing ticked for the feedback box
     const fb=[]; const add=(t,b)=>fb.push({t:pdfText(t),b});
-    add(`Feedback ${stuLabel(s)}  ${tot(s)}/${maxT()}`, true);
+    add(`Feedback ${stuLabel(s)}`+(pref('pdf','total')?`  ${tot(s)}/${maxT()}`:''), true);
     extra.forEach(n=>add((n.kind==='ok'?'+ ':n.kind==='miss'?'x ':'')+n.text));
-    if(s.res.overall) add(s.res.overall);
-    add('How to improve', true);
-    const groups=tierGroups(s);
-    if(!groups.length) add('Full marks or nothing to fix. Well done.');
-    groups.forEach(g=>{ add(`${g.t.name} (${g.t.hint})`, true); g.items.forEach(x=>add(`Q${x.q}: ${x.advice}`)); });
+    if(ov) add(s.res.overall);
+    if(ti){ add('How to improve', true);
+      const groups=tierGroups(s);
+      if(!groups.length) add('Full marks or nothing to fix. Well done.');
+      groups.forEach(g=>{ add(`${g.t.name} (${g.t.hint})`, true); g.items.forEach(x=>add(`Q${x.q}: ${x.advice}`)); }); }
     const wrapped = fb.flatMap(r=>wrap(r.t, r.b?bold:font, fs, M-24).map((l,i)=>({l,b:r.b,gap:i===0})));
     const need = wrapped.length*fs*1.25 + 20;
     let pg=last, top=cursor+10, x=W+8, w=M-16;
@@ -1118,7 +1137,8 @@ function renderExport(){
     ${!S.length?'<div class="msg">Nothing marked yet.</div>':`
     ${need?`<div class="msg">${need} script${need>1?'s still have':' still has'} uncertain points. They export with the AI's mark and are flagged in Excel.</div>`:'<div class="msg ok">Every uncertain point is checked.</div>'}
     <div class="grid2">
-      <div class="stack"><h3>Annotated PDF</h3><div class="note">Each student's original pages with a red margin: ticks and marks beside the answer lines, question subtotals, missed points, the circled total and the 3-tier "How to improve" box.</div>
+      <div class="stack"><h3>Annotated PDF</h3><div class="note">Each student's original pages with a red margin. Untick what you don't want printed; Review shows the same thing.</div>
+        <div class="row" style="flex-wrap:wrap;gap:4px 14px" id="pdfOpts">${prefBoxes('pdf', PDF_OPTS)}</div>
         <div class="row"><button class="btn primary" id="xPdf">Class PDF</button><button class="btn" id="xZip">One PDF per student (.zip)</button></div></div>
       <div class="stack"><h3>Excel</h3><div class="note">Sheets: Marks (per question, total, tiers), By point, Comments (with the evidence quoted), Improvement, Class analysis.</div>
         <div class="row"><button class="btn primary" id="xXl">Download .xlsx</button></div></div>
@@ -1128,6 +1148,7 @@ function renderExport(){
         <div class="row"><button class="btn" id="xSheet">Save to Google Sheet</button></div></div>
     </div><div class="note" id="xMsg" aria-live="polite"></div>`}</div>`;
   if(!S.length) return;
+  bindPrefs($('pdfOpts'), ()=>{});
   const msg=t=>$('xMsg').textContent=t, base=safeName(JOB.title);
   $('xBook').onclick=()=>{ const Q=JOB.scheme.questions, rows=[...S].sort((a,b)=>(a.no??999)-(b.no??999)).map(s=>[s.no??'', nameOf(s), ...Q.map(q=>qGot(s,q)), tot(s)].join('\t'));
     copyText(['No.\tName\t'+Q.map(q=>'Q'+q.qid).join('\t')+'\tTotal', ...rows].join('\n'), `Copied ${rows.length} students. Paste into the mark book.`); };
