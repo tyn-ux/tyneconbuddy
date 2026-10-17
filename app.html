@@ -157,6 +157,8 @@ nav button[data-tab="acct"]{--tabc:var(--teal)}
 .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
       box-shadow:var(--shadow-1); padding:18px; margin:0 0 16px}
 .card.ac{border-top:4px solid var(--ac,var(--line))}
+nav button[data-tab="learn"],#subnav button[data-tab="learn"]{--tabc:var(--teal)}
+.learncard{padding:0;overflow:hidden}#learnFrame{display:block;width:100%;min-height:70vh;border:0;background:transparent}
 .ac-gold{--ac:var(--gold)} .ac-blue{--ac:var(--ch-ch4)} .ac-green{--ac:var(--ch-ch2)}
 .ac-violet{--ac:var(--violet)} .ac-pink{--ac:var(--pink)} .ac-teal{--ac:var(--teal)}
 .ac-red{--ac:var(--ch-u11)}
@@ -582,6 +584,7 @@ rect.fx-flash{animation-name:fxflashbg}
 <nav id="nav" class="hide">
   <button data-tab="overview" aria-selected="true">Home</button>
   <div class="navhd">Practise</div>
+  <button data-tab="learn" class="sub">Learn</button>
   <button data-tab="drill" class="sub">Drill</button>
   <button data-tab="exam" class="sub">Exam</button>
   <button data-tab="lq" class="sub">Long Qs</button>
@@ -593,6 +596,7 @@ rect.fx-flash{animation-name:fxflashbg}
 </nav>
 <div class="content">
 <div id="subnav" class="hide" role="navigation" aria-label="Practise">
+  <button data-tab="learn">Learn</button>
   <button data-tab="drill">Drill</button>
   <button data-tab="exam">Exam</button>
   <button data-tab="lq">Long Qs</button>
@@ -775,6 +779,11 @@ rect.fx-flash{animation-name:fxflashbg}
   <div id="tab-lq" class="hide">
     <div class="card"><h2>Long questions</h2><div class="row"><select id="lqSec"></select></div></div>
     <div class="card" id="lqList"><p class="muted">Pick a section.</p></div>
+  </div>
+
+  <div id="tab-learn" class="hide">
+    <div class="card learncard"><iframe id="learnFrame" title="Learning Centre"></iframe></div>
+    <p class="mono"><a href="learning.html" target="_blank" rel="noopener">Open the Learning Centre in a new tab</a></p>
   </div>
 
   <div id="tab-rev" class="hide">
@@ -1172,8 +1181,8 @@ function lockOut(){
 }
 
 /* -------------------------------------------------------------------- nav */
-const TABS=['overview','drill','exam','miss','allq','lq','rev','store','acct'];
-const PRACTISE=['drill','exam','lq','allq'];
+const TABS=['overview','learn','drill','exam','miss','allq','lq','rev','store','acct'];
+const PRACTISE=['learn','drill','exam','lq','allq'];
 let LASTP='drill';                 // the Practise tab reopens the last mode used
 function show(tab){
   if(PRACTISE.indexOf(tab)>=0) LASTP=tab;
@@ -1183,12 +1192,14 @@ function show(tab){
   $('subnav').classList.toggle('hide',PRACTISE.indexOf(tab)<0);
   window.scrollTo(0,0);
   if(tab==='overview'){ drawGreeting(); drawOverview(); loadBoard('ovLb'); loadTop20(); loadCheer(); epHome(); }
+  if(tab==='learn'){ const f=$('learnFrame'); if(!f.getAttribute('src')) f.setAttribute('src','learning.html?embed=1'); }
   if(tab==='store')    drawStore();
   if(tab==='drill' && IDX && !$('picker').classList.contains('hide')) drawPicker();
   if(tab==='miss')     loadBook();
   if(tab==='rev')      drawRevision();
   if(tab==='acct')     loadBoard('lb');
 }
+window.addEventListener('message',e=>{const f=$('learnFrame');if(f&&e.source===f.contentWindow&&e.data&&e.data.lcHeight)f.style.height=Math.max(400,e.data.lcHeight)+'px';});
 ['nav','subnav','tabbar'].forEach(id=>$(id).addEventListener('click',e=>{
   const b=e.target.closest('[data-tab]'); if(!b) return;
   show(b.dataset.group==='practise'?LASTP:b.dataset.tab);

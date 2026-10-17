@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Learning Centre · tyneconbuddy</title>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one reading column; the Ch.1 player is the centrepiece, styled like the game's console screen */
+:root{
+  --bg:#f3f6f4; --paper:#ffffff; --ink:#1d2b2c; --muted:#5d6d6e; --line:#d5dfdc;
+  --teal:#1f6f72; --teal-soft:#dcefee; --sand:#f6ead2; --coral:#d9534a; --gold:#b8862a;
+  --ok:#2e7d4f; --ok-soft:#e1f2e7; --bad:#b33a32; --bad-soft:#f8e3e1; --screen:#fffdf6;
+  --f-display:"Baloo 2","Noto Sans TC",system-ui,sans-serif;
+  --f-body:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121a1b; --paper:#1a2425; --ink:#e6eeec; --muted:#9db0ae; --line:#2e3d3e;
+  --teal:#5fb8b9; --teal-soft:#1d3536; --sand:#3a3222; --coral:#ef7a70; --gold:#e0b45a;
+  --ok:#6cc58f; --ok-soft:#183427; --bad:#f08a80; --bad-soft:#3a1f1d; --screen:#1f2a2b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121a1b; --paper:#1a2425; --ink:#e6eeec; --muted:#9db0ae; --line:#2e3d3e;
+  --teal:#5fb8b9; --teal-soft:#1d3536; --sand:#3a3222; --coral:#ef7a70; --gold:#e0b45a;
+  --ok:#6cc58f; --ok-soft:#183427; --bad:#f08a80; --bad-soft:#3a1f1d; --screen:#1f2a2b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,5vw,40px);font-weight:800}
+h2{font-size:24px;font-weight:800}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--teal)}
+.lede{max-width:66ch;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--teal-soft);color:var(--teal);font-weight:500}
+.chip.gold{background:var(--sand);color:var(--gold)}
+header{display:flex;flex-direction:column;gap:12px}
+section{display:flex;flex-direction:column;gap:16px}
+.lang{display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0;max-width:100%}
+.chsel{font:inherit;font-size:14px;max-width:100%;min-width:0;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+.lang button,.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:var(--paper)}
+.btn.primary{background:var(--coral);border-color:var(--coral);color:#fff;font-weight:700}
+.btn.ghost{background:transparent}
+.btn:focus-visible,.opt:focus-visible,.lang button:focus-visible,.card-chip:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+/* flow */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;counter-reset:f}
+.flow div{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.flow b{font-family:var(--f-display);font-size:16px}
+.flow small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.flow .t{font-family:var(--f-mono);font-size:11.5px;color:var(--teal)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.box ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+/* player */
+.player{display:grid;grid-template-columns:220px 1fr;gap:0;border-radius:16px;overflow:hidden;border:4px solid var(--teal);background:var(--teal)}
+@media (max-width:720px){.player{grid-template-columns:1fr}}
+.stops{background:var(--teal);padding:12px;display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.stops{flex-direction:row;overflow-x:auto}}
+.stop-btn{all:unset;cursor:pointer;display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-radius:8px;color:#e7f4f3;font-size:13px;line-height:1.35;min-width:0}
+@media (max-width:720px){.stop-btn{flex:0 0 auto;max-width:170px}}
+.stop-btn[aria-current="true"]{background:rgba(255,255,255,.16)}
+.stop-btn:focus-visible{outline:2px solid #ffd76a}
+.stop-btn .st{font-family:var(--f-mono);font-size:11px;min-width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}
+.stop-btn.done .st{background:#ffd76a;color:#5a4300}
+.stop-btn small{display:block;opacity:.75;font-family:var(--f-mono);font-size:10.5px}
+.screen{background:var(--screen);padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;min-width:0;min-height:430px}
+.phase-bar{display:flex;gap:4px;flex-wrap:wrap}
+.phase-bar span{font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.phase-bar span.on{background:var(--teal);color:var(--paper);border-color:var(--teal)}
+.phase-bar span.past{color:var(--teal);border-color:var(--teal)}
+.mon{display:flex;gap:8px;flex-wrap:wrap}
+.mon span{font-size:12.5px;background:var(--sand);color:var(--gold);border-radius:6px;padding:2px 8px;font-weight:500}
+.say{font-size:16px;line-height:1.65;display:flex;flex-direction:column;gap:4px}
+.en,.zh{display:block}
+.bi .en{color:var(--muted);font-size:.93em;font-weight:400}
+.fb.ok .en,.fb.no .en{color:var(--muted)}
+.term{font-family:var(--f-display);font-size:22px;color:var(--teal)}
+.defn{border-left:4px solid var(--teal);background:var(--teal-soft);padding:10px 12px;border-radius:0 8px 8px 0}
+.pts{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);font-family:var(--f-mono);font-size:12px;width:22px;height:22px;border-radius:50%;background:var(--teal);color:var(--paper);display:grid;place-items:center;margin-top:3px}
+.q{font-weight:700;font-size:16px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{all:unset;cursor:pointer;border:1.5px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 12px 9px 34px;display:block;line-height:1.45;position:relative}
+.opt .lt{position:absolute;left:12px;top:9px;font-family:var(--f-mono);font-size:13px;color:var(--teal)}
+.opt small{display:block;margin-top:4px}
+.opt:hover{border-color:var(--teal)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt[aria-disabled="true"]{cursor:default}
+.fb{border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.fb.ok{background:var(--ok-soft);color:var(--ok)}
+.fb.no{background:var(--bad-soft);color:var(--bad)}
+.fb .zh{color:var(--ink)}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.src{font-size:12px;color:var(--muted);font-family:var(--f-body)}
+.fast{background:var(--sand);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.cards{display:flex;flex-wrap:wrap;gap:8px}
+.card-chip{all:unset;cursor:pointer;border:1.5px dashed var(--teal);border-radius:8px;padding:6px 10px;font-size:14px;background:var(--paper)}
+.card-chip.used{opacity:.35;cursor:default}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:40px}
+.chain span{background:var(--teal);color:var(--paper);border-radius:8px;padding:5px 10px;font-size:14px}
+.chain i{color:var(--teal);font-style:normal}
+textarea{font:inherit;width:100%;min-height:80px;border:1.5px solid var(--line);border-radius:10px;padding:10px;background:var(--paper);color:var(--ink)}
+.check{display:flex;flex-direction:column;gap:6px}
+.check label{display:flex;gap:8px;align-items:flex-start}
+.reward{background:var(--sand);color:var(--ink);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
+/* review mode */
+.review{display:flex;flex-direction:column;gap:14px}
+.rv{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.rv h3 small{font-family:var(--f-mono);font-size:12px;color:var(--teal);font-weight:500;margin-left:6px}
+.rv .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal)}
+.rv .ans{color:var(--ok);font-weight:700}
+/* table */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.region td{background:var(--teal-soft);font-weight:700;color:var(--teal)}
+td ol{margin:0;padding-left:18px}
+.tag{font-size:11.5px;border-radius:5px;padding:1px 6px;background:var(--sand);color:var(--gold);white-space:nowrap}
+.decide ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px}
+.mutedline{color:var(--muted);font-size:13px}
+.embed header .eyebrow,.embed header h1{display:none}.embed .wrap{padding-block:8px 24px}
+.hide-en .en{display:none}.hide-zh .zh{display:none}
+@media (prefers-reduced-motion:no-preference){.screen>*{animation:in .25s ease both}@keyframes in{from{opacity:.85;transform:translateY(3px)}to{opacity:1;transform:none}}}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+<header>
+  <span class="eyebrow">tyneconbuddy · HKDSE Economics</span>
+  <h1>Learning Centre 學習中心</h1>
+  <p class="lede">Learn a whole chapter in about 10–14 minutes, starting from almost nothing. Each stop takes about two minutes: guess first, learn the key idea, see an example, check yourself, then pick the best explanation. The same journeys are inside the EconMon game’s Learning Centres.</p>
+  <div class="chips">
+    <span class="chip">20 chapters</span>
+    <span class="chip">104 stops · about 2 min each</span>
+    <span class="chip gold">10–14 min per chapter</span>
+  </div>
+  <div class="lang" role="group" aria-label="Language">
+    <span class="mutedline">Text:</span>
+    <button type="button" data-lang="bi" aria-pressed="true">中英對照</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+    <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+  </div>
+</header>
+
+
+
+<section aria-labelledby="h-play">
+  <h2 id="h-play">Start a chapter</h2>
+  <div class="lang"><label class="mutedline" for="chSelA">Chapter</label> <select id="chSelA" class="chsel"><option value="1">Ch.1 Basic economic concepts 基本經濟概念</option><option value="2">Ch.2 Economic systems and basic economic problems 經濟體系同基本經濟問題</option><option value="3">Ch.3 Production and division of labour 生產同分工</option><option value="4">Ch.4 Factors of production 生產要素</option><option value="5">Ch.5 Costs and production in the short and long run 短期同長期嘅生產同成本</option><option value="6">Ch.6 Forms of business ownership 企業擁有權形式</option><option value="7">Ch.7 Growth of firms 廠商擴張</option><option value="8">Ch.8 Market structures 市場結構</option><option value="9">Ch.9 Objectives and profit maximisation 廠商目標同利潤最大化</option><option value="10">Ch.10 Demand, supply and equilibrium 需求、供應同均衡</option><option value="11">Ch.11 Changes in demand and supply 需求同供應嘅改變</option><option value="12">Ch.12 Elasticity 彈性</option><option value="13">Ch.13 Price controls and quotas 價格管制同配額</option><option value="14">Ch.14 Taxes and subsidies 稅同補貼</option><option value="15">Ch.15 Efficiency and surplus 效率同盈餘</option><option value="16">Ch.16 Inefficiency of government intervention 政府干預嘅效率損失</option><option value="17">Ch.17 Externalities 外部性</option><option value="18">Ch.18 Income inequality 收入不平均</option><option value="19">Ch.19 National income accounting 國民收入核算</option><option value="20">Ch.20 Real GDP, growth and price indices 實質 GDP、增長同物價指數</option></select></div>
+  <p class="lede" id="playTitle"></p>
+  <div class="player">
+    <nav class="stops" id="stops" aria-label="Stops"></nav>
+    <div class="screen" id="screen" aria-live="polite"></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-rev">
+  <h2 id="h-rev">Notes view</h2>
+  <p class="lede">Every line of the chosen chapter on one page, with the answers. Good for revising after you have tried the journey.</p>
+  <div><button type="button" class="btn" id="rvToggle" aria-expanded="false">Show notes</button></div>
+  <div class="review" id="review" hidden></div>
+</section>
+
+<section aria-labelledby="h-how">
+  <h2 id="h-how">How a stop works</h2>
+  <p class="lede">A chapter is 5 to 7 stops plus a finale. Every stop has the same six steps, so you only learn the routine once. Each stop matches one EconMon in the game.</p>
+  <div class="flow">
+    <div><span class="t">~15 s</span><b>🎬 Hook</b><small>One or two lines about a real Hong Kong place and time.</small></div>
+    <div><span class="t">~20 s</span><b>🤔 你覺得呢？</b><small>Guess first, before any teaching. No penalty for a wrong guess.</small></div>
+    <div><span class="t">~30 s</span><b>📖 Key idea</b><small>The exam definition plus at most 4 short points. English term kept.</small></div>
+    <div><span class="t">~30 s</span><b>🔍 Example</b><small>The idea worked through in 3–4 numbered steps.</small></div>
+    <div><span class="t">~20 s</span><b>✅ Check</b><small>One new question to check yourself.</small></div>
+    <div><span class="t">~15 s</span><b>🗣 Say it</b><small>Pick the best explanation of three. The two wrong ones are common misconceptions.</small></div>
+  </div>
+  <div class="two">
+    <div class="box"><h3>⏩ Fast track</h3><p>If your guess is right, you can skip straight to the Check. Right again, and the stop is done. If you already know a chapter, you can finish it in about 6 minutes; if it is new to you, take the full path.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-all">
+  <h2 id="h-all">All 20 chapters</h2>
+  <p class="lede">Each stop is one concept the student can then catch and battle as an EconMon. Time is the full path plus a 2-minute finale.</p>
+  <div class="tbl"><table id="tbl"><thead><tr><th>Ch.</th><th>Stops (EconMon)</th><th>Stops</th><th>Full path</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section aria-labelledby="h-src">
+  <h2 id="h-src">Sources</h2>
+  <div class="box"><ul>
+   <li><b>1963 water rationing</b> (Ch.1): <a href="https://industrialhistoryhk.org/hong-kong-water-supply-the-1963-water-famine/">Industrial History of Hong Kong</a></li>
+   <li><b>Tai O salt and sluices</b> (Ch.1): <a href="https://industrialhistoryhk.org/?p=493">Industrial History of Hong Kong</a></li>
+   <li><b>Tai O shrimp paste</b> (Ch.1–2): <a href="https://industrialhistoryhk.org/sing-lee-shrimp-sauce-paste-factory-tai/">Industrial History of Hong Kong</a></li>
+   <li><b>Garment industry in Sham Shui Po and Cheung Sha Wan; relocation to the Pearl River Delta</b> (Ch.3–5): <a href="https://www.hkmemory.hk/en/collections-postwar_industries-manufacturing_industries-garment-industry_focus.html">Hong Kong Memory</a></li>
+   <li><b>Airport Authority, a statutory body wholly owned by the government</b> (Ch.6): <a href="https://hongkongairport.com/en/airport-authority/vision-mission">AAHK</a></li>
+   <li><b>Minimum wage of $28 from 1 May 2011</b> (Ch.13): <a href="https://www.info.gov.hk/gia/general/201011/10/P201011100222_print.htm">GovHK</a></li>
+   <li><b>Textile export quotas, transferable, ended 2005</b> (Ch.13): <a href="https://www.legco.gov.hk/yr98-99/english/panels/ti/papers/ti10105b.htm">LegCo</a>, <a href="https://www.hkpc.org/en/about-us/media-centre/press-releases/2005/profound-impact-of-quota-expiry-on-hong-kong-garment-industry-study">HKPC</a></li>
+   <li><b>Plastic bag charge of at least $1 from 31 Dec 2022</b> (Ch.17): <a href="https://www.epd.gov.hk/epd/english/environmentinhk/waste/pro_responsibility/psb_index.html">EPD</a></li>
+   <li><b>2016 Gini 0.539 (original), 0.473 after taxes and transfers</b> (Ch.18): <a href="https://www.info.gov.hk/gia/general/201706/09/P2017060900426.htm">GovHK</a></li>
+   <li>General present-day statements, not source-checked: Water Supplies Department as sole water supplier; public flats by waiting list; Home Ownership Scheme ballots; free newspapers at MTR exits in the 2010s; tobacco duty; LCSD sports-centre fees.</li>
+   <li>阿瑩 Ah Ying and all the firms she meets are fictional, and so are their figures. They are labelled in the text.</li>
+  </ul></div>
+</section>
+
+
+</div>
+
+<script>
+(async function(){
+const S={lang:'bi'};
+try{const v=localStorage.getItem('lc_lang');if(v)S.lang=v;}catch(e){}
+const T=(en,zh)=>({en,zh});
+let ALL=null;
+try{ALL=await (await fetch('learning_centre.json',{cache:'no-cache'})).json();}catch(e){document.getElementById('app').insertAdjacentHTML('afterbegin','<p class="lede">The chapter content could not be loaded. Please reload the page.</p>');return;};
+const MONMAP={"wantlet": "Wantlet 慾望寄居蟹 · 沙灘", "scarcroaker": "Scarcroaker 稀缺黃花 · 沙灘近岸", "choicefin": "Choicefin 抉擇魚 · 紅樹林", "oppcostra": "Oppcostra 機會成本鱟 · 鹽田", "fullcrab": "Fullcrab 全成本蟹 · 棚屋區（西）", "tickmud": "Tickmud 時鐘彈塗魚 · 紅樹林", "shiftide": "Shiftide 潮變蝦 · 棚屋區（西）", "sunkshell": "Sunkshell 沉沒蚶 · 鹽田舊水閘", "saltling": "Saltling 鹽精 · 鹽田", "interoyster": "Interoyster 利息蠔 · 棚屋碼頭", "tripliq": "Tripliq 三問鷺 · 關帝古廟前", "tradiphin": "Tradiphin 傳統白海豚 · 海邊觀景台", "commandra": "Commandra 指令鳶 · 舊警署前", "marketail": "Marketail 市場斑 · 大澳街市", "deedtle": "Deedtle 業權龜 · 大澳碼頭", "swapgull": "Swapgull 交換鷗 · 大澳街市", "queuepus": "Queuepus 排隊八爪魚 · 大澳街市", "triactiv": "Triactiv 三活蝦醬精 · 蝦醬曬場", "flowray": "Flowray 循環鯆魚 · 大澳碼頭", "normafly": "Normafly 判斷蜻蜓 · 關帝古廟前", "bobbinix": "Bobbinix 線轆精 · 布行街", "rivalrow": "Rivalrow 爭食麻雀 · 唐樓天台", "silkstage": "Silkstage 三產蠶 · 布行街", "antsembly": "Antsembly 分工蟻 · 長沙灣工廠", "sewtron": "Sewtron 衣車獸 · 長沙灣工廠", "factorgeck": "Factorgeck 要素壁虎 · 唐樓後巷", "hourat": "Hourat 工時鼠 · 唐樓後巷", "webrate": "Webrate 效率蜘蛛 · 唐樓後巷", "hopcat": "Hopcat 流動貓 · 唐樓天台", "paymyna": "Paymyna 工資八哥 · 布行街", "runtle": "Runtle 長短龜 · 公園水池", "abacost": "Abacost 成本算盤 · 長沙灣工廠", "margifish": "Margifish 邊際金魚 · 公園水池", "dimdove": "Dimdove 遞減白鴿 · 唐樓天台", "scalecarp": "Scalecarp 規模錦鯉 · 公園水池", "clusterswift": "Clusterswift 群聚燕 · 唐樓天台", "chopling": "Chopling 印仔精 · 工廈走廊", "shieldmantis": "Shieldmantis 有限責任螳螂 · 工廈走廊", "stockbat": "Stockbat 股債蝠 · 裕民坊寫字樓", "lionseal": "Lionseal 公營石獅 · 裕民坊寫字樓", "scalebalance": "Scalebalance 公私天秤 · 裕民坊廣場", "banyamerge": "Banyamerge 合併榕 · 觀塘貨倉", "cranehoriz": "Cranehoriz 橫向吊機 · 觀塘貨倉", "liftvert": "Liftvert 縱向貨梯 · 觀塘碼頭", "diversipede": "Diversipede 多元百足 · 工廈天台", "motivekite": "Motivekite 動機紙鷂 · 工廈天台", "homoguppy": "Homoguppy 同質孔雀魚 · 金魚街", "brandbetta": "Brandbetta 品牌鬥魚 · 女人街", "oligopup": "Oligopup 寡頭波鞋犬 · 波鞋街", "monopolotus": "Monopolotus 獨市蓮 · 花墟", "searchparrot": "Searchparrot 議價鸚鵡 · 女人街", "objectivowl": "Objectivowl 目標貓頭鷹 · 電腦中心", "revcricket": "Revcricket 收益蟋蟀 · 電腦中心", "mrmcmoth": "Mrmcmoth 邊際蛾 · 電腦中心", "fixedfrog": "Fixedfrog 固定成本蛙 · 園圃街雀鳥花園", "sumcaterpillar": "Sumcaterpillar 累加毛蟲 · 園圃街雀鳥花園", "demandragon": "Demandragon 需求龍 · 旺角街市", "supplyswan": "Supplyswan 供應天鵝 · 花墟", "equilibee": "Equilibee 均衡蜂 · 金魚街", "surplusquid": "Surplusquid 過剩魷魚 · 波鞋街", "relprifox": "Relprifox 相對價格狐 · 旺角街市", "alongsnail": "Alongsnail 沿線蝸牛 · 天后廟前地", "substibat": "Substibat 替代蝙蝠 · 廟街夜市", "incomole": "Incomole 收入鼴鼠 · 油麻地街市", "costcrab": "Costcrab 成本蟹 · 避風塘", "twinshrike": "Twinshrike 雙移伯勞 · 油麻地果欄", "stretchgecko": "Stretchgecko 彈性壁虎 · 玉器市場", "rubbeel": "Rubbeel 橡皮鰻 · 避風塘", "determinut": "Determinut 決定松鼠 · 廟街夜市", "revenewt": "Revenewt 收益蠑螈 · 玉器市場", "slingstork": "Slingstork 彈弓鸛 · 油麻地果欄", "capcat": "Capcat 限價貓 · 美荷樓前地", "blackmyna": "Blackmyna 黑市八哥 · 美荷樓前地", "floortoise": "Floortoise 保底龜 · 石硤尾公園", "bindbulbul": "Bindbulbul 生效紅耳鵯 · 棚仔布市場", "quotabag": "Quotabag 配額紅白藍 · 棚仔布市場", "taxtoad": "Taxtoad 稅蟾蜍 · 石硤尾公園", "incidenkite": "Incidenkite 稅負麻鷹 · 舊工廠大廈", "subsidove": "Subsidove 補貼斑鳩 · 屋邨街市", "levycicada": "Levycicada 稅收蟬 · 舊工廠大廈", "pangolicy": "Pangolicy 政策穿山甲 · 石硤尾公園", "willpup": "Willpup 願付唐狗 · 美荷樓前地", "surpleye": "Surpleye 盈餘綠繡眼 · 棚仔布市場", "sellerskink": "Sellerskink 賣家石龍子 · 舊工廠大廈", "balancheron": "Balancheron 效率白鷺 · 石硤尾公園", "wasteweevil": "Wasteweevil 浪費象鼻蟲 · 屋邨街市", "rentcrab": "Rentcrab 租管寄居蟹 · 紅磡街市", "floormullet": "Floormullet 保底烏頭 · 紅磡碼頭", "quotaeel": "Quotaeel 配額海鰻 · 紅磡街市", "taxgull": "Taxgull 稅收海鷗 · 黃埔船塢舊址", "subsiturtle": "Subsiturtle 補貼綠海龜 · 黃埔船塢舊址", "costheron": "Costheron 外部成本夜鷺 · 紅磡海濱長廊", "beenefit": "Beenefit 外部效益蜜蜂 · 紅磡觀音廟", "levyjelly": "Levyjelly 膠袋水母 · 紅磡海濱長廊", "coasestar": "Coasestar 產權海星 · 紅磡觀音廟", "socialphin": "Socialphin 社會白海豚 · 紅磡碼頭", "gapigeon": "Gapigeon 差距白鴿 · 皇后像廣場", "lorenzkite": "Lorenzkite 羅倫茲麻鷹 · 香港公園", "ginigecko": "Ginigecko 堅尼壁虎 · 嘉咸街", "taxsparrow": "Taxsparrow 轉移麻雀 · 皇后像廣場", "fairfalcon": "Fairfalcon 公平遊隼 · 交易廣場", "resitram": "Resitram 居民叮叮獸 · 德輔道中", "valuadder": "Valuadder 增值竹葉青 · 嘉咸街", "spendsquirrel": "Spendsquirrel 開支松鼠 · 香港公園", "factorcat": "Factorcat 要素貓 · 交易廣場", "egnigret": "Egnigret 國民白鷺 · 中環碼頭", "realion": "Realion 實質銅獅 · 皇后像廣場", "growthkoi": "Growthkoi 增長錦鯉 · 香港公園", "welfarefly": "Welfarefly 福利蝴蝶 · 香港公園", "cpiglet": "Cpiglet 物價豬仔 · 嘉咸街街市", "deflatfish": "Deflatfish 平減河豚 · 中環碼頭"};
+const TT={"1": ["Basic economic concepts", "基本經濟概念"], "2": ["Economic systems and basic economic problems", "經濟體系同基本經濟問題"], "3": ["Production and division of labour", "生產同分工"], "4": ["Factors of production", "生產要素"], "5": ["Costs and production in the short and long run", "短期同長期嘅生產同成本"], "6": ["Forms of business ownership", "企業擁有權形式"], "7": ["Growth of firms", "廠商擴張"], "8": ["Market structures", "市場結構"], "9": ["Objectives and profit maximisation", "廠商目標同利潤最大化"], "10": ["Demand, supply and equilibrium", "需求、供應同均衡"], "11": ["Changes in demand and supply", "需求同供應嘅改變"], "12": ["Elasticity", "彈性"], "13": ["Price controls and quotas", "價格管制同配額"], "14": ["Taxes and subsidies", "稅同補貼"], "15": ["Efficiency and surplus", "效率同盈餘"], "16": ["Inefficiency of government intervention", "政府干預嘅效率損失"], "17": ["Externalities", "外部性"], "18": ["Income inequality", "收入不平均"], "19": ["National income accounting", "國民收入核算"], "20": ["Real GDP, growth and price indices", "實質 GDP、增長同物價指數"]};
+const REGN={"1": "大澳 Tai O", "2": "大澳 Tai O", "3": "深水埗 Sham Shui Po", "4": "深水埗 Sham Shui Po", "5": "深水埗 Sham Shui Po", "6": "觀塘 Kwun Tong", "7": "觀塘 Kwun Tong", "8": "旺角 Mong Kok", "9": "旺角 Mong Kok", "10": "旺角 Mong Kok", "11": "油麻地 Yau Ma Tei", "12": "油麻地 Yau Ma Tei", "13": "石硤尾 Shek Kip Mei", "14": "石硤尾 Shek Kip Mei", "15": "石硤尾 Shek Kip Mei", "16": "紅磡 Hung Hom", "17": "紅磡 Hung Hom", "18": "中環 Central", "19": "中環 Central", "20": "中環 Central"};
+let CH=1;try{const v=+localStorage.getItem('lc_ch');if(ALL[v])CH=v;}catch(e){}
+let STOPS=ALL[CH].stops,FINALE=ALL[CH].fin;
+const PH=[['hook','🎬'],['guess','🤔'],['idea','📖'],['ex','🔍'],['check','✅'],['say','🗣']];
+const PHN={hook:T('Hook','引入'),guess:T('Guess','你覺得呢？'),idea:T('Key idea','重點'),ex:T('Example','例子'),check:T('Check','檢查'),say:T('Say it','講一次')};
+let st={i:0,ph:0,done:{},fast:{},ans:{},exStep:0,chain:[],exitA:{},ownCk:{}};
+function setCh(c){CH=c;STOPS=ALL[c].stops;FINALE=ALL[c].fin;st={i:0,ph:0,done:{},fast:{},ans:{},exStep:0,chain:[],exitA:{},ownCk:{}};try{localStorage.setItem('lc_ch',c)}catch(e){}document.querySelectorAll('.chsel').forEach(x=>x.value=String(c));const h=document.getElementById('playTitle');if(h)h.textContent=REGN[c]+' · Ch.'+c+' '+TT[c][0]+' '+TT[c][1];renderStops();renderScreen();renderReview();}
+const $=s=>document.querySelector(s);
+function L(o){if(typeof o==='string')return o;const e=`<span class="en">${o.en}</span>`,z=`<span class="zh">${o.zh}</span>`;return S.lang==='en'?e:S.lang==='zh'?z:z+e;}
+function Lp(o){return S.lang==='en'?o.en:S.lang==='zh'?o.zh:o.zh+' '+o.en;}
+function applyLang(){const a=$('#app');a.classList.toggle('bi',S.lang==='bi');document.querySelectorAll('.lang button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===S.lang)));renderStops();renderScreen();renderReview();}
+document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>{S.lang=b.dataset.lang;try{localStorage.setItem('lc_lang',S.lang)}catch(e){}applyLang();}));
+function renderStops(){const n=$('#stops');n.innerHTML='';STOPS.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.className='stop-btn'+(st.done[s.id]?' done':'');b.setAttribute('aria-current',String(st.i===i));b.innerHTML=`<span class="st">${st.done[s.id]?(st.fast[s.id]?'⏩':'✓'):i+1}</span><span>${Lp(s.t)}<small>~${s.min} min</small></span>`;b.onclick=()=>{st.i=i;st.ph=0;st.exStep=0;renderStops();renderScreen();};n.appendChild(b);});
+ const f=document.createElement('button');f.type='button';f.className='stop-btn'+(st.done.fin?' done':'');f.setAttribute('aria-current',String(st.i===STOPS.length));f.innerHTML=`<span class="st">${st.done.fin?'✓':'★'}</span><span>${Lp(T('Finale: the chapter chain','總結：成章條鏈'))}<small>~2 min</small></span>`;f.onclick=()=>{st.i=STOPS.length;st.ph=0;renderStops();renderScreen();};n.appendChild(f);}
+function phaseBar(){return `<div class="phase-bar">${PH.map(([k,ic],j)=>`<span class="${j===st.ph?'on':j<st.ph?'past':''}">${ic} ${Lp(PHN[k])}</span>`).join('')}</div>`;}
+function mcq(q,key,onRight){const a=st.ans[key];let h=`<p class="q">${L(q.q)}</p><div class="opts" role="group">`;
+ q.o.forEach((o,j)=>{let c='';if(a!=null){if(j===q.a)c=' right';else if(j===a)c=' wrong';}h+=`<button type="button" class="opt${c}" data-k="${key}" data-j="${j}" ${a!=null?'aria-disabled="true"':''}><span class="lt">${String.fromCharCode(65+j)}</span>${L(o)}</button>`;});
+ h+='</div>';if(a!=null){const ok=a===q.a;h+=`<div class="fb ${ok?'ok':'no'}"><b>${ok?Lp(T('Right!','啱！')):Lp(T('Not quite.','差少少。'))}</b>${L(q.w)}${!ok&&key.endsWith('check')?`<span class="src">📒 ${Lp(T('Added to the correction album.','已加入錯題簿。'))}</span>`:''}</div>`;}
+ return h;}
+function bindOpts(after){document.querySelectorAll('.opt[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(st.ans[k]!=null)return;st.ans[k]=+b.dataset.j;after&&after(k);renderScreen();});}
+function nav(back,next,nextLabel){return `<div class="nav">${back?`<button type="button" class="btn ghost" id="bk">◀ ${Lp(T('Back','返回'))}</button>`:''}${next?`<button type="button" class="btn primary" id="nx">${nextLabel||Lp(T('Next','下一步'))} ▶</button>`:''}</div>`;}
+function go(d){st.ph+=d;if(st.ph<0)st.ph=0;st.exStep=0;renderScreen();}
+function renderScreen(){const sc=$('#screen');if(st.i===STOPS.length){renderFinale(sc);return;}
+ const s=STOPS[st.i],k=PH[st.ph][0],key=s.id+'_'+k;let h=`${phaseBar()}<h3>${st.i+1}. ${Lp(s.t)}</h3><div class="mon">${s.mons.map(m=>`<span>${MONMAP[m]||m}</span>`).join('')}</div>`;let canNext=true,nextLabel;
+ if(k==='hook'){h+=`<div class="say">${L(s.hook)}</div>${s.src?`<p class="src">${Lp(T('Source','來源'))}: ${s.src}</p>`:''}`;}
+ else if(k==='guess'){h+=mcq(s.guess,key);const a=st.ans[key];canNext=a!=null;
+   if(a===s.guess.a)h+=`<div class="fast"><span>${Lp(T('You got it. Already know this?','答啱咗。已經識？'))}</span><div class="nav" style="padding:0"><button type="button" class="btn" id="ft">⏩ ${Lp(T('Fast track to the Check','快速通道：直接去檢查'))}</button></div></div>`;}
+ else if(k==='idea'){h+=`<div class="term">${s.idea.term}</div><div class="defn say">${L(s.idea.d)}</div><ul class="pts">${s.idea.p.map(p=>`<li class="say">${L(p)}</li>`).join('')}</ul>`;}
+ else if(k==='ex'){h+=`<p class="q">${L(s.ex.t)}</p><ol class="steps">${s.ex.s.slice(0,st.exStep+1).map(p=>`<li><div class="say">${L(p)}</div></li>`).join('')}</ol>`;if(st.exStep<s.ex.s.length-1){canNext=true;nextLabel=Lp(T('Next step','下一步'));}}
+ else if(k==='check'){h+=mcq(s.check,key);canNext=st.ans[key]!=null;if(canNext&&st.fast[s.id]&&st.ans[key]===s.check.a){st.done[s.id]=1;nextLabel=Lp(T('Stop done: next stop','完成：下一站'));}else if(canNext&&st.fast[s.id]){h+=`<p class="src">${Lp(T('Fast track missed: the full stop will play.','快速通道答錯：會行返完整一站。'))}</p>`;}}
+ else if(k==='say'){h+=`<p class="q">${L(s.say.q)}</p><div class="opts">`;const a=st.ans[key];s.say.o.forEach((o,j)=>{let c='';if(a!=null){if(o[1])c=' right';else if(j===a)c=' wrong';}h+=`<button type="button" class="opt${c}" data-k="${key}" data-j="${j}" ${a!=null?'aria-disabled="true"':''}>${L(o[0])}${a!=null&&(j===a||o[1])?`<small class="src">${Lp(o[2])}</small>`:''}</button>`;});h+='</div>';canNext=a!=null;if(canNext){st.done[s.id]=1;nextLabel=Lp(T('Next stop','下一站'));}}
+ h+=nav(st.ph>0,canNext,nextLabel);sc.innerHTML=h;bindOpts();
+ const ft=$('#ft');if(ft)ft.onclick=()=>{st.fast[s.id]=1;st.ph=4;renderScreen();};
+ const bk=$('#bk');if(bk)bk.onclick=()=>{if(k==='ex'&&st.exStep>0){st.exStep--;renderScreen();}else go(-1);};
+ const nx=$('#nx');if(nx)nx.onclick=()=>{
+   if(k==='ex'&&st.exStep<s.ex.s.length-1){st.exStep++;renderScreen();return;}
+   if(k==='check'&&st.fast[s.id]){if(st.ans[key]===s.check.a){nextStop();return;}st.fast[s.id]=0;st.ph=1;go(1);return;}
+   if(k==='say'){nextStop();return;}go(1);};
+ renderStops();}
+function nextStop(){st.i=Math.min(st.i+1,STOPS.length);st.ph=0;st.exStep=0;renderStops();renderScreen();}
+function renderFinale(sc){const F=FINALE;let h=`<h3>★ ${Lp(T('Finale: the chapter chain','總結：成章條鏈'))}</h3>`;
+ h+=`<p class="q">${Lp(T('1. Tap the cards in order to build the chain.','1. 順序撳卡，砌出成章條鏈。'))}</p><div class="chain">${st.chain.map((j,n)=>`${n?'<i>→</i>':''}<span>${Lp(F.chain[j])}</span>`).join('')||`<span style="background:transparent;color:var(--muted)">…</span>`}</div>`;
+ const order=[...Array(FINALE.chain.length).keys()].sort((a,b)=>((a*2+CH)%FINALE.chain.length)-((b*2+CH)%FINALE.chain.length));h+=`<div class="cards">${order.map(j=>`<button type="button" class="card-chip${st.chain.includes(j)?' used':''}" data-c="${j}">${Lp(F.chain[j])}</button>`).join('')}</div>`;
+ const chainDone=st.chain.length===FINALE.chain.length;if(st.chainBad)h+=`<div class="fb no">${L(T('That card does not come next. Ask: what does each step lead to?','呢張卡唔係下一步。問吓自己：每一步會引致乜？'))}</div>`;
+ if(chainDone){h+=`<div class="fb ok"><b>${Lp(T('Chain complete.','條鏈砌好咗。'))}</b>${L(T('Free goods and interest hang off this chain: free goods have no opportunity cost; interest is the cost of time.','Free good 同利息掛喺條鏈旁邊：free good 冇 opportunity cost；利息係時間嘅成本。'))}</div>`;
+  h+=`<p class="q">${Lp(T('2. Exit ticket','2. 離場小測'))}</p>`;F.exit.forEach((q,n)=>{h+=mcq(q,'exit'+n);});
+  const allExit=F.exit.every((q,n)=>st.ans['exit'+n]!=null);
+  if(allExit){h+=`<p class="q">3. ${L(F.own.q)}</p><textarea id="own" aria-label="Your explanation">${st.own||''}</textarea><p class="src">${Lp(T('Then tick what your answer included:','跟住剔低你有講到嘅：'))}</p><div class="check">${F.own.ck.map((c,n)=>`<label><input type="checkbox" data-ck="${n}" ${st.ownCk[n]?'checked':''}> <span>${L(c)}</span></label>`).join('')}</div>`;
+   const right=F.exit.filter((q,n)=>st.ans['exit'+n]===q.a).length;const ticks=Object.values(st.ownCk).filter(Boolean).length;
+   if(ticks===3){st.done.fin=1;h+=`<div class="reward"><b>🎓 ${Lp(T(`Ch.${CH} journey complete`,`Ch.${CH} 學習旅程完成`))}</b><span>${Lp(T(`Exit ticket ${right}/3 · Reward: $150 and the 📘 mark for Ch.${CH}.`,`離場小測 ${right}/3 · 獎勵：$150 同 Ch.${CH} 嘅 📘。`))}</span></div>`;}
+   else h+=`<p class="src">${Lp(T('Missing a point? Add it to your sentence, then tick it.','漏咗重點？加返入你句說話，再剔。'))}</p>`;}}
+ sc.innerHTML=h;
+ document.querySelectorAll('.card-chip').forEach(b=>b.onclick=()=>{const j=+b.dataset.c;if(st.chain.includes(j))return;if(j===st.chain.length){st.chain.push(j);st.chainBad=0;}else st.chainBad=1;renderScreen();});
+ bindOpts();const o=$('#own');if(o)o.oninput=()=>{st.own=o.value;};
+ document.querySelectorAll('[data-ck]').forEach(c=>c.onchange=()=>{st.ownCk[c.dataset.ck]=c.checked;renderScreen();});renderStops();}
+function renderReview(){const r=$('#review');let h='';
+ const q2=(lbl,q)=>`<div><div class="lbl">${lbl}</div><p class="q">${L(q.q)}</p><ol type="A">${q.o.map((o,j)=>`<li class="${j===q.a?'ans':''}">${L(o)}${j===q.a?' ✓':''}</li>`).join('')}</ol><p class="say">${L(q.w)}</p></div>`;
+ STOPS.forEach((s,i)=>{h+=`<div class="rv"><h3>${i+1}. ${Lp(s.t)}<small>~${s.min} min · ${s.mons.map(m=>MONMAP[m]||m).join(' / ')}</small></h3>
+  <div><div class="lbl">🎬 Hook</div><div class="say">${L(s.hook)}</div>${s.src?`<p class="src">Source: ${s.src}</p>`:''}</div>
+  ${q2('🤔 你覺得呢？',s.guess)}
+  <div><div class="lbl">📖 Key idea · ${s.idea.term}</div><div class="defn say">${L(s.idea.d)}</div><ul class="pts">${s.idea.p.map(p=>`<li class="say">${L(p)}</li>`).join('')}</ul></div>
+  <div><div class="lbl">🔍 Example · ${Lp(s.ex.t)}</div><ol class="steps">${s.ex.s.map(p=>`<li><div class="say">${L(p)}</div></li>`).join('')}</ol></div>
+  ${q2('✅ Check',s.check)}
+  <div><div class="lbl">🗣 Say it</div><p class="q">${L(s.say.q)}</p><ul class="pts">${s.say.o.map(o=>`<li class="${o[1]?'ans':''}">${L(o[0])}${o[1]?' ✓':''}<br><small class="src">${Lp(o[2])}</small></li>`).join('')}</ul></div></div>`;});
+ h+=`<div class="rv"><h3>★ Finale<small>~2 min</small></h3><div><div class="lbl">Chain</div><p>${FINALE.chain.map(Lp).join(' → ')}</p></div>${FINALE.exit.map((q,n)=>q2('Exit ticket '+(n+1),q)).join('')}<div><div class="lbl">Own words</div><p class="q">${L(FINALE.own.q)}</p><ul class="pts">${FINALE.own.ck.map(c=>`<li>${L(c)}</li>`).join('')}</ul></div></div>`;
+ r.innerHTML=h;}
+$('#rvToggle').onclick=e=>{const r=$('#review');r.hidden=!r.hidden;e.target.setAttribute('aria-expanded',String(!r.hidden));e.target.textContent=r.hidden?'Show notes':'Hide notes';};
+// outline
+const REG=[['大澳 Tai O','1960s',[1,2]],['深水埗 Sham Shui Po','1970s',[3,4,5]],['觀塘 Kwun Tong','1980s',[6,7]],['旺角 Mong Kok','1990s',[8,9,10]],['油麻地 Yau Ma Tei','2003',[11,12]],['石硤尾 Shek Kip Mei','2011',[13,14,15]],['紅磡 Hung Hom','2013',[16,17]],['中環 Central','2016–17',[18,19,20]]];
+const CHO={1:['Basic economic concepts',[['Wants, resources and scarcity','Wantlet, Scarcroaker'],['Choice and opportunity cost','Choicefin, Oppcostra'],['Will the cost change? EE + HVOF','Shiftide'],['Full cost and time cost','Fullcrab, Tickmud'],['Sunk cost','Sunkshell'],['Free goods and economic goods','Saltling'],['Interest','Interoyster']]],
+2:['Economic systems and basic economic problems',[['Three basic economic problems','Tripliq'],['Traditional, planned and market economies','Tradiphin, Commandra, Marketail'],['Private property rights','Deedtle'],['Exchange, specialisation and economic activities','Swapgull, Triactiv'],['Competition and discrimination','Queuepus'],['The circular flow','Flowray'],['Positive and normative statements','Normafly']]],
+3:['Production and division of labour',[['Goods and services; consumer and producer goods','Bobbinix'],['Private goods and public goods','Rivalrow'],['Primary, secondary and tertiary production','Silkstage'],['Types of division of labour','Antsembly'],['Pros, cons and limits of division of labour','Sewtron']]],
+4:['Factors of production',[['Four factors and their returns','Factorgeck'],['Labour supply','Hourat'],['Labour productivity','Webrate'],['Mobility of labour','Hopcat'],['Wage payment methods','Paymyna']]],
+5:['Costs and production in the short and long run',[['Short run and long run','Runtle'],['TFC, TVC, TC, AC, MC','Abacost'],['TP, AP, MP and diminishing returns','Margifish, Dimdove'],['Internal economies of scale','Scalecarp'],['External economies of scale','Clusterswift']]],
+6:['Forms of business ownership',[['Sole proprietorship and partnership','Chopling'],['Limited company','Shieldmantis'],['Shares and bonds','Stockbat'],['Public enterprises','Lionseal'],['Private and public sectors','Scalebalance']]],
+7:['Growth of firms',[['Internal and external expansion','Banyamerge'],['Horizontal expansion','Cranehoriz'],['Vertical expansion','Liftvert'],['Lateral and conglomerate expansion','Diversipede'],['Motives for expansion','Motivekite']]],
+8:['Market structures',[['Perfect competition','Homoguppy'],['Monopolistic competition','Brandbetta'],['Oligopoly','Oligopup'],['Monopoly','Monopolotus'],['Price takers and price searchers','Searchparrot']]],
+9:['Objectives and profit maximisation',[['Objectives of firms','Objectivowl'],['TR, TC and profit','Revcricket'],['The MR = MC rule','Mrmcmoth'],['Fixed cost and the best output','Fixedfrog'],['TVC = ΣMC','Sumcaterpillar']]],
+10:['Demand, supply and equilibrium',[['Demand and the law of demand','Demandragon'],['Supply and the law of supply','Supplyswan'],['Market equilibrium','Equilibee'],['Excess demand and excess supply','Surplusquid'],['Full price and relative price','Relprifox']]],
+11:['Changes in demand and supply',[['Movement along vs shift','Alongsnail'],['Substitutes, complements, derived demand','Substibat'],['Other demand factors','Incomole'],['Supply factors','Costcrab'],['Effects of shifts on Pe and Qe','Twinshrike']]],
+12:['Elasticity',[['Calculating PED','Stretchgecko'],['Elastic, inelastic and unitary','Rubbeel'],['Determinants of PED','Determinut'],['Total revenue and PED','Revenewt'],['Price elasticity of supply','Slingstork']]],
+13:['Price controls and quotas',[['Price ceiling','Capcat'],['Allocation under a price ceiling','Blackmyna'],['Price floor and minimum wage','Floortoise'],['Effective vs ineffective controls','Bindbulbul'],['Quota','Quotabag']]],
+14:['Taxes and subsidies',[['Unit tax','Taxtoad'],['Tax incidence and elasticity','Incidenkite'],['Unit subsidy','Subsidove'],['Tax and subsidy calculations','Levycicada'],['Aims and effectiveness','Pangolicy']]],
+15:['Efficiency and surplus',[['Marginal and total benefit','Willpup'],['Consumer surplus','Surpleye'],['Marginal cost and producer surplus','Sellerskink'],['Total surplus and efficiency','Balancheron'],['Deadweight loss; functions of price','Wasteweevil']]],
+16:['Inefficiency of government intervention',[['DWL of a price ceiling','Rentcrab'],['DWL of a price floor','Floormullet'],['DWL of a quota','Quotaeel'],['DWL of a unit tax','Taxgull'],['DWL of a unit subsidy','Subsiturtle']]],
+17:['Externalities',[['Negative externality','Costheron'],['Positive externality','Beenefit'],['Government solutions','Levyjelly'],['Market solutions','Coasestar'],['Efficiency: MSB = MSC','Socialphin']]],
+18:['Income inequality',[['Sources of inequality','Gapigeon'],['The Lorenz curve','Lorenzkite'],['The Gini coefficient','Ginigecko'],['Equalising income','Taxsparrow'],['Equalising opportunities; equity vs efficiency','Fairfalcon']]],
+19:['National income accounting',[['GDP and resident units','Resitram'],['Value-added approach','Valuadder'],['Expenditure approach','Spendsquirrel'],['Income approach','Factorcat'],['GNI and what GDP excludes','Egnigret']]],
+20:['Real GDP, growth and price indices',[['Nominal and real GDP','Realion'],['Per capita GDP and growth','Growthkoi'],['Limits of GDP','Welfarefly'],['Price indices and the CPI','Cpiglet'],['GDP deflator vs CPI','Deflatfish']]]};
+const tb=$('#tbl tbody');let th='';REG.forEach(([r,e,chs])=>{th+=`<tr class="region"><td colspan="4">${r} · ${e} · ${Lp(T('Learning Centre','學習中心'))}</td></tr>`;chs.forEach(c=>{const [nm,stops]=CHO[c];const mins=Math.round(stops.length*2+2);th+=`<tr><td class="n">Ch.${c}</td><td><b>${nm}</b><ol>${stops.map(s=>`<li>${s[0]} <span class="mutedline">(${s[1]})</span></li>`).join('')}</ol></td><td class="n">${stops.length}</td><td class="n">~${Math.round(ALL[c].stops.reduce((a,x)=>a+x.min,0)+2)} min</td></tr>`;});});tb.innerHTML=th;document.querySelectorAll('.chsel').forEach(x=>x.addEventListener('change',()=>setCh(+x.value)));
+applyLang();setCh(CH);
+if(/[?&]embed/.test(location.search)){document.documentElement.classList.add('embed');const post=()=>{try{parent.postMessage({lcHeight:document.documentElement.scrollHeight},'*');}catch(e){}};new ResizeObserver(post).observe(document.body);post();}
+})();
+</script>
+
+</body>
+</html>
