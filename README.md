@@ -43,3 +43,10 @@ Keep every field on one line and do not use `|` inside a text.
 - **📒 Correction album** (START → 📒 Album): wrong answers are saved automatically; tap 🔖 on any question to bookmark it. Filter by wrong / bookmarked / fixed and by chapter, see your answer next to the correct one with the explanation, and 🔁 Retry. Right on two different days removes the question.
 - **Question bank audit**: 2,099 → 1,772 questions. All sort (matching) questions removed (12 gym steps replaced by MC), 7 weak questions deleted, 40 rewritten, 3 dated examples replaced. Details in `QUESTION_AUDIT_v24.md`.
 - **Class mode**: if you imported a **Questions** sheet before, it still holds the old bank (with sort questions) and overrides this one. Run EconMon ▸ Import game content again, or delete the Questions sheet.
+
+## v0.25
+- **Learning Centre 學習中心** in all 8 districts (a cream building with a 「學」 sign). Inside, 林老師 runs a short learning journey for every chapter (Ch.1–20, 104 stops). Each stop takes about 2 minutes: hook → guess first (你覺得呢？) → key idea → example → check → pick the best explanation. Get the guess right to take the ⏩ fast track. Each chapter ends with a concept chain, a 3-question exit ticket and a one-sentence explanation in your own words.
+- **Required first step**: arriving in a new district, the goal line and 鄧 Sir point to the Learning Centre, and each gym leader asks you to finish that gym's chapters first. Badges you already hold are not affected.
+- Rewards: 💰$150 and a 📘 mark per chapter; a first-try Check gives +1 XP to that stop's EconMon. Wrong Checks go into the 📒 correction album.
+- Details, sources and open teacher items: `LEARNING_CENTRE_v25.md`. Journey content: `learning_centre.json`.
+
