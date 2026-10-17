@@ -284,7 +284,7 @@ function classMap_() {
 }
 function clsOpen_(st) { return st === 'open' || st === 'everyone'; }
 function epFlushCache_() {
-  CacheService.getScriptCache().removeAll(['ep_rules', 'ep_store', 'ep_hidden', 'ep_classes', 'ep_pct', 'ep_targets']);
+  CacheService.getScriptCache().removeAll(['ep_rules', 'ep_store', 'ep_hidden', 'ep_classes', 'ep_pct', 'ep_targets', 'ep_tasks', 'ep_bankchap']);
 }
 /* Class pages are cached for a minute; a change to one student also changes
    every 'everyone' class page. */
@@ -657,8 +657,10 @@ function epWallet_(sess) {
   });
   var tg = epTargetOf_(w.cls);
   if (tg) tg = { mc: tg.mc, lq: tg.lq, doneMc: w.st.wk.mc || 0, doneLq: w.st.wk.lq || 0 };
+  var tasks = [];
+  try { if (epTasks_().length) tasks = epTasksFor_(sess.uid, w.cls, epClearedOf_(sess.uid)); } catch (e) {}
   return { bal: w.bal, earned: w.earned, look: w.look, owned: w.owned, store: epStore_(), rules: list,
-           recent: w.st.recent, e: brief_(res.aw), target: tg };
+           recent: w.st.recent, e: brief_(res.aw), target: tg, tasks: tasks };
 }
 
 /* Opening the site: welcome gift once, daily check-in with 3- and 7-day
@@ -777,7 +779,8 @@ function onOpen() {
     .addItem('Set up E-point tabs', 'epSetup')
     .addSeparator()
     .addItem('Update the Progress tab', 'epBuildProgress')
-    .addItem('Update Progress and Dashboard every morning', 'epMenuDaily')
+    .addItem('Update the Weak topics tab', 'epBuildWeak')
+    .addItem('Update Progress, Weak topics and Dashboard every morning', 'epMenuDaily')
     .addItem('Email me a summary every Monday', 'epMenuEmail')
     .addItem('Reward everyone on track this week…', 'epMenuReward')
     .addItem('Build Dashboard', 'buildDashboard')
@@ -796,7 +799,7 @@ function tell_(s) { SpreadsheetApp.getUi().alert(s); }
 /* Makes every new tab and fills in defaults. Safe to run again: it never
    overwrites a tab that already has rows. */
 function epSetup() {
-  classSheet_(); eRulesSheet_(); eStoreSheet_(); eGiveSheet_(); walletSheet_(); ledgerSheet_(); targetSheet_();
+  classSheet_(); eRulesSheet_(); eStoreSheet_(); eGiveSheet_(); walletSheet_(); ledgerSheet_(); targetSheet_(); taskSheet_();
   ensureStudentStatus_();
   var added = epAddNewItems_(), rulesAdded = epAddNewRules_();
   epFlushCache_();
@@ -901,7 +904,8 @@ function epMenuRecount() {
  * class, so the students who need a nudge are at the top. Built from the
  * Wallet, ELedger and Cleared tabs; nothing for students to hand in.
  * ========================================================================== */
-var EP_TEACHER_TABS = ['Progress', 'Targets', 'History', 'Dashboard', 'Students', 'Classes', 'EGive', 'ERules', 'EStore', 'Comments', 'LQ Marking'];
+var EP_TASK_COLS = 6;
+var EP_TEACHER_TABS = ['Progress', 'Tasks', 'Targets', 'Weak topics', 'History', 'Dashboard', 'Students', 'Classes', 'EGive', 'ERules', 'EStore', 'Comments', 'LQ Marking'];
 
 function epBuildProgress() {
   var stats = clearedStats_(), wk = epWeek_(), today = epDay_(), DAY = 86400000, now = Date.now();
@@ -918,7 +922,14 @@ function epBuildProgress() {
     var e = Number(lv[j][5]) || 0, a = String(lv[j][4]);
     if (e > 0 && a !== 'teacher' && a !== 'welcome') weekE[String(lv[j][1])] = (weekE[String(lv[j][1])] || 0) + e;
   }
-  var rows = [], cls = {}, hist = [];
+  var rows = [], cls = {}, hist = [], perf = epPerf_(), tasks = epTasks_();
+  var accs = {};                                     // class -> accuracies, for the median
+  studentRows_().forEach(function (s) {
+    var a = perf.acc(s.uid);
+    if (a !== null) (accs[s.cls] = accs[s.cls] || []).push(a);
+  });
+  var med = {};
+  Object.keys(accs).forEach(function (k) { var x = accs[k].sort(function (a, b) { return a - b; }); med[k] = x[Math.floor(x.length / 2)]; });
   studentRows_().forEach(function (s) {
     if (s.status === 'removed') return;
     var w = wal[s.uid] || { bal: 0, st: {}, upd: 0 }, x = stats.by[s.uid] || { c: 0, p: 0 };
@@ -930,8 +941,18 @@ function epBuildProgress() {
     var tg = epTargetText_(epTargetOf_(s.cls), mc, lq);
     var flag = !x.c && !days ? 'Not started' : ago !== '' && ago >= 7 ? 'Quiet 7+ days'
              : days >= 3 || tg === 'Met' ? 'On track' : 'Needs a nudge';
-    rows.push([s.cls, Number(s.num) || '', s.nick, flag, tg, days, mc, lq, weekE[s.uid] || 0, x.c, x.p / 100, levelOf_(x.p),
-               streak, w.bal, w.upd ? new Date(w.upd) : '', s.status === 'hidden' ? 'hidden' : '']);
+    var acc = perf.acc(s.uid), working = days >= 3 || tg === 'Met', grp;
+    if (acc === null) grp = 'Not started';
+    else if (working) grp = acc >= med[s.cls] ? 'Working, doing well' : 'Working but stuck';
+    else grp = acc >= med[s.cls] ? 'Coasting' : 'Falling behind';
+    var tcells = tasks.slice(0, EP_TASK_COLS).map(function (t) {
+      if (t.cls !== 'ALL' && t.cls !== s.cls) return '';
+      var d = 0, set = perf.cleared[s.uid] || {};
+      for (var k in set) if (epInScope_(t.sc, perf.bank[k])) d++;
+      return d >= t.n ? 'Done' : d + '/' + t.n + (t.due && t.due < epDay_() ? ' late' : '');
+    });
+    rows.push([s.cls, Number(s.num) || '', s.nick, flag, grp, tg].concat(tcells, [days, mc, lq, weekE[s.uid] || 0, x.c, x.p / 100,
+               acc === null ? '' : acc, levelOf_(x.p), streak, w.bal, w.upd ? new Date(w.upd) : '', s.status === 'hidden' ? 'hidden' : '']));
     hist.push([s.uid, s.cls, Number(s.num) || '', s.nick, days, mc, lq, tg, weekE[s.uid] || 0, x.c, x.p / 100]);
     var c = cls[s.cls] || (cls[s.cls] = { n: 0, on: 0, nudge: 0, quiet: 0, none: 0, met: 0, days: 0, cleared: 0 });
     c.n++; c.days += days; c.cleared += x.c; if (tg === 'Met') c.met++;
@@ -950,19 +971,25 @@ function epBuildProgress() {
   sh.getRange(1, 1).setValue('Progress · week of ' + wk + ' · updated ' +
     Utilities.formatDate(new Date(), EP_TZ, 'd MMM HH:mm')).setFontWeight('bold').setFontSize(14);
   sh.getRange(2, 1).setValue('On track = practised on 3+ days this week, or met the weekly target (Targets tab). ' +
-    'Needs a nudge = 1–2 days. Week = Monday to today. Nothing here needs students to hand anything in.').setFontStyle('italic').setFontColor('#666666');
+    'Needs a nudge = 1–2 days. Effort vs result: working = on track; doing well = accuracy at or above the class median. ' +
+    '"Working but stuck" needs teaching, "Coasting" needs a push. Tasks come from the Tasks tab. Nothing here needs students to hand anything in.').setFontStyle('italic').setFontColor('#666666');
   var r = 4, ch = ['Class', 'Students', 'On track', 'Needs a nudge', 'Quiet 7+ days', 'Not started', 'Met target', 'Avg days this week', 'Avg MCQs cleared'];
   sh.getRange(r, 1, 1, ch.length).setValues([ch]).setFontWeight('bold').setBackground('#eeeeee');
   if (csum.length) sh.getRange(r + 1, 1, csum.length, ch.length).setValues(csum);
   r += csum.length + 3;
-  var hd = ['Class', 'No.', 'Nickname', 'Status', 'Target', 'Days this week', 'MCQs this week', 'Long Qs this week',
-            'E earned this week', 'MCQs cleared', 'Cleared %', 'Level', 'Check-in streak', 'E balance', 'Last active', 'Note'];
+  var tcols = tasks.slice(0, EP_TASK_COLS).map(function (t) { return 'Task: ' + t.what + ' (' + t.n + (t.due ? ', due ' + t.due : '') + ')'; });
+  var hd = ['Class', 'No.', 'Nickname', 'Status', 'Effort vs result', 'Target'].concat(tcols, ['Days this week', 'MCQs this week',
+            'Long Qs this week', 'E earned this week', 'MCQs cleared', 'Cleared %', 'Accuracy', 'Level', 'Check-in streak',
+            'E balance', 'Last active', 'Note']);
+  var off = tcols.length;
   sh.getRange(r, 1, 1, hd.length).setValues([hd]).setFontWeight('bold').setBackground('#eeeeee');
   sh.setFrozenRows(0);
   if (rows.length) {
     sh.getRange(r + 1, 1, rows.length, hd.length).setValues(rows);
-    sh.getRange(r + 1, 11, rows.length, 1).setNumberFormat('0.0%');
-    sh.getRange(r + 1, 15, rows.length, 1).setNumberFormat('d mmm hh:mm');
+    sh.getRange(r + 1, 12 + off, rows.length, 2).setNumberFormat('0.0%');
+    sh.getRange(r + 1, 18 + off, rows.length, 1).setNumberFormat('d mmm hh:mm');
+    var gcol = { 'Working, doing well': '#d9ead3', 'Working but stuck': '#fce5cd', 'Coasting': '#fff2cc', 'Falling behind': '#f4cccc', 'Not started': '#efefef' };
+    sh.getRange(r + 1, 5, rows.length, 1).setBackgrounds(rows.map(function (x) { return [gcol[x[4]]]; }));
     var colour = { 'On track': '#d9ead3', 'Needs a nudge': '#fff2cc', 'Quiet 7+ days': '#f4cccc', 'Not started': '#efefef' };
     sh.getRange(r + 1, 4, rows.length, 1).setBackgrounds(rows.map(function (x) { return [colour[x[3]]]; }));
   }
@@ -977,8 +1004,9 @@ function epMenuDaily() {
   var have = {};
   ScriptApp.getProjectTriggers().forEach(function (t) { have[t.getHandlerFunction()] = 1; });
   if (!have.epBuildProgress) ScriptApp.newTrigger('epBuildProgress').timeBased().everyDays(1).atHour(7).create();
+  if (!have.epBuildWeak) ScriptApp.newTrigger('epBuildWeak').timeBased().everyDays(1).atHour(7).create();
   if (!have.buildDashboard) ScriptApp.newTrigger('buildDashboard').timeBased().everyDays(1).atHour(7).create();
-  tell_('Progress and Dashboard will update every morning around 7:00.');
+  tell_('Progress, Weak topics and Dashboard will update every morning around 7:00.');
 }
 
 /* The site keeps many working tabs (Log, Sessions, Cleared, Wallet…). Hide
@@ -1103,8 +1131,9 @@ function epMenuReward() {
   var seat = {};
   studentRows_().forEach(function (s) { if (s.status !== 'removed') seat[s.cls + '-' + Number(s.num)] = s.uid; });
   var n = 0;
+  var cS = hdr >= 0 ? v[hdr].indexOf('Status') : -1, cT = hdr >= 0 ? v[hdr].indexOf('Target') : -1;
   for (var j = hdr + 1; hdr >= 0 && j < v.length; j++) {
-    if (!(v[j][3] === 'On track' || v[j][4] === 'Met')) continue;
+    if (!(v[j][cS] === 'On track' || v[j][cT] === 'Met')) continue;
     var uid = seat[v[j][0] + '-' + Number(v[j][1])];
     if (!uid) continue;
     var res = withWallet_(uid, function (w) {
@@ -1115,4 +1144,180 @@ function epMenuReward() {
     if (res.aw && res.aw.length) n++;
   }
   tell_(n ? n + ' students got ' + e + ' E for this week.' : 'Nobody new to reward this week (each student can get it once a week).');
+}
+
+
+/* ================================================================ TASKS === *
+ * The teacher assigns work in a Tasks tab: class (or ALL), a chapter or a
+ * topic, how many MCQs, a due date. Progress is counted from the Cleared tab
+ * (MCQs of that chapter or topic the student has got right), so students hand
+ * nothing in; their Home page shows each open task with a Start button.
+ * Chapters as the site lists them; keep in step with CHAPTERS in app.html.
+ * ========================================================================== */
+var EP_CHAPTERS = [
+ ['ch1','Ch 1 · Basic Economic Concepts','core',['scarcity','oppcost','goods','types','posnorm','property','economy','interest','basic']],
+ ['ch2','Ch 2 · Factors of Production & Labour','core',['factors','dol','labprod','labmob','labsup','wage']],
+ ['ch3','Ch 3 · Firms & Production','core',['cprod','typeprod','dimret','shortlong','scale','expansion','profitmax','ownership','sharesbonds','pubpriv']],
+ ['ch4','Ch 4 · Price Theory','core',['supdem','relprice','elasticity','shortsurp','funcprice']],
+ ['ch5','Ch 5 · Market Structures & Welfare','core',['market','efficiency','extern','equity']],
+ ['u11','Unit 11 · Market Intervention','ch11',['tax','sub','quo','flr','cel']],
+ ['tf','Tax & Fiscal / Monetary','ch22',['fm','prp','tax']],
+ ['micro','Efficiency & Equity','macro',['Efficiency','Externalities','Equity','Principles of Taxation','micro','mtax','elect']],
+ ['natl','National Income','macro',['Circular Flow','GNP / GNI','Real / Nominal GDP','AD-AS','natl','gni','realgdp','adas']],
+ ['money','Money & Banking','macro',['Problems of Barter','Functions of Money','Properties of Good Money','Banking System','Liquidity','M1 / M2 / M3','Monetary Base','Deposit Creation / Contraction','Function of HKMA','Money Demand','Money Market Equilibrium','Quantity Theory of Money','money','balsheet','qtm']],
+ ['macro','Macro Problems','macro',['Business Cycle','Inflation / Deflation','Nominal / Real Interest Rate','Unemployment','macro','bizcycle','inflation','realint','unemp','policy']],
+ ['trade','Trade & Forex','macro',["Int'l Trade (Concept)","Int'l Trade (Calculation)",'Trade Barriers','Balance of Payments','Exchange Rate','Linked Exchange Rate','trade','bop','fx','barrier']],
+];
+
+function taskSheet_() {
+  var sh = sheet_('Tasks', ['class', 'chapter or topic', 'MCQs', 'due', 'on', 'note']);
+  if (sh.getLastRow() < 2) sh.appendRow(['ALL', 'ch4', 20, new Date(Date.now() + 7 * 86400000), 'no',
+    'example: type yes in "on" to use it. Chapter id (ch1-ch5, u11, tf, micro, natl, money, macro, trade), its name, or a topic such as elasticity']);
+  return sh;
+}
+/* "ch4", "Price Theory", "elasticity" -> {label, chap?, page?, topic?} */
+function epScope_(txt) {
+  var t = String(txt || '').trim().toLowerCase();
+  if (!t) return null;
+  for (var i = 0; i < EP_CHAPTERS.length; i++) {
+    var c = EP_CHAPTERS[i];
+    if (t === c[0] || c[1].toLowerCase().indexOf(t) >= 0) return { label: c[1], chap: c[0], page: c[2], topics: c[3] };
+  }
+  for (var j = 0; j < EP_CHAPTERS.length; j++) {
+    var c2 = EP_CHAPTERS[j];
+    for (var k = 0; k < c2[3].length; k++) if (c2[3][k].toLowerCase() === t)
+      return { label: c2[3][k] + ' (' + c2[1].split(' · ')[0] + ')', page: c2[2], topics: [c2[3][k]], topic: c2[3][k] };
+  }
+  return null;
+}
+/* MCQ keys in a scope, cached; and the chapter of every Bank MCQ. */
+function epBankChap_() {
+  var c = CacheService.getScriptCache(), hit = c.get('ep_bankchap');
+  if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  var out = {};
+  rows_(bankSheet_(), 4).forEach(function (r) {
+    if (String(r[1]).toLowerCase() !== 'mcq') return;
+    var pg = String(r[2]), tp = String(r[3]), ch = '';
+    for (var i = 0; i < EP_CHAPTERS.length && !ch; i++) if (EP_CHAPTERS[i][2] === pg && EP_CHAPTERS[i][3].indexOf(tp) >= 0) ch = EP_CHAPTERS[i][0];
+    for (var j = 0; j < EP_CHAPTERS.length && !ch; j++) if (EP_CHAPTERS[j][2] === pg) ch = EP_CHAPTERS[j][0];
+    out[String(r[0])] = [ch, pg, tp];
+  });
+  try { c.put('ep_bankchap', JSON.stringify(out), 600); } catch (e) {}   // over 100 KB: just not cached
+  return out;
+}
+function epInScope_(sc, b) {
+  return !!b && (sc.topic ? b[1] === sc.page && b[2] === sc.topic : b[0] === sc.chap);
+}
+function epTasks_() {
+  var c = CacheService.getScriptCache(), hit = c.get('ep_tasks');
+  if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  var v = taskSheet_().getDataRange().getValues(), out = [];
+  for (var i = 1; i < v.length; i++) {
+    if (!yes_(v[i][4])) continue;
+    var sc = epScope_(v[i][1]), n = Math.max(1, Math.round(Number(v[i][2]) || 0)), due = v[i][3] ? new Date(v[i][3]) : null;
+    if (!sc) continue;
+    out.push({ id: i + 1, cls: String(v[i][0]).trim().toUpperCase() || 'ALL', what: String(v[i][1]).trim(), sc: sc, n: n,
+               due: due && !isNaN(due.getTime()) ? Utilities.formatDate(due, EP_TZ, 'yyyy-MM-dd') : '' });
+  }
+  c.put('ep_tasks', JSON.stringify(out), 120);
+  return out;
+}
+/* Open tasks for one student: [{label, n, done, due, late, chap, page, topic}] */
+function epTasksFor_(uid, cls, clearedSet) {
+  var list = epTasks_().filter(function (t) { return t.cls === 'ALL' || t.cls === String(cls || '').toUpperCase(); });
+  if (!list.length) return [];
+  var bank = epBankChap_(), today = epDay_();
+  return list.map(function (t) {
+    var done = 0;
+    for (var k in clearedSet) if (epInScope_(t.sc, bank[k])) done++;
+    return { label: t.sc.label, n: t.n, done: Math.min(done, t.n), due: t.due, late: !!t.due && t.due < today && done < t.n,
+             chap: t.sc.chap || '', page: t.sc.page, topic: t.sc.topic || '' };
+  });
+}
+function epClearedOf_(uid) {
+  var v = clearedSheet_().getDataRange().getValues();
+  for (var i = 1; i < v.length; i++) if (String(v[i][0]) === uid) return pj_(v[i][1], {}) || {};
+  return {};
+}
+
+
+/* ============================================================ ANALYSIS ==== *
+ * Per student and chapter: MCQs answered (cleared or ever wrong) and MCQs
+ * ever got wrong, from the Mistakes and Cleared tabs. acc(uid) = share of
+ * answered MCQs never got wrong, or null before any answer.
+ * ========================================================================== */
+function epPerf_() {
+  var bank = epBankChap_(), by = {}, cleared = {};
+  function cell(u, ch) { var x = by[u] || (by[u] = {}); return x[ch] || (x[ch] = { a: {}, w: {} }); }
+  clearedSheet_().getDataRange().getValues().slice(1).forEach(function (r) {
+    var u = String(r[0]), set = pj_(r[1], {}) || {};
+    cleared[u] = set;
+    for (var k in set) if (bank[k]) cell(u, bank[k][0]).a[k] = 1;
+  });
+  rows_(mistakeSheet_(), 3).forEach(function (r) {
+    var u = String(r[1]), k = String(r[2]);
+    if (!bank[k]) return;
+    var c = cell(u, bank[k][0]); c.a[k] = 1; c.w[k] = 1;
+  });
+  function n(o) { return Object.keys(o).length; }
+  return {
+    bank: bank, cleared: cleared, by: by,
+    acc: function (u) {
+      var a = 0, w = 0, x = by[u] || {};
+      for (var ch in x) { a += n(x[ch].a); w += n(x[ch].w); }
+      return a ? Math.round((1 - w / a) * 1000) / 1000 : null;
+    },
+    rate: function (u, ch) {
+      var c = (by[u] || {})[ch]; if (!c) return null;
+      var a = n(c.a); return a >= EP_WEAK_MIN ? n(c.w) / a : null;
+    }
+  };
+}
+var EP_WEAK_MIN = 5;   // fewer answers in a chapter than this: too few to judge
+
+/* Weak topics tab: wrong rate per student per chapter, with each class's
+   average on top. Red = 15+ points worse than the class average (and 30%+
+   wrong): the students to pull into a small-group re-teach. */
+function epBuildWeak() {
+  var perf = epPerf_(), chs = EP_CHAPTERS.map(function (c) { return c; });
+  var studs = studentRows_().filter(function (s) { return s.status !== 'removed' && s.status !== 'hidden'; })
+    .sort(function (a, b) { return a.cls < b.cls ? -1 : a.cls > b.cls ? 1 : (Number(a.num) || 0) - (Number(b.num) || 0); });
+  var avg = {};
+  studs.forEach(function (s) {
+    chs.forEach(function (c) {
+      var r = perf.rate(s.uid, c[0]); if (r === null) return;
+      var k = s.cls + '|' + c[0], x = avg[k] || (avg[k] = { s: 0, n: 0 }); x.s += r; x.n++;
+    });
+  });
+  var classes = studs.map(function (s) { return s.cls; }).filter(function (c, i, a) { return a.indexOf(c) === i; });
+  var head = ['Class', 'No.', 'Nickname'].concat(chs.map(function (c) { return c[1]; }));
+  var body = [], bg = [];
+  classes.forEach(function (k) {
+    body.push([k, '', 'Class average'].concat(chs.map(function (c) { var x = avg[k + '|' + c[0]]; return x ? x.s / x.n : ''; })));
+    bg.push(head.map(function () { return '#eeeeee'; }));
+  });
+  studs.forEach(function (s) {
+    var row = [s.cls, Number(s.num) || '', s.nick], b = ['#ffffff', '#ffffff', '#ffffff'];
+    chs.forEach(function (c) {
+      var r = perf.rate(s.uid, c[0]), x = avg[s.cls + '|' + c[0]], a = x ? x.s / x.n : null;
+      row.push(r === null ? '' : r);
+      b.push(r !== null && a !== null && r >= 0.3 && r - a >= 0.15 ? '#f4cccc' : r !== null && r <= 0.1 ? '#d9ead3' : '#ffffff');
+    });
+    body.push(row); bg.push(b);
+  });
+  var ss = ss_(), sh = ss.getSheetByName('Weak topics') || ss.insertSheet('Weak topics', 1);
+  sh.clear();
+  sh.getRange(1, 1).setValue('Weak topics · wrong rate per chapter · updated ' + Utilities.formatDate(new Date(), EP_TZ, 'd MMM HH:mm'))
+    .setFontWeight('bold').setFontSize(14);
+  sh.getRange(2, 1).setValue('Wrong rate = MCQs ever got wrong ÷ MCQs answered in that chapter. Blank = fewer than ' + EP_WEAK_MIN +
+    ' answered. Red = 15+ points worse than the class average: candidates for a small-group re-teach. Green = 10% or less.')
+    .setFontStyle('italic').setFontColor('#666666');
+  sh.getRange(4, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#eeeeee').setWrap(true);
+  if (body.length) {
+    sh.getRange(5, 1, body.length, head.length).setValues(body).setBackgrounds(bg);
+    sh.getRange(5, 4, body.length, chs.length).setNumberFormat('0%');
+  }
+  var msg = 'Weak topics updated: ' + studs.length + ' students.';
+  try { ss.setActiveSheet(sh); ss.toast(msg); } catch (e) { Logger.log(msg); }
+  return msg;
 }
