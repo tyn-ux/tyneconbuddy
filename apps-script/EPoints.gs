@@ -787,7 +787,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Export question bank for the paper builder', 'epExportBank')
     .addSeparator()
-    .addItem('Tidy tabs: show only the teacher tabs', 'epTidyTabs')
+    .addItem('Choose tabs to show…', 'epChooseTabs')
     .addItem('Show all tabs', 'epShowAllTabs')
     .addToUi();
 }
@@ -929,7 +929,38 @@ function epMenuRecount() {
  * Wallet, ELedger and Cleared tabs; nothing for students to hand in.
  * ========================================================================== */
 var EP_TASK_COLS = 6;
-var EP_TEACHER_TABS = ['Progress', 'Tasks', 'Targets', 'Weak topics', 'History', 'Dashboard', 'Students', 'Classes', 'EGive', 'ERules', 'EStore', 'Comments', 'LQ Marking'];
+/* Every tab the code uses: [name, what the teacher does there, which part of
+   the site writes it]. Group 'show' is ticked by default in Choose tabs;
+   'data' tabs are the app's memory: hide them, never delete them (sheet_()
+   would quietly make a new empty one and students would lose that data). */
+var EP_TABS = {
+  show: [['Progress', 'Who is on track, who needs a nudge, effort vs result, tasks', 'E-points'],
+         ['Tasks', 'Set homework: class, chapter, MCQs, due date', 'E-points'],
+         ['Weak topics', 'Which chapters each student gets wrong', 'E-points'],
+         ['Students', 'Class, number, nickname, order on the class page', 'Main app'],
+         ['Classes', 'Open or archive a class; LKSECO = everyone', 'E-points'],
+         ['Comments', 'Hide or verify student comments', 'Main app'],
+         ['LQ Marking', 'Saved marks from teacher.html', 'Teacher marking']],
+  settings: [['Targets', 'Weekly target per class', 'E-points'],
+             ['History', 'One line per student per week', 'E-points'],
+             ['Dashboard', 'Older class summary', 'Teacher dashboard'],
+             ['EGive', 'Give E-points by hand', 'E-points'],
+             ['ERules', 'How many E each action earns', 'E-points'],
+             ['EStore', 'Store items and prices', 'E-points'],
+             ['New', 'Add new questions, then run importNew', 'Main app'],
+             ['Roster', 'Allowed emails', 'Main app'],
+             ['Blocklist', 'Blocked users', 'Main app'],
+             ['Config', 'Settings', 'Main app']],
+  data: [['Bank', 'Every question', 'Main app'], ['Sessions', 'Logins', 'Main app'],
+         ['Cleared', 'Questions each student has cleared', 'Main app'], ['Scores', 'Leaderboard scores', 'Main app'],
+         ['Mistakes', 'Wrong answers', 'Main app'], ['Log', 'Every answer', 'Main app'],
+         ['Wallet', 'E-point balances', 'E-points'], ['ELedger', 'Every E-point given or spent', 'E-points'],
+         ['Notes', 'Correction Album notes', 'Correction Album'], ['LQAlbum', 'Correction Album Long Qs', 'Correction Album'],
+         ['LQMarks', 'Student AI Long Q marks', 'Long Q marking'], ['LQUsage', 'Daily AI marking limit', 'Long Q marking'],
+         ['Explain', 'Saved AI explanations', 'Main app'], ['ExplainSeen', 'Who saw each explanation', 'Main app'],
+         ['AIUsage', 'Daily AI explain limit', 'Main app'], ['Likes', 'Comment likes', 'Main app']]
+};
+var EP_TEACHER_TABS = EP_TABS.show.map(function (t) { return t[0]; });
 
 function epBuildProgress() {
   var stats = clearedStats_(), wk = epWeek_(), today = epDay_(), DAY = 86400000, now = Date.now();
@@ -1030,24 +1061,86 @@ function epMenuDaily() {
   if (!have.epBuildProgress) ScriptApp.newTrigger('epBuildProgress').timeBased().everyDays(1).atHour(7).create();
   if (!have.epBuildWeak) ScriptApp.newTrigger('epBuildWeak').timeBased().everyDays(1).atHour(7).create();
   if (!have.buildDashboard) ScriptApp.newTrigger('buildDashboard').timeBased().everyDays(1).atHour(7).create();
+  if (!have.epTidyTabs) ScriptApp.newTrigger('epTidyTabs').timeBased().everyDays(1).atHour(8).create();
   tell_('Progress, Weak topics and Dashboard will update every morning around 7:00.');
 }
 
-/* The site keeps many working tabs (Log, Sessions, Cleared, Wallet…). Hide
-   them so the teacher sees only the tabs they use; nothing is deleted. */
-function epTidyTabs() {
-  var ss = ss_(), keep = {}, pos = 1;
-  EP_TEACHER_TABS.forEach(function (n) { keep[n] = 1; });
-  EP_TEACHER_TABS.forEach(function (n) {
+/* The site keeps many working tabs (Log, Sessions, Cleared, Wallet…). The
+   teacher ticks the tabs they want in a side panel; the rest are hidden.
+   Only tabs the code never uses can be deleted, from the same panel. */
+function epTabChoice_() {
+  try { var v = JSON.parse(PropertiesService.getDocumentProperties().getProperty('ep_tabs') || 'null'); if (v && v.length) return v; } catch (e) {}
+  return EP_TEACHER_TABS.slice();
+}
+function epKnownTabs_() {
+  var k = {};
+  ['show', 'settings', 'data'].forEach(function (g) { EP_TABS[g].forEach(function (t) { k[t[0]] = g; }); });
+  return k;
+}
+function epChooseTabs() {
+  var ss = ss_(), known = epKnownTabs_(), on = {}, have = {};
+  epTabChoice_().forEach(function (n) { on[n] = 1; });
+  ss.getSheets().forEach(function (sh) { have[sh.getName()] = 1; });
+  var row = function (t, del) {
+    return '<label class="r"><input type="checkbox" value="' + esc_(t[0]) + '"' + (on[t[0]] ? ' checked' : '') + '>' +
+      '<span><b>' + esc_(t[0]) + '</b>' + (t[1] ? '<br><small>' + esc_(t[1]) + (t[2] ? ' · ' + esc_(t[2]) : '') + '</small>' : '') + '</span>' +
+      (del ? '<button type="button" class="del" data-n="' + esc_(t[0]) + '">Delete</button>' : '') + '</label>';
+  };
+  var grp = function (title, note, list, del) {
+    list = list.filter(function (t) { return have[t[0]]; });
+    return list.length ? '<h4>' + title + '</h4>' + (note ? '<p class="n">' + note + '</p>' : '') + list.map(function (t) { return row(t, del); }).join('') : '';
+  };
+  var other = ss.getSheets().map(function (sh) { return sh.getName(); })
+    .filter(function (n) { return !known[n]; }).map(function (n) { return [n, '', '']; });
+  var html = '<style>body{font:13px Arial,sans-serif;margin:10px}h4{margin:14px 0 4px}.n{color:#666;margin:0 0 6px}' +
+    '.r{display:flex;gap:6px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #eee}.r span{flex:1}small{color:#666}' +
+    '.del{font-size:11px;color:#b00}.bar{position:sticky;bottom:0;background:#fff;padding:8px 0;display:flex;gap:6px}</style>' +
+    grp('Teacher tabs', 'Ticked tabs show, in this order. Untick to hide. Nothing is deleted.', EP_TABS.show) +
+    grp('Settings', 'Tick when you need them.', EP_TABS.settings) +
+    grp('App data', 'Safe to look at, but never delete or edit: students would lose their data.', EP_TABS.data) +
+    grp('Not used by the app', 'Old or extra tabs. Look before you delete: Delete cannot be undone.', other, true) +
+    '<div class="bar"><button id="save">Save</button><span id="m"></span></div>' +
+    '<script>' +
+    'document.getElementById("save").onclick=function(){var v=[].map.call(document.querySelectorAll("input:checked"),function(i){return i.value});' +
+    'if(!v.length){document.getElementById("m").textContent="Tick at least one tab.";return}' +
+    'document.getElementById("m").textContent="Saving…";google.script.run.withSuccessHandler(function(t){document.getElementById("m").textContent=t}).epSaveTabs(v)};' +
+    '[].forEach.call(document.querySelectorAll(".del"),function(b){b.onclick=function(e){e.preventDefault();' +
+    'if(b.textContent!=="Really delete?"){b.textContent="Really delete?";return}' +
+    'google.script.run.withSuccessHandler(function(t){b.closest(".r").remove();document.getElementById("m").textContent=t}).epDeleteTab(b.dataset.n)}});' +
+    '</script>';
+  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(html).setTitle('Choose tabs to show'));
+}
+function esc_(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function epSaveTabs(names) {
+  names = (names || []).map(String).filter(Boolean);
+  if (!names.length) return 'Tick at least one tab.';
+  PropertiesService.getDocumentProperties().setProperty('ep_tabs', JSON.stringify(names));
+  epApplyTabs_(names);
+  return 'Saved: ' + names.length + ' tabs showing.';
+}
+function epApplyTabs_(names) {
+  var ss = ss_(), keep = {}, pos = 1, first = null;
+  names.forEach(function (n) {
     var sh = ss.getSheetByName(n);
     if (!sh) return;
+    keep[n] = 1; first = first || sh;
     sh.showSheet(); ss.setActiveSheet(sh); ss.moveActiveSheet(pos++);
   });
+  if (!first) return;
   ss.getSheets().forEach(function (sh) { if (!keep[sh.getName()]) sh.hideSheet(); });
-  var first = ss.getSheetByName('Progress') || ss.getSheets()[0];
   ss.setActiveSheet(first);
-  tell_('Tidy: only ' + EP_TEACHER_TABS.join(', ') + ' are showing. Nothing was deleted. Use "Show all tabs" to see the rest.');
 }
+/* Only a tab the code never uses can go; the app's own tabs are refused. */
+function epDeleteTab(name) {
+  if (epKnownTabs_()[name]) return name + ' is used by the app, so it was not deleted.';
+  var ss = ss_(), sh = ss.getSheetByName(name);
+  if (!sh) return name + ' is already gone.';
+  if (ss.getSheets().length < 2) return 'A spreadsheet needs at least one tab.';
+  ss.deleteSheet(sh);
+  return name + ' deleted.';
+}
+/* Kept for old menus and triggers: applies the saved choice. */
+function epTidyTabs() { epApplyTabs_(epTabChoice_()); }
 function epShowAllTabs() {
   ss_().getSheets().forEach(function (sh) { sh.showSheet(); });
   tell_('All tabs are showing again.');
