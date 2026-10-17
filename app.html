@@ -282,6 +282,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 .cmt .hd2{display:flex; gap:8px; align-items:baseline; font-family:var(--f-sans); font-size:12px}
 .cmt .nk{font-weight:700}
 .cmt.ver{background:var(--pos-bg); border-left:3px solid var(--pos); padding-left:10px}
+.clsb{font-family:var(--f-mono,monospace); font-size:11px; padding:0 5px; border:1px solid currentColor; border-radius:4px; opacity:.7; white-space:nowrap}
 .vtag{font-family:var(--f-sans); font-size:11px; padding:1px 7px; border:1px solid var(--pos-line);
   background:var(--surface); color:var(--pos); border-radius:var(--r-pill)}
 .like{font-family:var(--f-sans); font-size:12px; padding:2px 9px; cursor:pointer; margin-left:auto;
@@ -3000,10 +3001,11 @@ function loadBoard(target){
   jsonp(q, r=>{
     if(!r||!r.top){ el.innerHTML='<p class="muted">'+(r&&r.error==='closed'?'This class is not open.':'Leaderboard is unavailable right now.')+'</p>'; return; }
     if(!r.top.length){ el.innerHTML='<p class="muted">No one in this class yet.</p>'; return; }
-    let h='<table><tr><th>#</th><th>Nickname</th><th>Lv</th><th>Cleared</th><th>%</th></tr>';
+    const mixed=r.top.some(x=>x.k);       // an 'everyone' class: show each student's real class
+    let h='<div class="tblwrap"><table><tr><th>#</th><th>Nickname</th>'+(mixed?'<th>Class</th>':'')+'<th>Lv</th><th>Cleared</th><th>%</th></tr>';
     // The top 15 only; anyone below sees their own rank in the line underneath.
-    r.top.slice(0,15).forEach((x,i)=>{ h+='<tr><td>'+(x.rank||i+1)+'</td><td>'+esc(x.nick||'—')+'</td><td>'+x.lvl+'</td><td>'+(x.c||0)+'</td><td>'+x.pct+'%</td></tr>'; });
-    h+='</table><p class="mono" style="margin-top:8px">'+(r.cls?'Class '+esc(r.cls)+' · ':'')+(r.top.length>15?'top 15 of '+r.top.length+' · ':'')+'out of '+r.total+' MCQs · updates every 2 minutes</p>';
+    r.top.slice(0,15).forEach((x,i)=>{ h+='<tr><td>'+(x.rank||i+1)+'</td><td>'+esc(x.nick||'—')+'</td>'+(mixed?'<td class="mono">'+esc(x.k||'')+'</td>':'')+'<td>'+x.lvl+'</td><td>'+(x.c||0)+'</td><td>'+x.pct+'%</td></tr>'; });
+    h+='</table></div><p class="mono" style="margin-top:8px">'+(r.cls?'Class '+esc(r.cls)+' · ':'')+(r.top.length>15?'top 15 of '+r.top.length+' · ':'')+'out of '+r.total+' MCQs · updates every 2 minutes</p>';
     if(r.you) h+='<p class="mono" style="margin-top:4px">You are #'+r.you.rank+' of '+r.n
       +'  ·  '+r.you.pct+'%  ·  Lv.'+r.you.lvl
       +(r.you.gapQ?'  ·  '+r.you.gapQ+' questions behind the next rank':'')+'</p>';
@@ -3545,7 +3547,7 @@ function epClassDraw(){
     const items=(r&&r.items)||[];
     if(!items.length){ $('ovMates').innerHTML='<p class="muted">Nobody here yet.</p>'; return; }
     $('ovMates').innerHTML='<div class="mates">'+items.map(m=>
-      '<div class="mate">'+epArt(m.look,esc(m.nick)+'\'s character')+'<div class="nk">'+esc(m.nick)+(m.t?' <span class="vtag">Teacher</span>':'')+'</div>'
+      '<div class="mate">'+epArt(m.look,esc(m.nick)+'\'s character')+'<div class="nk">'+esc(m.nick)+(m.t?' <span class="vtag">Teacher</span>':'')+(m.cl?' <span class="clsb">'+esc(m.cl)+'</span>':'')+'</div>'
       +'<div class="lv"><span class="lvb">Lv.'+m.lv+'</span> '+esc(LEVEL_NAMES[m.lv-1]||'')+'</div></div>').join('')+'</div>';
   });
 }

@@ -369,7 +369,7 @@ function epBoard_(sess, cls) {
   sc.list.forEach(function (s) {
     var x = st.by[s.uid] || { c: 0, p: 0 };
     if (!sess && !x.c) return;
-    rows.push({ uid: s.uid, nick: s.nick || '—', c: x.c, pct: x.p, lvl: levelOf_(x.p) });
+    rows.push({ uid: s.uid, nick: s.nick || '—', c: x.c, pct: x.p, lvl: levelOf_(x.p), k: s.cls });
   });
   rows.sort(function (a, b) { return b.c - a.c || (a.nick < b.nick ? -1 : 1); });
   for (var i = 0; i < rows.length; i++) rows[i].rank = i && rows[i].c === rows[i - 1].c ? rows[i - 1].rank : i + 1;
@@ -383,7 +383,9 @@ function epBoard_(sess, cls) {
     break;
   }
   var top = (sess ? rows : rows.slice(0, TOP_N)).map(function (r) {
-    return { rank: r.rank, nick: r.nick, pct: r.pct, lvl: r.lvl, c: r.c };   // uid deliberately dropped
+    var o = { rank: r.rank, nick: r.nick, pct: r.pct, lvl: r.lvl, c: r.c };   // uid deliberately dropped
+    if (everyone && sess) o.k = r.k;                                          // an 'everyone' class mixes real classes
+    return o;
   });
   return { cls: everyone && !sess ? '' : cls, n: rows.length, total: st.total, top: top, you: you };
 }
@@ -743,7 +745,10 @@ function epClassPage_(cls) {
     return b.t - a.t || (a.o === b.o ? 0 : a.o < b.o ? -1 : 1) || b.lv - a.lv
         || (a.k < b.k ? -1 : a.k > b.k ? 1 : a.n - b.n);
   });
-  items.forEach(function (x) { delete x.n; delete x.k; delete x.o; if (!x.t) delete x.t; });   // seat numbers and order stay private
+  items.forEach(function (x) {                       // seat numbers and order stay private
+    if (st === 'everyone' && !x.t && x.k) x.cl = x.k;  // an 'everyone' page shows each student's real class
+    delete x.n; delete x.k; delete x.o; if (!x.t) delete x.t;
+  });
   var out = { cls: cls, items: items };
   c.put('ep_cp_' + cls, JSON.stringify(out), 60);
   return out;
@@ -765,7 +770,13 @@ function onOpen() {
     .addItem('Recount balances from ELedger', 'epMenuRecount')
     .addSeparator()
     .addItem('Set up E-point tabs', 'epSetup')
+    .addSeparator()
+    .addItem('Update the Progress tab', 'epBuildProgress')
+    .addItem('Update Progress and Dashboard every morning', 'epMenuDaily')
     .addItem('Build Dashboard', 'buildDashboard')
+    .addSeparator()
+    .addItem('Tidy tabs: show only the teacher tabs', 'epTidyTabs')
+    .addItem('Show all tabs', 'epShowAllTabs')
     .addToUi();
 }
 
@@ -874,4 +885,106 @@ function epMenuRecount() {
     }
   } finally { lock.releaseLock(); }
   try { tell_('Recounted. ' + n + ' balance(s) changed.'); } catch (e) { Logger.log('Recounted ' + n); }
+}
+
+
+/* ============================================================ PROGRESS ==== *
+ * One "Progress" tab the teacher can read at a glance, with no formulas:
+ * a line per class, then a line per student, worst-off first within each
+ * class, so the students who need a nudge are at the top. Built from the
+ * Wallet, ELedger and Cleared tabs; nothing for students to hand in.
+ * ========================================================================== */
+var EP_TEACHER_TABS = ['Progress', 'Dashboard', 'Students', 'Classes', 'EGive', 'ERules', 'EStore', 'Comments', 'LQ Marking'];
+
+function epBuildProgress() {
+  var stats = clearedStats_(), wk = epWeek_(), today = epDay_(), DAY = 86400000, now = Date.now();
+  var wal = {}, wv = walletSheet_().getDataRange().getValues();
+  for (var i = 1; i < wv.length; i++) {
+    var st = pj_(wv[i][7], {}) || {};
+    wal[String(wv[i][0])] = { bal: Number(wv[i][3]) || 0, st: st, upd: wv[i][8] ? new Date(wv[i][8]).getTime() : 0 };
+  }
+  // E earned this week (Mon to today), from the ledger; spending is not effort
+  var weekE = {}, lv = ledgerSheet_().getDataRange().getValues(), wkStart = new Date(wk + 'T00:00:00+08:00').getTime();
+  for (var j = lv.length - 1; j >= 1; j--) {
+    var t = lv[j][0] ? new Date(lv[j][0]).getTime() : 0;
+    if (t < wkStart) break;                                  // the ledger is append-only, so newest rows are last
+    var e = Number(lv[j][5]) || 0, a = String(lv[j][4]);
+    if (e > 0 && a !== 'teacher' && a !== 'welcome') weekE[String(lv[j][1])] = (weekE[String(lv[j][1])] || 0) + e;
+  }
+  var rows = [], cls = {};
+  studentRows_().forEach(function (s) {
+    if (s.status === 'removed') return;
+    var w = wal[s.uid] || { bal: 0, st: {}, upd: 0 }, x = stats.by[s.uid] || { c: 0, p: 0 };
+    var days = (w.st.wk && w.st.wk.w === wk) ? (w.st.wk.days || []).length : 0;
+    var ck = w.st.ck || {}, streak = 0;
+    if (ck.d === today || ck.d === Utilities.formatDate(new Date(now - DAY), EP_TZ, 'yyyy-MM-dd')) streak = ck.n || 0;
+    var ago = w.upd ? Math.floor((now - w.upd) / DAY) : '';
+    var flag = !x.c && !days ? 'Not started' : ago !== '' && ago >= 7 ? 'Quiet 7+ days' : days >= 3 ? 'On track' : 'Needs a nudge';
+    rows.push([s.cls, Number(s.num) || '', s.nick, flag, days, weekE[s.uid] || 0, x.c, x.p / 100, levelOf_(x.p),
+               streak, w.bal, w.upd ? new Date(w.upd) : '', s.status === 'hidden' ? 'hidden' : '']);
+    var c = cls[s.cls] || (cls[s.cls] = { n: 0, on: 0, nudge: 0, quiet: 0, none: 0, days: 0, cleared: 0 });
+    c.n++; c.days += days; c.cleared += x.c;
+    c[{ 'On track': 'on', 'Needs a nudge': 'nudge', 'Quiet 7+ days': 'quiet', 'Not started': 'none' }[flag]]++;
+  });
+  var rank = { 'Not started': 0, 'Quiet 7+ days': 1, 'Needs a nudge': 2, 'On track': 3 };
+  rows.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : rank[a[3]] - rank[b[3]] || a[1] - b[1]; });
+  var csum = Object.keys(cls).sort().map(function (k) {
+    var c = cls[k];
+    return [k, c.n, c.on, c.nudge, c.quiet, c.none, Math.round(c.days / c.n * 10) / 10, Math.round(c.cleared / c.n)];
+  });
+
+  var ss = ss_(), sh = ss.getSheetByName('Progress') || ss.insertSheet('Progress', 0);
+  sh.clear();
+  sh.getRange(1, 1).setValue('Progress · week of ' + wk + ' · updated ' +
+    Utilities.formatDate(new Date(), EP_TZ, 'd MMM HH:mm')).setFontWeight('bold').setFontSize(14);
+  sh.getRange(2, 1).setValue('On track = practised on 3+ days this week. Needs a nudge = 1–2 days. ' +
+    'Week = Monday to today. Nothing here needs students to hand anything in.').setFontStyle('italic').setFontColor('#666666');
+  var r = 4, ch = ['Class', 'Students', 'On track', 'Needs a nudge', 'Quiet 7+ days', 'Not started', 'Avg days this week', 'Avg MCQs cleared'];
+  sh.getRange(r, 1, 1, ch.length).setValues([ch]).setFontWeight('bold').setBackground('#eeeeee');
+  if (csum.length) sh.getRange(r + 1, 1, csum.length, ch.length).setValues(csum);
+  r += csum.length + 3;
+  var hd = ['Class', 'No.', 'Nickname', 'Status', 'Days this week', 'E earned this week', 'MCQs cleared', 'Cleared %',
+            'Level', 'Check-in streak', 'E balance', 'Last active', 'Note'];
+  sh.getRange(r, 1, 1, hd.length).setValues([hd]).setFontWeight('bold').setBackground('#eeeeee');
+  sh.setFrozenRows(0);
+  if (rows.length) {
+    sh.getRange(r + 1, 1, rows.length, hd.length).setValues(rows);
+    sh.getRange(r + 1, 8, rows.length, 1).setNumberFormat('0.0%');
+    sh.getRange(r + 1, 12, rows.length, 1).setNumberFormat('d mmm hh:mm');
+    var colour = { 'On track': '#d9ead3', 'Needs a nudge': '#fff2cc', 'Quiet 7+ days': '#f4cccc', 'Not started': '#efefef' };
+    sh.getRange(r + 1, 4, rows.length, 1).setBackgrounds(rows.map(function (x) { return [colour[x[3]]]; }));
+  }
+  sh.autoResizeColumns(1, hd.length);
+  var msg = 'Progress tab updated: ' + rows.length + ' students.';
+  try { ss.setActiveSheet(sh); ss.toast(msg); } catch (e) { Logger.log(msg); }
+  return msg;
+}
+
+/* Rebuild Progress (and the Dashboard) every morning around 7. */
+function epMenuDaily() {
+  var have = {};
+  ScriptApp.getProjectTriggers().forEach(function (t) { have[t.getHandlerFunction()] = 1; });
+  if (!have.epBuildProgress) ScriptApp.newTrigger('epBuildProgress').timeBased().everyDays(1).atHour(7).create();
+  if (!have.buildDashboard) ScriptApp.newTrigger('buildDashboard').timeBased().everyDays(1).atHour(7).create();
+  tell_('Progress and Dashboard will update every morning around 7:00.');
+}
+
+/* The site keeps many working tabs (Log, Sessions, Cleared, Wallet…). Hide
+   them so the teacher sees only the tabs they use; nothing is deleted. */
+function epTidyTabs() {
+  var ss = ss_(), keep = {}, pos = 1;
+  EP_TEACHER_TABS.forEach(function (n) { keep[n] = 1; });
+  EP_TEACHER_TABS.forEach(function (n) {
+    var sh = ss.getSheetByName(n);
+    if (!sh) return;
+    sh.showSheet(); ss.setActiveSheet(sh); ss.moveActiveSheet(pos++);
+  });
+  ss.getSheets().forEach(function (sh) { if (!keep[sh.getName()]) sh.hideSheet(); });
+  var first = ss.getSheetByName('Progress') || ss.getSheets()[0];
+  ss.setActiveSheet(first);
+  tell_('Tidy: only ' + EP_TEACHER_TABS.join(', ') + ' are showing. Nothing was deleted. Use "Show all tabs" to see the rest.');
+}
+function epShowAllTabs() {
+  ss_().getSheets().forEach(function (sh) { sh.showSheet(); });
+  tell_('All tabs are showing again.');
 }
