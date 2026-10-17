@@ -284,7 +284,7 @@ function classMap_() {
 }
 function clsOpen_(st) { return st === 'open' || st === 'everyone'; }
 function epFlushCache_() {
-  CacheService.getScriptCache().removeAll(['ep_rules', 'ep_store', 'ep_hidden', 'ep_classes', 'ep_pct']);
+  CacheService.getScriptCache().removeAll(['ep_rules', 'ep_store', 'ep_hidden', 'ep_classes', 'ep_pct', 'ep_targets']);
 }
 /* Class pages are cached for a minute; a change to one student also changes
    every 'everyone' class page. */
@@ -369,7 +369,7 @@ function epBoard_(sess, cls) {
   sc.list.forEach(function (s) {
     var x = st.by[s.uid] || { c: 0, p: 0 };
     if (!sess && !x.c) return;
-    rows.push({ uid: s.uid, nick: s.nick || '—', c: x.c, pct: x.p, lvl: levelOf_(x.p) });
+    rows.push({ uid: s.uid, nick: s.nick || '—', c: x.c, pct: x.p, lvl: levelOf_(x.p), k: s.cls });
   });
   rows.sort(function (a, b) { return b.c - a.c || (a.nick < b.nick ? -1 : 1); });
   for (var i = 0; i < rows.length; i++) rows[i].rank = i && rows[i].c === rows[i - 1].c ? rows[i - 1].rank : i + 1;
@@ -383,7 +383,9 @@ function epBoard_(sess, cls) {
     break;
   }
   var top = (sess ? rows : rows.slice(0, TOP_N)).map(function (r) {
-    return { rank: r.rank, nick: r.nick, pct: r.pct, lvl: r.lvl, c: r.c };   // uid deliberately dropped
+    var o = { rank: r.rank, nick: r.nick, pct: r.pct, lvl: r.lvl, c: r.c };   // uid deliberately dropped
+    if (everyone && sess) o.k = r.k;                                          // an 'everyone' class mixes real classes
+    return o;
   });
   return { cls: everyone && !sess ? '' : cls, n: rows.length, total: st.total, top: top, you: you };
 }
@@ -507,6 +509,8 @@ function epOne_(sess, w, aw, key, ok, page) {
     if (ok) give_(w, aw, 'mc_correct', key);
     if (st.n % 10 === 0) give_(w, aw, 'mc_ten', st.n + ' questions today');
     st.ever = (st.ever || 0) + 1;
+    st.wk.mc = (st.wk.mc || 0) + 1;                  // for the weekly target
+
     if (st.ever >= 10 && !st.once.first10 && give_(w, aw, 'first10', 'first 10 questions')) st.once.first10 = 1;
     active_(w, aw);
   }
@@ -544,6 +548,7 @@ function epLqMarked_(sess, key, sum, words, photo) {
     var st = w.st, aw = [];
     if (photo || words >= 40) {
       give_(w, aw, 'lq_submit', key); active_(w, aw);
+      st.wk.lq = (st.wk.lq || 0) + 1;
       if (!st.once.first_lq && give_(w, aw, 'first_lq', key)) st.once.first_lq = 1;
     }
     var prev = st.lqb[key];
@@ -650,8 +655,10 @@ function epWallet_(sess) {
     var r = rules[d[0]]; if (!r || !r.on) return;
     list.push({ a: d[0], p: r.p, lim: r.lim, what: r.what, today: w.st.c[d[0]] || 0 });
   });
+  var tg = epTargetOf_(w.cls);
+  if (tg) tg = { mc: tg.mc, lq: tg.lq, doneMc: w.st.wk.mc || 0, doneLq: w.st.wk.lq || 0 };
   return { bal: w.bal, earned: w.earned, look: w.look, owned: w.owned, store: epStore_(), rules: list,
-           recent: w.st.recent, e: brief_(res.aw) };
+           recent: w.st.recent, e: brief_(res.aw), target: tg };
 }
 
 /* Opening the site: welcome gift once, daily check-in with 3- and 7-day
@@ -743,7 +750,10 @@ function epClassPage_(cls) {
     return b.t - a.t || (a.o === b.o ? 0 : a.o < b.o ? -1 : 1) || b.lv - a.lv
         || (a.k < b.k ? -1 : a.k > b.k ? 1 : a.n - b.n);
   });
-  items.forEach(function (x) { delete x.n; delete x.k; delete x.o; if (!x.t) delete x.t; });   // seat numbers and order stay private
+  items.forEach(function (x) {                       // seat numbers and order stay private
+    if (st === 'everyone' && !x.t && x.k) x.cl = x.k;  // an 'everyone' page shows each student's real class
+    delete x.n; delete x.k; delete x.o; if (!x.t) delete x.t;
+  });
   var out = { cls: cls, items: items };
   c.put('ep_cp_' + cls, JSON.stringify(out), 60);
   return out;
@@ -765,7 +775,15 @@ function onOpen() {
     .addItem('Recount balances from ELedger', 'epMenuRecount')
     .addSeparator()
     .addItem('Set up E-point tabs', 'epSetup')
+    .addSeparator()
+    .addItem('Update the Progress tab', 'epBuildProgress')
+    .addItem('Update Progress and Dashboard every morning', 'epMenuDaily')
+    .addItem('Email me a summary every Monday', 'epMenuEmail')
+    .addItem('Reward everyone on track this week…', 'epMenuReward')
     .addItem('Build Dashboard', 'buildDashboard')
+    .addSeparator()
+    .addItem('Tidy tabs: show only the teacher tabs', 'epTidyTabs')
+    .addItem('Show all tabs', 'epShowAllTabs')
     .addToUi();
 }
 
@@ -778,11 +796,11 @@ function tell_(s) { SpreadsheetApp.getUi().alert(s); }
 /* Makes every new tab and fills in defaults. Safe to run again: it never
    overwrites a tab that already has rows. */
 function epSetup() {
-  classSheet_(); eRulesSheet_(); eStoreSheet_(); eGiveSheet_(); walletSheet_(); ledgerSheet_();
+  classSheet_(); eRulesSheet_(); eStoreSheet_(); eGiveSheet_(); walletSheet_(); ledgerSheet_(); targetSheet_();
   ensureStudentStatus_();
   var added = epAddNewItems_(), rulesAdded = epAddNewRules_();
   epFlushCache_();
-  var msg = 'E-point tabs are ready: Classes, ERules, EStore, EGive, Wallet, ELedger.' + (added ? ' Added ' + added + ' new store items to EStore.' : '')
+  var msg = 'E-point tabs are ready: Classes, ERules, EStore, EGive, Wallet, ELedger, Targets.' + (added ? ' Added ' + added + ' new store items to EStore.' : '')
           + (rulesAdded ? ' Added ' + rulesAdded + ' new ways to earn to ERules.' : '');
   try { tell_(msg); } catch (e) { Logger.log(msg); }
 }
@@ -874,4 +892,227 @@ function epMenuRecount() {
     }
   } finally { lock.releaseLock(); }
   try { tell_('Recounted. ' + n + ' balance(s) changed.'); } catch (e) { Logger.log('Recounted ' + n); }
+}
+
+
+/* ============================================================ PROGRESS ==== *
+ * One "Progress" tab the teacher can read at a glance, with no formulas:
+ * a line per class, then a line per student, worst-off first within each
+ * class, so the students who need a nudge are at the top. Built from the
+ * Wallet, ELedger and Cleared tabs; nothing for students to hand in.
+ * ========================================================================== */
+var EP_TEACHER_TABS = ['Progress', 'Targets', 'History', 'Dashboard', 'Students', 'Classes', 'EGive', 'ERules', 'EStore', 'Comments', 'LQ Marking'];
+
+function epBuildProgress() {
+  var stats = clearedStats_(), wk = epWeek_(), today = epDay_(), DAY = 86400000, now = Date.now();
+  var wal = {}, wv = walletSheet_().getDataRange().getValues();
+  for (var i = 1; i < wv.length; i++) {
+    var st = pj_(wv[i][7], {}) || {};
+    wal[String(wv[i][0])] = { bal: Number(wv[i][3]) || 0, st: st, upd: wv[i][8] ? new Date(wv[i][8]).getTime() : 0 };
+  }
+  // E earned this week (Mon to today), from the ledger; spending is not effort
+  var weekE = {}, lv = ledgerSheet_().getDataRange().getValues(), wkStart = new Date(wk + 'T00:00:00+08:00').getTime();
+  for (var j = lv.length - 1; j >= 1; j--) {
+    var t = lv[j][0] ? new Date(lv[j][0]).getTime() : 0;
+    if (t < wkStart) break;                                  // the ledger is append-only, so newest rows are last
+    var e = Number(lv[j][5]) || 0, a = String(lv[j][4]);
+    if (e > 0 && a !== 'teacher' && a !== 'welcome') weekE[String(lv[j][1])] = (weekE[String(lv[j][1])] || 0) + e;
+  }
+  var rows = [], cls = {}, hist = [];
+  studentRows_().forEach(function (s) {
+    if (s.status === 'removed') return;
+    var w = wal[s.uid] || { bal: 0, st: {}, upd: 0 }, x = stats.by[s.uid] || { c: 0, p: 0 };
+    var days = (w.st.wk && w.st.wk.w === wk) ? (w.st.wk.days || []).length : 0;
+    var ck = w.st.ck || {}, streak = 0;
+    if (ck.d === today || ck.d === Utilities.formatDate(new Date(now - DAY), EP_TZ, 'yyyy-MM-dd')) streak = ck.n || 0;
+    var ago = w.upd ? Math.floor((now - w.upd) / DAY) : '';
+    var inWk = w.st.wk && w.st.wk.w === wk, mc = inWk ? w.st.wk.mc || 0 : 0, lq = inWk ? w.st.wk.lq || 0 : 0;
+    var tg = epTargetText_(epTargetOf_(s.cls), mc, lq);
+    var flag = !x.c && !days ? 'Not started' : ago !== '' && ago >= 7 ? 'Quiet 7+ days'
+             : days >= 3 || tg === 'Met' ? 'On track' : 'Needs a nudge';
+    rows.push([s.cls, Number(s.num) || '', s.nick, flag, tg, days, mc, lq, weekE[s.uid] || 0, x.c, x.p / 100, levelOf_(x.p),
+               streak, w.bal, w.upd ? new Date(w.upd) : '', s.status === 'hidden' ? 'hidden' : '']);
+    hist.push([s.uid, s.cls, Number(s.num) || '', s.nick, days, mc, lq, tg, weekE[s.uid] || 0, x.c, x.p / 100]);
+    var c = cls[s.cls] || (cls[s.cls] = { n: 0, on: 0, nudge: 0, quiet: 0, none: 0, met: 0, days: 0, cleared: 0 });
+    c.n++; c.days += days; c.cleared += x.c; if (tg === 'Met') c.met++;
+    c[{ 'On track': 'on', 'Needs a nudge': 'nudge', 'Quiet 7+ days': 'quiet', 'Not started': 'none' }[flag]]++;
+  });
+  var rank = { 'Not started': 0, 'Quiet 7+ days': 1, 'Needs a nudge': 2, 'On track': 3 };
+  rows.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : rank[a[3]] - rank[b[3]] || a[1] - b[1]; });
+  var csum = Object.keys(cls).sort().map(function (k) {
+    var c = cls[k];
+    return [k, c.n, c.on, c.nudge, c.quiet, c.none, c.met, Math.round(c.days / c.n * 10) / 10, Math.round(c.cleared / c.n)];
+  });
+  try { epSaveHistory_(wk, hist); } catch (e) { Logger.log('History not saved: ' + e); }
+
+  var ss = ss_(), sh = ss.getSheetByName('Progress') || ss.insertSheet('Progress', 0);
+  sh.clear();
+  sh.getRange(1, 1).setValue('Progress · week of ' + wk + ' · updated ' +
+    Utilities.formatDate(new Date(), EP_TZ, 'd MMM HH:mm')).setFontWeight('bold').setFontSize(14);
+  sh.getRange(2, 1).setValue('On track = practised on 3+ days this week, or met the weekly target (Targets tab). ' +
+    'Needs a nudge = 1–2 days. Week = Monday to today. Nothing here needs students to hand anything in.').setFontStyle('italic').setFontColor('#666666');
+  var r = 4, ch = ['Class', 'Students', 'On track', 'Needs a nudge', 'Quiet 7+ days', 'Not started', 'Met target', 'Avg days this week', 'Avg MCQs cleared'];
+  sh.getRange(r, 1, 1, ch.length).setValues([ch]).setFontWeight('bold').setBackground('#eeeeee');
+  if (csum.length) sh.getRange(r + 1, 1, csum.length, ch.length).setValues(csum);
+  r += csum.length + 3;
+  var hd = ['Class', 'No.', 'Nickname', 'Status', 'Target', 'Days this week', 'MCQs this week', 'Long Qs this week',
+            'E earned this week', 'MCQs cleared', 'Cleared %', 'Level', 'Check-in streak', 'E balance', 'Last active', 'Note'];
+  sh.getRange(r, 1, 1, hd.length).setValues([hd]).setFontWeight('bold').setBackground('#eeeeee');
+  sh.setFrozenRows(0);
+  if (rows.length) {
+    sh.getRange(r + 1, 1, rows.length, hd.length).setValues(rows);
+    sh.getRange(r + 1, 11, rows.length, 1).setNumberFormat('0.0%');
+    sh.getRange(r + 1, 15, rows.length, 1).setNumberFormat('d mmm hh:mm');
+    var colour = { 'On track': '#d9ead3', 'Needs a nudge': '#fff2cc', 'Quiet 7+ days': '#f4cccc', 'Not started': '#efefef' };
+    sh.getRange(r + 1, 4, rows.length, 1).setBackgrounds(rows.map(function (x) { return [colour[x[3]]]; }));
+  }
+  sh.autoResizeColumns(1, hd.length);
+  var msg = 'Progress tab updated: ' + rows.length + ' students.';
+  try { ss.setActiveSheet(sh); ss.toast(msg); } catch (e) { Logger.log(msg); }
+  return msg;
+}
+
+/* Rebuild Progress (and the Dashboard) every morning around 7. */
+function epMenuDaily() {
+  var have = {};
+  ScriptApp.getProjectTriggers().forEach(function (t) { have[t.getHandlerFunction()] = 1; });
+  if (!have.epBuildProgress) ScriptApp.newTrigger('epBuildProgress').timeBased().everyDays(1).atHour(7).create();
+  if (!have.buildDashboard) ScriptApp.newTrigger('buildDashboard').timeBased().everyDays(1).atHour(7).create();
+  tell_('Progress and Dashboard will update every morning around 7:00.');
+}
+
+/* The site keeps many working tabs (Log, Sessions, Cleared, Wallet…). Hide
+   them so the teacher sees only the tabs they use; nothing is deleted. */
+function epTidyTabs() {
+  var ss = ss_(), keep = {}, pos = 1;
+  EP_TEACHER_TABS.forEach(function (n) { keep[n] = 1; });
+  EP_TEACHER_TABS.forEach(function (n) {
+    var sh = ss.getSheetByName(n);
+    if (!sh) return;
+    sh.showSheet(); ss.setActiveSheet(sh); ss.moveActiveSheet(pos++);
+  });
+  ss.getSheets().forEach(function (sh) { if (!keep[sh.getName()]) sh.hideSheet(); });
+  var first = ss.getSheetByName('Progress') || ss.getSheets()[0];
+  ss.setActiveSheet(first);
+  tell_('Tidy: only ' + EP_TEACHER_TABS.join(', ') + ' are showing. Nothing was deleted. Use "Show all tabs" to see the rest.');
+}
+function epShowAllTabs() {
+  ss_().getSheets().forEach(function (sh) { sh.showSheet(); });
+  tell_('All tabs are showing again.');
+}
+
+
+/* ============================================================== TARGETS === *
+ * The teacher's weekly target, per class, in a Targets tab. A row for ALL
+ * applies to every class without its own row. Students see a progress bar
+ * on Home; the Progress tab shows who met it. Counting starts the week this
+ * version is deployed (MCQs = different questions answered each day).
+ * ========================================================================== */
+function targetSheet_() {
+  var sh = sheet_('Targets', ['class', 'MCQs a week', 'Long Qs a week', 'on', 'note']);
+  if (sh.getLastRow() < 2) sh.appendRow(['ALL', 30, 1, 'yes', 'every class without its own row']);
+  return sh;
+}
+function epTargets_() {
+  var c = CacheService.getScriptCache(), hit = c.get('ep_targets');
+  if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  var v = targetSheet_().getDataRange().getValues(), out = {};
+  for (var i = 1; i < v.length; i++) {
+    var k = String(v[i][0]).trim().toUpperCase();
+    if (k && yes_(v[i][3])) out[k] = { mc: Math.max(0, Math.round(Number(v[i][1]) || 0)), lq: Math.max(0, Math.round(Number(v[i][2]) || 0)) };
+  }
+  c.put('ep_targets', JSON.stringify(out), 120);
+  return out;
+}
+function epTargetOf_(cls) {
+  var t = epTargets_(), x = t[String(cls || '').toUpperCase()] || t.ALL;
+  return x && (x.mc || x.lq) ? x : null;
+}
+function epTargetText_(tg, mc, lq) {
+  if (!tg) return '';
+  var met = mc >= tg.mc && lq >= tg.lq;
+  if (met) return 'Met';
+  var part = function (n, of, what) { return of ? (n >= of ? what + ' done' : n + '/' + of + ' ' + what) : ''; };
+  return [part(mc, tg.mc, 'MCQ'), part(lq, tg.lq, 'LQ')].filter(String).join(', ');
+}
+
+/* ============================================================== HISTORY === *
+ * Each Progress update also keeps this week's line per student in a History
+ * tab (one row per student per week, overwritten until the week ends), so
+ * effort over the term is on record without anyone saving anything.
+ * ========================================================================== */
+function historySheet_() {
+  return sheet_('History', ['week', 'uid', 'class', 'no.', 'nickname', 'days', 'MCQs this week', 'Long Qs this week',
+                            'target', 'E this week', 'MCQs cleared', 'cleared %', 'updated']);
+}
+function epSaveHistory_(wk, lines) {
+  var sh = historySheet_(), v = sh.getDataRange().getValues(), at = {};
+  for (var i = 1; i < v.length; i++) if (String(v[i][0]) === wk) at[String(v[i][1])] = i + 1;
+  var add = [];
+  lines.forEach(function (l) {
+    var row = [wk].concat(l, [new Date()]);
+    if (at[l[0]]) sh.getRange(at[l[0]], 1, 1, row.length).setValues([row]); else add.push(row);
+  });
+  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, add[0].length).setValues(add);
+}
+
+/* ========================================================= MONDAY EMAIL === *
+ * Every Monday morning the script emails a short summary of last week to
+ * the teacher (TEACHER_EMAILS, else the Sheet owner). Only the teacher gets
+ * it; students are never emailed.
+ * ========================================================================== */
+function epWeeklyEmail() {
+  var last = Utilities.formatDate(new Date(new Date(epWeek_() + 'T12:00:00Z').getTime() - 7 * 86400000), 'UTC', 'yyyy-MM-dd');
+  var v = historySheet_().getDataRange().getValues().slice(1).filter(function (r) { return String(r[0]) === last; });
+  var to = Object.keys(epTeachers_()).join(',') || Session.getEffectiveUser().getEmail();
+  if (!to) return 'No teacher email.';
+  var cls = {}, quiet = [], met = 0;
+  v.forEach(function (r) {
+    var c = cls[r[2]] || (cls[r[2]] = { n: 0, met: 0, active: 0 });
+    c.n++;
+    if (r[8] === 'Met') { c.met++; met++; }
+    if (Number(r[5]) > 0) c.active++; else quiet.push(r[2] + '-' + r[3] + ' ' + r[4]);
+  });
+  var lines = ['tyneconbuddy · week of ' + last, ''];
+  Object.keys(cls).sort().forEach(function (k) {
+    var c = cls[k];
+    lines.push(k + ': ' + c.active + '/' + c.n + ' practised, ' + c.met + ' met the target');
+  });
+  lines.push('', 'No practice last week (' + quiet.length + '):', quiet.slice(0, 60).join(', ') || 'nobody', '',
+             'Details: the Progress and History tabs in the Sheet ' + ss_().getUrl());
+  MailApp.sendEmail(to, 'tyneconbuddy weekly summary · ' + last + ' · ' + met + ' met the target', lines.join('\n'));
+  return 'Sent to ' + to;
+}
+function epMenuEmail() {
+  var have = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'epWeeklyEmail'; });
+  if (!have) ScriptApp.newTrigger('epWeeklyEmail').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(7).create();
+  tell_('Every Monday around 7:00 you will get a summary of last week by email. ' +
+        'Keep "Update Progress and Dashboard every morning" on so the numbers are there.');
+}
+
+/* ====================================================== ONE-CLICK REWARD === *
+ * Gives the same E to every student marked On track or Met this week in
+ * the Progress tab (rebuilt first). Once per student per week.
+ * ========================================================================== */
+function epMenuReward() {
+  epBuildProgress();
+  var e = Math.round(Number(ask_('Reward this week\'s hard workers', 'How many E for each student who is On track or met the target this week? e.g. 30')) || 0);
+  if (!e) return;
+  var wk = epWeek_(), sh = ss_().getSheetByName('Progress'), v = sh.getDataRange().getValues(), hdr = -1;
+  for (var i = 0; i < v.length; i++) if (v[i][0] === 'Class' && v[i][2] === 'Nickname') { hdr = i; break; }
+  var seat = {};
+  studentRows_().forEach(function (s) { if (s.status !== 'removed') seat[s.cls + '-' + Number(s.num)] = s.uid; });
+  var n = 0;
+  for (var j = hdr + 1; hdr >= 0 && j < v.length; j++) {
+    if (!(v[j][3] === 'On track' || v[j][4] === 'Met')) continue;
+    var uid = seat[v[j][0] + '-' + Number(v[j][1])];
+    if (!uid) continue;
+    var res = withWallet_(uid, function (w) {
+      if (w.st.once['rw:' + wk]) return [];
+      w.st.once['rw:' + wk] = 1;
+      return [{ a: 'teacher', p: e, ref: 'hard work, week of ' + wk, by: 'teacher', note: 'Weekly reward from the teacher' }];
+    });
+    if (res.aw && res.aw.length) n++;
+  }
+  tell_(n ? n + ' students got ' + e + ' E for this week.' : 'Nobody new to reward this week (each student can get it once a week).');
 }
