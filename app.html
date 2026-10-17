@@ -285,6 +285,7 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 .tgbox{margin:0 auto 12px; min-width:210px; text-align:left; padding:8px 10px; border:1px solid var(--line); border-radius:8px}
 .tgbox.met{border-color:var(--pos-line)}
 .tgrow{display:grid; grid-template-columns:62px 1fr auto; gap:8px; align-items:center; font-size:13px; margin:3px 0}
+.tgrow.task{grid-template-columns:minmax(90px,1.2fr) 1fr auto auto; margin:6px 0}
 .tgbar{height:8px; border-radius:4px; background:var(--line); overflow:hidden}
 .tgbar i{display:block; height:100%; background:var(--pos)}
 .clsb{font-family:var(--f-mono,monospace); font-size:11px; padding:0 5px; border:1px solid currentColor; border-radius:4px; opacity:.7; white-space:nowrap}
@@ -624,6 +625,7 @@ rect.fx-flash{animation-name:fxflashbg}
       <div class="card ac ac-gold" id="ovMe"><h2>My character</h2><p class="muted">Loading…</p></div>
       <div class="ovside">
         <div class="card" id="ovHello"></div>
+        <div class="card ac ac-gold hide" id="ovTasks"></div>
         <div class="card ac ac-blue nextcard" id="ovNext"></div>
         <div class="card ac ac-gold">
           <div class="lvl"><b id="ovLvlN">Lv.1</b><span id="ovLvlName" class="muted"></span>
@@ -3533,8 +3535,33 @@ function epHome(){
          +'<div class="row"><button class="btn" data-ep="pick" data-base="boy">Teen boy</button>'
          +'<button class="btn" data-ep="pick" data-base="girl">Teen girl</button></div>')
     +'</div></div>';
+  epTasksDraw();
   epClassList();
 }
+/* Tasks the teacher set in the Sheet (Tasks tab), the next one to do first.
+   Progress = MCQs of that chapter or topic already cleared. */
+const epTaskName=t=>t.topic?lbl(t.topic):t.label.split(' · ').pop();
+function epTasksDraw(){
+  const ts=(EPW&&EPW.tasks)||[], el=$('ovTasks');
+  el.classList.toggle('hide',!ts.length);
+  if(!ts.length) return;
+  const open=ts.filter(t=>t.done<t.n).sort((a,b)=>(a.due||'9')<(b.due||'9')?-1:1), next=open[0];
+  const dd=d=>d?new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}):'';
+  el.innerHTML='<h2>Your tasks</h2>'
+    +(next?'<p style="margin:0 0 10px"><b>Next step:</b> '+esc(epTaskName(next))+', '+(next.n-next.done)+' more MCQ'+(next.n-next.done>1?'s':'')
+      +(next.due?(next.late?' · <span style="color:var(--neg)">was due '+dd(next.due)+'</span>':' · due '+dd(next.due)):'')+'</p>'
+      :'<p style="margin:0 0 10px">All tasks done. Well played.</p>')
+    +ts.map((t,i)=>'<div class="tgrow task"><span>'+esc(epTaskName(t))+'</span><span class="tgbar"><i style="width:'
+      +Math.round(t.done/t.n*100)+'%"></i></span><b>'+(t.done>=t.n?'Done':t.done+'/'+t.n)+'</b>'
+      +(t.done<t.n?'<button class="btn sm" data-task="'+i+'">Start</button>':'<span></span>')+'</div>').join('');
+}
+$('ovTasks').addEventListener('click',e=>{
+  const b=e.target.closest('[data-task]'); if(!b) return;
+  const t=EPW.tasks[Number(b.dataset.task)];
+  show('drill');
+  if(!$('qcard').classList.contains('hide')) $('quit').click();
+  if(t.topic) startSection(t.page,t.topic,lbl(t.topic)); else pickChapter(t.chap);
+});
 $('ovMe').addEventListener('click',e=>{
   const b=e.target.closest('[data-ep]'); if(!b) return;
   if(b.dataset.ep==='store') show('store');
