@@ -282,6 +282,11 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 .cmt .hd2{display:flex; gap:8px; align-items:baseline; font-family:var(--f-sans); font-size:12px}
 .cmt .nk{font-weight:700}
 .cmt.ver{background:var(--pos-bg); border-left:3px solid var(--pos); padding-left:10px}
+.tgbox{margin:0 auto 12px; min-width:210px; text-align:left; padding:8px 10px; border:1px solid var(--line); border-radius:8px}
+.tgbox.met{border-color:var(--pos-line)}
+.tgrow{display:grid; grid-template-columns:62px 1fr auto; gap:8px; align-items:center; font-size:13px; margin:3px 0}
+.tgbar{height:8px; border-radius:4px; background:var(--line); overflow:hidden}
+.tgbar i{display:block; height:100%; background:var(--pos)}
 .clsb{font-family:var(--f-mono,monospace); font-size:11px; padding:0 5px; border:1px solid currentColor; border-radius:4px; opacity:.7; white-space:nowrap}
 .vtag{font-family:var(--f-sans); font-size:11px; padding:1px 7px; border:1px solid var(--pos-line);
   background:var(--surface); color:var(--pos); border-radius:var(--r-pill)}
@@ -3507,6 +3512,14 @@ function epAns(key,ok,page){ epPost({event:'mcans',key:key,ok:ok?1:0,page:page})
 function epAnsMany(items,page){ if(items.length) epPost({event:'mcans',items:items,page:page}).then(epGot); }
 
 /* --------------------------------------------------------------- home --- */
+/* The teacher's weekly target (Targets tab): one bar per part, filled as the week goes. */
+function epTargetHtml(t){
+  if(!t) return '';
+  const bar=(n,of,lbl)=>of?'<div class="tgrow"><span>'+lbl+'</span><span class="tgbar"><i style="width:'+Math.min(100,Math.round(n/of*100))+'%"></i></span><b>'+Math.min(n,of)+'/'+of+'</b></div>':'';
+  const met=t.doneMc>=t.mc&&t.doneLq>=t.lq;
+  return '<div class="tgbox'+(met?' met':'')+'"><p class="mono" style="margin:0 0 4px">This week\'s target'+(met?' · done, well played':'')+'</p>'
+    +bar(t.doneMc,t.mc,'MCQs')+bar(t.doneLq,t.lq,'Long Qs')+'</div>';
+}
 function epHome(){
   if(!EPW){ epLoad(epHome); return; }
   const lk=EPW.look;
@@ -3514,6 +3527,7 @@ function epHome(){
     +'<div class="epmeav">'+epArt(lk,'your character')+'</div><div>'
     +'<p class="epbig"><span class="ecoin">E</span><b id="ovEBal">'+EPW.bal+'</b></p>'
     +'<p class="mono" style="margin:0 0 10px">'+EPW.earned+' E earned so far</p>'
+    +epTargetHtml(EPW.target)
     +(lk?'<button class="btn primary" data-ep="store">Dress up and shop</button>'
         :'<p class="muted" style="margin:0 0 8px">Pick your starter character. You can change it any time.</p>'
          +'<div class="row"><button class="btn" data-ep="pick" data-base="boy">Teen boy</button>'
