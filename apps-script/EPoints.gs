@@ -799,25 +799,33 @@ function ask_(title, hint) {
 function tell_(s) { SpreadsheetApp.getUi().alert(s); }
 
 /* paper.html (the past-paper builder) has no server route: the bank, answers
-   included, never goes online. The teacher saves a copy of the Bank tab to
-   their own Drive here, downloads it once, and opens it in paper.html. */
+   included, never goes online. The teacher downloads a copy of the Bank tab
+   straight from this dialog and opens it in paper.html. The download is made
+   in the browser: a Drive "uc?export=download" link gave 403 for teachers
+   signed in to more than one Google account. */
+function epBankJson() {
+  var sh = ss_().getSheetByName('Bank');
+  if (!sh || sh.getLastRow() < 2) return '';
+  var v = sh.getDataRange().getValues(), h = v.shift().map(String), cols = ['key', 'type', 'page', 'topic', 'payload'], ix = {};
+  cols.forEach(function (k) { ix[k] = h.indexOf(k); });
+  if (ix.key < 0 || ix.payload < 0) return '';
+  var rows = v.filter(function (r) { return r[ix.key] && r[ix.payload]; }).map(function (r) {
+    return cols.map(function (k) { return ix[k] < 0 ? '' : String(r[ix[k]]); });
+  });
+  return JSON.stringify({ exported: new Date().toISOString(), rows: rows });
+}
 function epExportBank() {
   var sh = ss_().getSheetByName('Bank');
   if (!sh || sh.getLastRow() < 2) return tell_('There is no Bank tab with questions.');
-  var v = sh.getDataRange().getValues(), h = v.shift().map(String), ix = {};
-  ['key', 'type', 'page', 'topic', 'payload'].forEach(function (k) { ix[k] = h.indexOf(k); });
-  if (ix.key < 0 || ix.payload < 0) return tell_('The Bank tab needs "key" and "payload" columns.');
-  var rows = v.filter(function (r) { return r[ix.key] && r[ix.payload]; }).map(function (r) {
-    return ['key', 'type', 'page', 'topic', 'payload'].map(function (k) { return ix[k] < 0 ? '' : String(r[ix[k]]); });
-  });
-  var day = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-  var f = DriveApp.createFile('tyneconbuddy-bank-' + day + '.json',
-    JSON.stringify({ exported: new Date().toISOString(), rows: rows }), 'application/json');
-  var url = 'https://drive.google.com/uc?export=download&id=' + f.getId();
+  var name = 'tyneconbuddy-bank-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd') + '.json';
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(
-    '<p style="font-family:sans-serif">' + rows.length + ' questions saved to your Drive as <b>' + f.getName() + '</b>.</p>' +
-    '<p style="font-family:sans-serif"><a href="' + url + '" target="_blank">Download it</a>, then open it in paper.html ' +
-    '(Choose bank file). Export again after you add questions.</p>').setWidth(420).setHeight(160), 'Question bank exported');
+    '<div style="font:14px Arial,sans-serif"><p id="m">Preparing ' + (sh.getLastRow() - 1) + ' questions…</p>' +
+    '<p><a id="a" style="display:none;font-weight:bold" download="' + name + '">Download ' + name + '</a></p>' +
+    '<p style="color:#666">Then open it in paper.html (Choose File). Export again after you add questions.</p></div>' +
+    '<script>google.script.run.withFailureHandler(function(e){document.getElementById("m").textContent="Could not read the Bank tab: "+e.message})' +
+    '.withSuccessHandler(function(t){var m=document.getElementById("m");if(!t){m.textContent="The Bank tab needs key and payload columns.";return}' +
+    'var a=document.getElementById("a");a.href=URL.createObjectURL(new Blob([t],{type:"application/json"}));a.style.display="";' +
+    'm.textContent="Ready.";a.click()}).epBankJson();</script>').setWidth(440).setHeight(190), 'Export question bank');
 }
 
 /* Makes every new tab and fills in defaults. Safe to run again: it never
