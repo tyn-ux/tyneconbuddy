@@ -1,6 +1,6 @@
 # Learning Centre (v0.25)
 
-Each district has a Learning Centre (學習中心), a cream building with a teal roof and a 「學」 sign. Inside, 林老師 Miss Lam runs one learning journey per chapter: 20 chapters, 104 stops in total. A journey assumes almost no prior knowledge. A beginner takes about 10–14 minutes per chapter; a student who already knows the material can use the fast track.
+Each district has a Learning Centre (學習中心), a cream building with a teal roof and a 「學」 sign. Inside, 鄧 Sir (Mr. Tang) runs one learning journey per chapter: 20 chapters, 104 stops in total. A journey assumes almost no prior knowledge. A beginner takes about 10–14 minutes per chapter; a student who already knows the material can use the fast track.
 
 ## How a stop works
 1. 🎬 Hook: one or two lines set in a real place and period.
