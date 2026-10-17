@@ -49,4 +49,5 @@ Keep every field on one line and do not use `|` inside a text.
 - **Required first step**: arriving in a new district, the goal line and 鄧 Sir point to the Learning Centre, and each gym leader asks you to finish that gym's chapters first. Badges you already hold are not affected.
 - Rewards: 💰$150 and a 📘 mark per chapter; a first-try Check gives +1 XP to that stop's EconMon. Wrong Checks go into the 📒 correction album.
 - Details, sources and open teacher items: `LEARNING_CENTRE_v25.md`. Journey content: `learning_centre.json`.
+- **On the web**: `learning.html` shows all 20 journeys outside the game (chapter picker, play mode, notes view with answers). It reads `learning_centre.json`, so the game and the page share one copy of the content. The Study Desk (`app.html`) has a new **Practise → Learn** tab that shows this page.
 
