@@ -785,6 +785,8 @@ function onOpen() {
     .addItem('Reward everyone on track this week…', 'epMenuReward')
     .addItem('Build Dashboard', 'buildDashboard')
     .addSeparator()
+    .addItem('Export question bank for the paper builder', 'epExportBank')
+    .addSeparator()
     .addItem('Tidy tabs: show only the teacher tabs', 'epTidyTabs')
     .addItem('Show all tabs', 'epShowAllTabs')
     .addToUi();
@@ -795,6 +797,28 @@ function ask_(title, hint) {
   return r.getSelectedButton() === ui.Button.OK ? String(r.getResponseText() || '').trim() : '';
 }
 function tell_(s) { SpreadsheetApp.getUi().alert(s); }
+
+/* paper.html (the past-paper builder) has no server route: the bank, answers
+   included, never goes online. The teacher saves a copy of the Bank tab to
+   their own Drive here, downloads it once, and opens it in paper.html. */
+function epExportBank() {
+  var sh = ss_().getSheetByName('Bank');
+  if (!sh || sh.getLastRow() < 2) return tell_('There is no Bank tab with questions.');
+  var v = sh.getDataRange().getValues(), h = v.shift().map(String), ix = {};
+  ['key', 'type', 'page', 'topic', 'payload'].forEach(function (k) { ix[k] = h.indexOf(k); });
+  if (ix.key < 0 || ix.payload < 0) return tell_('The Bank tab needs "key" and "payload" columns.');
+  var rows = v.filter(function (r) { return r[ix.key] && r[ix.payload]; }).map(function (r) {
+    return ['key', 'type', 'page', 'topic', 'payload'].map(function (k) { return ix[k] < 0 ? '' : String(r[ix[k]]); });
+  });
+  var day = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var f = DriveApp.createFile('tyneconbuddy-bank-' + day + '.json',
+    JSON.stringify({ exported: new Date().toISOString(), rows: rows }), 'application/json');
+  var url = 'https://drive.google.com/uc?export=download&id=' + f.getId();
+  SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(
+    '<p style="font-family:sans-serif">' + rows.length + ' questions saved to your Drive as <b>' + f.getName() + '</b>.</p>' +
+    '<p style="font-family:sans-serif"><a href="' + url + '" target="_blank">Download it</a>, then open it in paper.html ' +
+    '(Choose bank file). Export again after you add questions.</p>').setWidth(420).setHeight(160), 'Question bank exported');
+}
 
 /* Makes every new tab and fills in defaults. Safe to run again: it never
    overwrites a tab that already has rows. */

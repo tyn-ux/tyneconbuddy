@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Past-paper Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Noto+Sans+TC:wght@400;500&display=swap">
+<style>
+/* Teacher-only paper builder. Same slate look as teacher.html. The bank is a
+   file the teacher exported from the Sheet (tyneconbuddy menu), kept in this
+   browser only; nothing here talks to the server. */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --surface2:#f6f8f9; --ink:#1b2a32; --muted:#5a6a73; --line:#d5dde1;
+  --accent:#1e5a6e; --accent-soft:#dcebf0; --pen:#c4232a; --ok:#2c7a47;
+  --f-ui:"IBM Plex Sans","Noto Sans TC",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#12191d; --surface:#1a2328; --surface2:#202b31; --ink:#e3eaed; --muted:#98a8b0; --line:#304048;
+  --accent:#7cc0d6; --accent-soft:#1d3a45; --pen:#ff6b6b; --ok:#6fcf8f; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.5}
+.wrap{max-width:1400px;margin:0 auto;padding:16px 16px 60px;display:grid;gap:14px}
+h1{font-size:20px;margin:0;font-weight:600}
+h3{font-size:12.5px;margin:0 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sub{color:var(--muted);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.cols{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;align-items:start}
+@media (max-width:900px){.cols{grid-template-columns:1fr}}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+label.f{display:grid;gap:2px;font-size:12px;color:var(--muted)}
+select,input[type=text],input[type=number],input[type=search]{font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;min-width:0}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:6px;padding:5px 10px}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme: dark){button.pri{color:#0d1418}}
+button:disabled{opacity:.5;cursor:default}
+.list{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.it{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;padding:7px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+.it:last-child{border-bottom:0}
+.it:hover{background:var(--surface2)}
+.it .k{font-family:var(--f-mono);font-size:12px}
+.it .t{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:9px;background:var(--accent-soft);color:var(--accent);margin-left:6px}
+.sel{counter-reset:n}
+.sel .it{grid-template-columns:auto minmax(0,1fr) auto;cursor:default}
+.sel .it::before{counter-increment:n;content:counter(n);font-family:var(--f-mono);color:var(--muted);min-width:2ch}
+.sel .it button{padding:0 7px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.msg{font-size:13px;color:var(--muted);min-height:1.2em}
+.msg.bad{color:var(--pen)}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center}
+.hide{display:none!important}
+/* ---- the paper itself: preview on screen, the only thing that prints ---- */
+#paper{background:#fff;color:#000;font-family:"Times New Roman","PMingLiU",serif;font-size:12pt;line-height:1.45;padding:18mm 16mm;border-radius:6px;max-width:210mm;margin:0 auto}
+#paper .ttl{text-align:center;font-weight:700;font-size:15pt;margin:0}
+#paper .meta{text-align:center;margin:2px 0 10px}
+#paper .ins{border:1px solid #000;padding:6px 10px;margin:0 0 14px;font-size:11pt}
+#paper .qh{font-weight:700;margin:14px 0 4px;break-after:avoid}
+#paper .qh .src{font-weight:400;font-size:10pt;color:#444}
+#paper p{margin:3px 0}
+#paper .opt{padding-left:2.2em;text-indent:-1.6em;margin:2px 0}
+#paper .opt.ok{font-weight:700}
+#paper img{max-width:100%;max-height:120mm;display:block;margin:6px 0}
+#paper table{border-collapse:collapse;margin:6px 0;font-size:11pt}
+#paper td,#paper th{border:1px solid #000;padding:2px 8px;text-align:center}
+#paper .ln{border-bottom:1px solid #777;height:9mm}
+#paper .ans{margin:4px 0 0;padding:4px 10px;border-left:3px solid #1e5a6e;background:#f2f6f7}
+#paper .pb{break-before:page;height:0}
+#paper .q{break-inside:avoid}
+#paper .key td{min-width:10mm}
+@media print{
+  @page{size:A4;margin:0}
+  body{background:#fff}
+  .wrap>*:not(#out){display:none!important}
+  #out{border:0;padding:0;background:none}
+  #out>*:not(#paper){display:none!important}
+  #paper{padding:16mm 15mm;max-width:none;border-radius:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Past-paper Builder · 試卷製作</h1>
+    <div class="sub">Pick past-paper questions, then save a question paper, an answer key or answers with explanations as PDF or Word.</div>
+  </header>
+
+  <section class="card" id="bankCard">
+    <h3>1 · Question bank</h3>
+    <div class="drop" id="drop">
+      <p style="margin:0 0 8px">In the Google Sheet, run <b>tyneconbuddy → Export question bank for the paper builder</b>, download the file, then open it here.</p>
+      <input type="file" id="file" accept=".json,application/json">
+      <p class="sub" style="margin:8px 0 0">The file stays in this browser only. Open a newer export any time to update it.</p>
+    </div>
+    <div class="msg" id="bankMsg"></div>
+  </section>
+
+  <div class="cols hide" id="work">
+    <section class="card">
+      <h3>2 · Find questions</h3>
+      <div class="row" style="margin-bottom:8px">
+        <label class="f">Exam<select id="fExam"></select></label>
+        <label class="f">Year<select id="fYear"></select></label>
+        <label class="f">Paper<select id="fPaper"><option value="">All</option><option>P1</option><option>P2</option></select></label>
+        <label class="f">Type<select id="fType"><option value="">All</option><option value="mcq">MCQ</option><option value="lq">Long Q</option></select></label>
+        <label class="f">Chapter<select id="fChap"></select></label>
+        <label class="f" style="flex:1 1 160px">Search<input type="search" id="fText" placeholder="words or key, e.g. elasticity"></label>
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <button id="addAll">Add all shown</button>
+        <span class="msg" id="fMsg"></span>
+      </div>
+      <div class="list" id="found"></div>
+    </section>
+
+    <section class="card">
+      <h3>3 · Your paper</h3>
+      <div class="row" style="margin-bottom:8px">
+        <select id="sets"><option value="">Saved papers…</option></select>
+        <button id="setLoad">Load</button><button id="setSave">Save as…</button><button id="setDel">Delete</button>
+        <button id="clear">Clear</button>
+      </div>
+      <div class="msg" id="selMsg"></div>
+      <div class="list sel" id="chosen"></div>
+      <div class="grid2" style="margin-top:12px">
+        <label class="f">School<input type="text" id="hSchool" placeholder="School name"></label>
+        <label class="f">Title<input type="text" id="hTitle" placeholder="S5 Economics Quiz 1"></label>
+        <label class="f">Class<input type="text" id="hClass" placeholder="5A"></label>
+        <label class="f">Date<input type="text" id="hDate"></label>
+        <label class="f">Time allowed<input type="text" id="hTime" placeholder="30 minutes"></label>
+        <label class="f">Lines per mark (Long Q)<input type="number" id="hLines" min="0" max="6" value="2"></label>
+      </div>
+      <label class="f" style="margin-top:8px">Instructions<input type="text" id="hIns" placeholder="Answer ALL questions."></label>
+      <div class="row" style="margin-top:8px">
+        <label><input type="checkbox" id="oSrc" checked> Show past-paper source</label>
+        <label><input type="checkbox" id="oShuf"> Shuffle question order</label>
+        <label><input type="checkbox" id="oName" checked> Name / class no. line</label>
+      </div>
+      <h3 style="margin-top:14px">4 · Export</h3>
+      <div class="row">
+        <select id="kind">
+          <option value="paper">Question paper</option>
+          <option value="key">Answer key</option>
+          <option value="full">Questions with answers &amp; explanations</option>
+        </select>
+        <button class="pri" id="goPdf">PDF</button>
+        <button class="pri" id="goDoc">Word (.docx)</button>
+        <button id="goPrev">Preview</button>
+      </div>
+      <div class="msg" id="outMsg"></div>
+    </section>
+  </div>
+
+  <section class="card hide" id="out"><div id="paper"></div></section>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LAB=['A','B','C','D','E'];
+/* Copied from app.html CHAPTERS (id, name, page, topics). Keep in step. */
+const CHAPTERS=[
+ ['ch1','Ch 1 · Basic Economic Concepts','core',['scarcity','oppcost','goods','types','posnorm','property','economy','interest','basic']],
+ ['ch2','Ch 2 · Factors of Production & Labour','core',['factors','dol','labprod','labmob','labsup','wage']],
+ ['ch3','Ch 3 · Firms & Production','core',['cprod','typeprod','dimret','shortlong','scale','expansion','profitmax','ownership','sharesbonds','pubpriv']],
+ ['ch4','Ch 4 · Price Theory','core',['supdem','relprice','elasticity','shortsurp','funcprice']],
+ ['ch5','Ch 5 · Market Structures & Welfare','core',['market','efficiency','extern','equity']],
+ ['u11','Unit 11 · Market Intervention','ch11',['tax','sub','quo','flr','cel']],
+ ['tf','Tax & Fiscal / Monetary','ch22',['fm','prp','tax']],
+ ['micro','Efficiency & Equity','macro',['Efficiency','Externalities','Equity','Principles of Taxation','micro','mtax','elect']],
+ ['natl','National Income','macro',['Circular Flow','GNP / GNI','Real / Nominal GDP','AD-AS','natl','gni','realgdp','adas']],
+ ['money','Money & Banking','macro',['Problems of Barter','Functions of Money','Properties of Good Money','Banking System','Liquidity','M1 / M2 / M3','Monetary Base','Deposit Creation / Contraction','Function of HKMA','Money Demand','Money Market Equilibrium','Quantity Theory of Money','money','balsheet','qtm']],
+ ['macro','Macro Problems','macro',['Business Cycle','Inflation / Deflation','Nominal / Real Interest Rate','Unemployment','macro','bizcycle','inflation','realint','unemp','policy']],
+ ['trade','Trade & Forex','macro',["Int'l Trade (Concept)","Int'l Trade (Calculation)",'Trade Barriers','Balance of Payments','Exchange Rate','Linked Exchange Rate','trade','bop','fx','barrier']],
+];
+function chapOf(page,topic){
+  for(const c of CHAPTERS) if(c[2]===page && c[3].indexOf(topic)>=0) return c[0];
+  for(const c of CHAPTERS) if(c[2]===page) return c[0];
+  return '';
+}
+const EXAMS={DSE:'DSE',DSEPP:'DSE Practice',DSESP:'DSE Sample',CE:'HKCEE',AL:'HKALE',other:'Other'};
+
+/* ------------------------------------------------------------ storage ---- */
+const idb={db:null,
+  open(){ return this.db||(this.db=new Promise((ok,no)=>{ const r=indexedDB.open('paperBuilder',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); })); },
+  async get(k){ const d=await this.open(); return new Promise(ok=>{ const r=d.transaction('kv').objectStore('kv').get(k); r.onsuccess=()=>ok(r.result); r.onerror=()=>ok(null); }); },
+  async set(k,v){ const d=await this.open(); return new Promise(ok=>{ const t=d.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=ok; t.onerror=ok; }); }};
+const ls={get(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }};
+
+/* --------------------------------------------------------------- bank ---- */
+let BANK=[], BYKEY={}, CHOSEN=[], TABLES={}, LQP={};
+fetch('tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(j=>{ TABLES=(j&&j.items)||{}; });
+fetch('lq_points.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(j=>{ LQP=(j&&j.points)||{}; });
+
+/* Two shapes: the Sheet export {rows:[[key,type,page,topic,payload]]}, or the
+   original bank.json {mcq:[…], lq:[…]} that install() read. */
+function parseBank(j){
+  const out=[];
+  const add=(q,type)=>{ if(!q||!q.key&&!q.id) return; q.key=q.key||q.id; q._type=type;
+    ['opts','structure','table'].forEach(f=>{ if(typeof q[f]==='string'&&/^\s*\[/.test(q[f])) try{ q[f]=JSON.parse(q[f]); }catch(e){} });
+    out.push(q); };
+  if(j&&Array.isArray(j.rows)) j.rows.forEach(r=>{ if(r[1]!=='mcq'&&r[1]!=='lq') return;
+    try{ const q=JSON.parse(r[4]); q._page=q._page||r[2]; q.topic=q.topic||r[3]; add(q,r[1]); }catch(e){} });
+  else if(j){ (j.mcq||[]).forEach(q=>add(q,'mcq')); (j.lq||[]).forEach(q=>add(q,'lq')); }
+  return out;
+}
+function info(q){
+  const k=q.key, m=k.match(/^(DSEPP|DSESP|DSE|CE|AL)(?=[\d/]|$)/), y=k.match(/(19|20)\d{2}/), p=k.match(/\bP([12])\b/), n=k.match(/Q(\d+)/);
+  return {exam:m?m[1]:'other', year:y?y[0]:'', paper:p?'P'+p[1]:'', qn:n?Number(n[1]):999,
+    chap:chapOf(q._page,q.topic||q.sub||'')};
+}
+function sortQs(a,b){ const x=a._i,y=b._i; return (y.year||'0').localeCompare(x.year||'0')||a.key.split('/')[0].localeCompare(b.key.split('/')[0])
+  ||x.paper.localeCompare(y.paper)||x.qn-y.qn||a.key.localeCompare(b.key); }
+function useBank(list,label){
+  BANK=list; BYKEY={}; list.forEach(q=>{ q._i=info(q); BYKEY[q.key]=q; }); BANK.sort(sortQs);
+  const nm=BANK.filter(q=>q._type==='mcq').length;
+  $('bankMsg').className='msg'; $('bankMsg').textContent=label+': '+nm+' MCQs and '+(BANK.length-nm)+' Long Qs.';
+  const opt=(v,t)=>'<option value="'+esc(v)+'">'+esc(t)+'</option>';
+  const exams=[...new Set(BANK.map(q=>q._i.exam))];
+  $('fExam').innerHTML=opt('','All')+Object.keys(EXAMS).filter(e=>exams.includes(e)).map(e=>opt(e,EXAMS[e])).join('');
+  $('fYear').innerHTML=opt('','All')+[...new Set(BANK.map(q=>q._i.year).filter(Boolean))].sort().reverse().map(y=>opt(y,y)).join('');
+  $('fChap').innerHTML=opt('','All')+CHAPTERS.map(c=>opt(c[0],c[1])).join('');
+  CHOSEN=CHOSEN.filter(k=>BYKEY[k]);
+  $('work').classList.remove('hide'); draw(); drawChosen();
+}
+$('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  f.text().then(t=>{ const list=parseBank(JSON.parse(t));
+    if(!list.length) throw new Error('no questions');
+    idb.set('bank',t); idb.set('bankName',f.name); useBank(list,f.name);
+  }).catch(err=>{ $('bankMsg').className='msg bad'; $('bankMsg').textContent='Could not read that file ('+err.message+'). Use the file from "Export question bank".'; });
+});
+Promise.all([idb.get('bank'),idb.get('bankName')]).then(([t,n])=>{ if(t) try{ useBank(parseBank(JSON.parse(t)),n||'Saved bank'); }catch(e){} });
+
+/* ------------------------------------------------------------ filters ---- */
+const plain=s=>tex(String(s||'')).replace(/\s+/g,' ').trim();
+function shown(){
+  const ex=$('fExam').value, yr=$('fYear').value, pp=$('fPaper').value, ty=$('fType').value, ch=$('fChap').value,
+    words=$('fText').value.toLowerCase().split(/\s+/).filter(Boolean);
+  return BANK.filter(q=>{ const i=q._i;
+    if(ex&&i.exam!==ex||yr&&i.year!==yr||pp&&i.paper!==pp||ty&&q._type!==ty||ch&&i.chap!==ch) return false;
+    if(!words.length) return true;
+    const hay=(q.key+' '+(q.topic||'')+' '+(q.sub||'')+' '+(q.q||'')+' '+(q.opts||[]).join(' ')).toLowerCase();
+    return words.every(w=>hay.includes(w)); });
+}
+function line(q){ return q.img&&!q.q?'(question is an image)':plain(q.q).slice(0,140); }
+function draw(){
+  const s=shown(), lim=300;
+  $('fMsg').textContent=s.length+' shown'+(s.length>lim?' (first '+lim+' listed, narrow the filter to see more)':'');
+  $('found').innerHTML=s.slice(0,lim).map(q=>'<label class="it"><input type="checkbox" data-k="'+esc(q.key)+'"'+(CHOSEN.includes(q.key)?' checked':'')+'>'
+    +'<span><span class="k">'+esc(q.key)+'</span><span class="tag">'+(q._type==='mcq'?'MCQ':'Long Q'+(q.marks?' · '+esc(q.marks)+'m':''))+'</span>'
+    +'<div class="t">'+esc(line(q))+'</div></span></label>').join('')||'<p class="sub" style="padding:10px">No questions match.</p>';
+}
+['fExam','fYear','fPaper','fType','fChap'].forEach(id=>$(id).addEventListener('change',draw));
+$('fText').addEventListener('input',draw);
+$('found').addEventListener('change',e=>{ const k=e.target.dataset.k; if(!k) return;
+  if(e.target.checked){ if(!CHOSEN.includes(k)) CHOSEN.push(k); } else CHOSEN=CHOSEN.filter(x=>x!==k);
+  drawChosen(); });
+$('addAll').addEventListener('click',()=>{ shown().forEach(q=>{ if(!CHOSEN.includes(q.key)) CHOSEN.push(q.key); }); draw(); drawChosen(); });
+
+/* ------------------------------------------------------------- chosen ---- */
+function drawChosen(){
+  ls.set('paper:chosen',CHOSEN);
+  const qs=CHOSEN.map(k=>BYKEY[k]).filter(Boolean), nm=qs.filter(q=>q._type==='mcq').length,
+    marks=qs.reduce((t,q)=>t+(q._type==='mcq'?1:Number(q.marks)||0),0);
+  $('selMsg').textContent=qs.length?nm+' MCQ, '+(qs.length-nm)+' Long Q · '+marks+' marks (1 per MCQ)':'Tick questions on the left.';
+  $('chosen').innerHTML=qs.map((q,i)=>'<div class="it"><span><span class="k">'+esc(q.key)+'</span>'
+    +'<div class="t">'+esc(line(q))+'</div></span><span class="row" style="gap:3px;flex-wrap:nowrap">'
+    +'<button data-mv="'+i+'" data-d="-1" title="Move up">↑</button><button data-mv="'+i+'" data-d="1" title="Move down">↓</button>'
+    +'<button data-rm="'+i+'" title="Remove">✕</button></span></div>').join('');
+}
+$('chosen').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.rm!=null){ CHOSEN.splice(Number(b.dataset.rm),1); }
+  else { const i=Number(b.dataset.mv), j=i+Number(b.dataset.d); if(j<0||j>=CHOSEN.length) return; [CHOSEN[i],CHOSEN[j]]=[CHOSEN[j],CHOSEN[i]]; }
+  drawChosen(); draw(); });
+$('clear').addEventListener('click',()=>{ if(CHOSEN.length&&!confirm('Remove all '+CHOSEN.length+' questions from this paper?')) return; CHOSEN=[]; drawChosen(); draw(); });
+CHOSEN=ls.get('paper:chosen',[]);
+
+const HF=['hSchool','hTitle','hClass','hDate','hTime','hLines','hIns'], OF=['oSrc','oShuf','oName'];
+function header(){ const h={}; HF.forEach(id=>h[id]=$(id).value); OF.forEach(id=>h[id]=$(id).checked); return h; }
+function setHeader(h){ HF.forEach(id=>{ if(h[id]!=null) $(id).value=h[id]; }); OF.forEach(id=>{ if(h[id]!=null) $(id).checked=h[id]; }); }
+setHeader(ls.get('paper:header',{})); if(!$('hDate').value) $('hDate').value=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+HF.concat(OF).forEach(id=>$(id).addEventListener('change',()=>ls.set('paper:header',header())));
+function drawSets(){ const s=ls.get('paper:sets',{});
+  $('sets').innerHTML='<option value="">Saved papers…</option>'+Object.keys(s).sort().map(n=>'<option>'+esc(n)+'</option>').join(''); }
+drawSets();
+$('setSave').addEventListener('click',()=>{ if(!CHOSEN.length) return; const n=prompt('Name for this paper','S5 Quiz'); if(!n) return;
+  const s=ls.get('paper:sets',{}); s[n]={keys:CHOSEN.slice(),header:header()}; ls.set('paper:sets',s); drawSets(); $('sets').value=n; });
+$('setLoad').addEventListener('click',()=>{ const s=ls.get('paper:sets',{})[$('sets').value]; if(!s) return;
+  CHOSEN=s.keys.filter(k=>BYKEY[k]); setHeader(s.header||{}); ls.set('paper:header',header()); drawChosen(); draw();
+  if(CHOSEN.length<s.keys.length) $('selMsg').textContent+=' · '+(s.keys.length-CHOSEN.length)+' saved questions are no longer in the bank'; });
+$('setDel').addEventListener('click',()=>{ const n=$('sets').value; if(!n||!confirm('Delete saved paper "'+n+'"?')) return;
+  const s=ls.get('paper:sets',{}); delete s[n]; ls.set('paper:sets',s); drawSets(); });
+
+/* ------------------------------------------------------ document model ---- */
+/* One list of blocks feeds both the print preview (HTML) and the .docx, so
+   the PDF and the Word file always carry the same content. Block types:
+   title, meta, ins, qh, p, opt, img, tbl, lines, ans, keytbl, pb. */
+function tex(s){ return String(s).replace(/\$([^$]*\\[^$]*)\$/g,(m,x)=>x.replace(/\\(mathrm|text|textbf)\{([^}]*)\}/g,'$2').replace(/[{}\\_^]/g,'')); }
+function qHash(s){
+  s=String(s||'').replace(/\s+/g,' ').trim(); let h=5381;
+  for(let i=0;i<s.length;i++) h=(Math.imul(h,33)^s.charCodeAt(i))>>>0;
+  return ('0000000'+h.toString(16)).slice(-8);
+}
+function stemBlocks(q){
+  if(q.img) return [{t:'img',src:q.img}];
+  const t=TABLES[q.key];
+  if(t&&t.h===qHash(q.q)) return t.p.map(x=>typeof x==='string'?{t:'p',text:tex(x)}:{t:'tbl',head:x.h,rows:x.r,cap:x.c});
+  return String(q.q||'').split(/\n+/).filter(s=>s.trim()).map(s=>({t:'p',text:tex(s.trim())}));
+}
+function points(q){
+  if(Array.isArray(q.structure)&&q.structure.length) return [{l:'',p:q.structure.filter(p=>p&&p[0])}];
+  if(LQP[q.key]) return LQP[q.key];
+  if(q.scheme) return [{l:'',p:String(q.scheme).split(/\n+/).filter(s=>s.trim()).map(s=>[s.trim(),null])}];
+  return [];
+}
+function pointBlocks(q){
+  const out=[];
+  points(q).forEach(g=>{ if(g.l) out.push({t:'ans',text:tex(g.l),b:true});
+    g.p.forEach(p=>out.push({t:'ans',text:'• '+tex(p[0])+(p[1]!=null?'  ['+p[1]+']':'')})); });
+  return out.length?out:[{t:'ans',text:'No marking points in the bank for this question.'}];
+}
+function build(kind){
+  const h=header(), qs=CHOSEN.map(k=>BYKEY[k]).filter(Boolean);
+  if(h.oShuf){ for(let i=qs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [qs[i],qs[j]]=[qs[j],qs[i]]; } }
+  const B=[], suffix={paper:'',key:' · Answer Key',full:' · Answers & Explanations'}[kind];
+  if(h.hSchool) B.push({t:'meta',text:h.hSchool,b:true});
+  B.push({t:'title',text:(h.hTitle||'Economics Test')+suffix});
+  B.push({t:'meta',text:[h.hClass&&'Class '+h.hClass,h.hDate,kind==='paper'&&h.hTime&&'Time allowed: '+h.hTime].filter(Boolean).join('   ·   ')});
+  if(kind==='paper'&&h.oName) B.push({t:'p',text:'Name: ______________________   Class: ______   No.: ____'});
+  if(kind==='paper'&&h.hIns) B.push({t:'ins',text:h.hIns});
+  if(kind==='key'){
+    const mc=qs.map((q,i)=>[i+1,q]).filter(x=>x[1]._type==='mcq');
+    if(mc.length){ const rows=[]; for(let i=0;i<mc.length;i+=10){ const c=mc.slice(i,i+10);
+        rows.push(c.map(x=>String(x[0]))); rows.push(c.map(x=>LAB[Number(x[1].ans)]||'?')); }
+      B.push({t:'keytbl',rows}); }
+    qs.forEach((q,i)=>{ if(q._type!=='lq') return;
+      B.push({t:'qh',text:'Question '+(i+1),src:h.oSrc?q.key:'',marks:q.marks}); pointBlocks(q).forEach(b=>B.push(b)); });
+    return B;
+  }
+  const per=Math.max(0,Number(h.hLines)||0);
+  qs.forEach((q,i)=>{
+    B.push({t:'qh',text:(i+1)+'.',src:h.oSrc?q.key:'',marks:q._type==='lq'?q.marks:''});
+    stemBlocks(q).forEach(b=>B.push(b));
+    if(q._type==='mcq'){
+      if(!(q.img&&q.mode==='full')) (q.opts||[]).forEach((o,j)=>B.push({t:'opt',text:LAB[j]+'.  '+tex(o),ok:kind==='full'&&j===Number(q.ans)}));
+      if(kind==='full'){ B.push({t:'ans',text:'Answer: '+(LAB[Number(q.ans)]||'?'),b:true}); if(q.why) B.push({t:'ans',text:tex(q.why)}); }
+    } else if(kind==='paper'){ if(per) B.push({t:'lines',n:Math.min(30,per*(Number(q.marks)||2))}); }
+    else pointBlocks(q).forEach(b=>B.push(b));
+    B.push({t:'end'});
+  });
+  return B;
+}
+
+/* --------------------------------------------------------------- HTML ---- */
+function toHtml(B){
+  let h='', open=false;
+  B.forEach(b=>{
+    if(b.t==='qh'){ if(open) h+='</div>'; h+='<div class="q">'; open=true;
+      h+='<p class="qh">'+esc(b.text)+(b.src?' <span class="src">('+esc(b.src)+')</span>':'')+(b.marks?' <span class="src">['+esc(b.marks)+' marks]</span>':'')+'</p>'; return; }
+    if(b.t==='end'){ if(open) h+='</div>'; open=false; return; }
+    if(b.t==='title') h+='<p class="ttl">'+esc(b.text)+'</p>';
+    else if(b.t==='meta') h+='<p class="meta">'+(b.b?'<b>'+esc(b.text)+'</b>':esc(b.text))+'</p>';
+    else if(b.t==='ins') h+='<div class="ins">'+esc(b.text)+'</div>';
+    else if(b.t==='p') h+='<p>'+esc(b.text)+'</p>';
+    else if(b.t==='opt') h+='<p class="opt'+(b.ok?' ok':'')+'">'+esc(b.text)+(b.ok?' ✓':'')+'</p>';
+    else if(b.t==='img') h+='<img src="'+esc(b.src)+'" alt="" onerror="this.remove()">';
+    else if(b.t==='tbl') h+=(b.cap?'<p>'+esc(b.cap)+'</p>':'')+'<table>'+b.head.map(r=>'<tr>'+r.map(c=>cell('th',c)).join('')+'</tr>').join('')
+      +b.rows.map(r=>'<tr>'+r.map(c=>cell('td',c)).join('')+'</tr>').join('')+'</table>';
+    else if(b.t==='lines') h+='<div class="ln"></div>'.repeat(b.n);
+    else if(b.t==='ans') h+='<p class="ans">'+(b.b?'<b>'+esc(b.text)+'</b>':esc(b.text))+'</p>';
+    else if(b.t==='keytbl') h+='<table class="key">'+b.rows.map((r,i)=>'<tr>'+r.map(c=>(i%2?'<td><b>':'<td>')+esc(c)+(i%2?'</b></td>':'</td>')).join('')+'</tr>').join('')+'</table>';
+  });
+  return h+(open?'</div>':'');
+}
+function cell(tag,c){ const a=Array.isArray(c); return '<'+tag+(a?' colspan="'+c[1]+'"':'')+'>'+esc(a?c[0]:c)+'</'+tag+'>'; }
+
+/* --------------------------------------------------------------- DOCX ---- */
+/* A small hand-written .docx (WordprocessingML zipped with JSZip, already
+   used by teacher.html): paragraphs, tables, answer lines and pictures.
+   Pictures are redrawn as PNG because Word cannot show .webp. */
+const xe=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'');
+function run(text,o){ o=o||{};
+  return '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="PMingLiU"/>'+(o.b?'<w:b/>':'')
+    +'<w:sz w:val="'+(o.sz||24)+'"/>'+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'</w:rPr><w:t xml:space="preserve">'+xe(text)+'</w:t></w:r>'; }
+function para(inner,o){ o=o||{};
+  return '<w:p><w:pPr>'+(o.keep?'<w:keepNext/>':'')+(o.border?'<w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="777777"/></w:pBdr>':'')
+    +(o.box?'<w:pBdr><w:top w:val="single" w:sz="4" w:space="4" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="4" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="4" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="4" w:color="000000"/></w:pBdr>':'')
+    +(o.shade?'<w:shd w:val="clear" w:color="auto" w:fill="F2F6F7"/>':'')
+    +'<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?60:o.after)+'"'+(o.line?' w:line="'+o.line+'" w:lineRule="exact"':'')+'/>'
+    +(o.ind?'<w:ind w:left="'+o.ind+'" w:hanging="'+(o.hang||0)+'"/>':'')+(o.center?'<w:jc w:val="center"/>':'')+'</w:pPr>'+inner+'</w:p>'; }
+function tableXml(rows,headN){
+  const border='<w:tblBorders>'+['top','left','bottom','right','insideH','insideV'].map(s=>'<w:'+s+' w:val="single" w:sz="4" w:color="000000"/>').join('')+'</w:tblBorders>';
+  return '<w:tbl><w:tblPr>'+border+'<w:tblCellMar><w:left w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr>'
+    +rows.map((r,i)=>'<w:tr>'+r.map(c=>{ const a=Array.isArray(c);
+      return '<w:tc><w:tcPr>'+(a&&c[1]>1?'<w:gridSpan w:val="'+c[1]+'"/>':'')+'</w:tcPr>'+para(run(a?c[0]:c,{b:i<headN,sz:22}),{center:true,after:0})+'</w:tc>'; }).join('')+'</w:tr>').join('')
+    +'</w:tbl>'+para('',{after:60}); }
+function pngOf(src){ return new Promise(ok=>{ const im=new Image(); im.crossOrigin='anonymous';
+  im.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
+      const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0);
+      c.toBlob(b=>b?b.arrayBuffer().then(buf=>ok({buf,w:c.width,h:c.height})):ok(null),'image/png'); }catch(e){ ok(null); } };
+  im.onerror=()=>ok(null); im.src=src; }); }
+async function toDocx(B){
+  const zip=new JSZip(), media=[]; let body='';
+  for(const b of B){
+    if(b.t==='title') body+=para(run(b.text,{b:true,sz:30}),{center:true,after:40});
+    else if(b.t==='meta') body+=para(run(b.text,{b:b.b}),{center:true,after:b.b?20:160});
+    else if(b.t==='ins') body+=para(run(b.text,{sz:22}),{box:true,after:200});
+    else if(b.t==='qh') body+=para(run(b.text,{b:true})+(b.src?run('  ('+b.src+')',{sz:20,color:'444444'}):'')+(b.marks?run('  ['+b.marks+' marks]',{sz:20,color:'444444'}):''),{keep:true,before:240});
+    else if(b.t==='p') body+=para(run(b.text));
+    else if(b.t==='opt') body+=para(run(b.text+(b.ok?'  ✓':''),{b:b.ok}),{ind:720,hang:360,after:20});
+    else if(b.t==='ans') body+=para(run(b.text,{b:b.b,sz:22}),{shade:true,ind:200,after:20});
+    else if(b.t==='lines') for(let i=0;i<b.n;i++) body+=para('',{border:true,line:480,after:0});
+    else if(b.t==='tbl') body+=(b.cap?para(run(b.cap)):'')+tableXml(b.head.concat(b.rows),b.head.length);
+    else if(b.t==='keytbl') body+=tableXml(b.rows,0);
+    else if(b.t==='img'){ const p=await pngOf(b.src); if(!p) continue;
+      const n=media.length+1, id='rIdImg'+n; media.push({n,id,buf:p.buf});
+      let cx=p.w*9525, cy=p.h*9525; const max=5900000; if(cx>max){ cy=Math.round(cy*max/cx); cx=max; }
+      body+=para('<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="'+cx+'" cy="'+cy+'"/><wp:docPr id="'+n+'" name="Picture '+n+'"/>'
+        +'<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+        +'<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="'+n+'" name="image'+n+'.png"/><pic:cNvPicPr/></pic:nvPicPr>'
+        +'<pic:blipFill><a:blip r:embed="'+id+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+        +'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'
+        +'</a:graphicData></a:graphic></wp:inline></w:drawing></w:r>',{after:60}); }
+  }
+  zip.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    +'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'
+    +'<Default Extension="png" ContentType="image/png"/>'
+    +'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  zip.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  zip.file('word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    +media.map(m=>'<Relationship Id="'+m.id+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image'+m.n+'.png"/>').join('')+'</Relationships>');
+  media.forEach(m=>zip.file('word/media/image'+m.n+'.png',m.buf));
+  zip.file('word/document.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    +'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+    +'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>'+body
+    +'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1000" w:right="1000" w:bottom="1000" w:left="1000" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>');
+  return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+
+/* ------------------------------------------------------------- export ---- */
+function fname(kind){ const h=header(); return ((h.hTitle||'Economics Test')+(h.hClass?' '+h.hClass:'')+' - '+{paper:'Question paper',key:'Answer key',full:'Answers'}[kind]).replace(/[\\/:*?"<>|]/g,'-'); }
+function ready(){ if(!CHOSEN.length){ $('outMsg').textContent='Choose some questions first.'; return false; } return true; }
+function preview(){ const B=build($('kind').value); $('paper').innerHTML=toHtml(B); $('out').classList.remove('hide'); return B; }
+$('goPrev').addEventListener('click',()=>{ if(!ready()) return; preview(); $('out').scrollIntoView({behavior:'smooth'}); });
+$('goPdf').addEventListener('click',()=>{ if(!ready()) return; preview();
+  const t=document.title; document.title=fname($('kind').value);
+  const imgs=[...$('paper').querySelectorAll('img')]; let waited=0;
+  (function wait(){ if(imgs.every(i=>i.complete)||waited>=8000){ $('outMsg').textContent='In the print window, choose "Save as PDF". 揀「另存為 PDF」。';
+      window.print(); document.title=t; return; } waited+=200; setTimeout(wait,200); })(); });
+$('goDoc').addEventListener('click',async()=>{ if(!ready()) return; const btn=$('goDoc'); btn.disabled=true; $('outMsg').textContent='Making the Word file…';
+  try{ const blob=await toDocx(preview()), a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=fname($('kind').value)+'.docx'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000); $('outMsg').textContent='Saved '+a.download+'.';
+  }catch(e){ $('outMsg').textContent='Could not make the Word file: '+e.message; }
+  btn.disabled=false; });
+</script>
+</body>
+</html>
