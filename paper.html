@@ -71,6 +71,21 @@ button:disabled{opacity:.5;cursor:default}
 #paper .pb{break-before:page;height:0}
 #paper .q{break-inside:avoid}
 #paper .key td{min-width:10mm}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:16px;width:min(860px,94vw);max-height:90vh;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+textarea{font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chips button{font-size:12px;padding:2px 8px;border-radius:12px}
+.diff{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:6px 0;white-space:pre-wrap}
+.diff del{background:#fbe0e0;color:#a3171d}
+.diff ins{background:#dcf2e3;color:#1d6b3a;text-decoration:none}
+@media (prefers-color-scheme: dark){.diff del{background:#4a1f22;color:#ff9a9a}.diff ins{background:#1b3a26;color:#8fe0a8}}
+.tbc{background:#fff2a8;color:#5a4500;padding:0 2px;border-radius:3px}
+.chg{margin:4px 0 0 18px;padding:0}
+.lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:10px}
+.pat{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0}
+.pat textarea{font-family:var(--f-mono);font-size:12.5px;min-height:110px}
+.ed{color:var(--accent);font-weight:600}
 @media print{
   @page{size:A4;margin:0}
   body{background:#fff}
@@ -97,6 +112,18 @@ button:disabled{opacity:.5;cursor:default}
     </div>
     <div class="msg" id="bankMsg"></div>
   </section>
+
+  <details class="card" id="aiCard">
+    <summary><b>AI (Gemini) settings</b> <span class="sub" id="aiState"></span></summary>
+    <p class="sub">Paste a Gemini API key from Google AI Studio (aistudio.google.com → Get API key). It is kept in this browser only and sent only to Google.
+      Without a key, every AI button gives you a prompt to paste into Gemini yourself.</p>
+    <div class="row">
+      <label class="f" style="flex:2 1 260px">API key<input type="password" id="gKey" autocomplete="off" placeholder="AIza…"></label>
+      <label class="f" style="flex:2 1 260px">Models, tried in order<input type="text" id="gModels"></label>
+      <button id="gSave">Save</button><button id="gTest">Test</button><button id="gForget">Forget key</button>
+    </div>
+    <div class="msg" id="gMsg"></div>
+  </details>
 
   <div class="cols hide" id="work">
     <section class="card">
@@ -154,7 +181,81 @@ button:disabled{opacity:.5;cursor:default}
     </section>
   </div>
 
+  <section class="card" id="ownCard">
+    <h3>Your own question · 自己的題目</h3>
+    <p class="sub" style="margin-top:0">Paste a question and its answer separately. Then use AI edit on it, or add it to your paper. Kept in this browser only.</p>
+    <div class="row" style="margin-bottom:6px">
+      <label class="f">Type<select id="oType"><option value="auto">Detect from the question</option><option value="mcq">MCQ</option><option value="lq">Long Q</option></select></label>
+      <label class="f">Marks (Long Q)<input type="number" id="oMarks" min="1" max="20" style="width:80px"></label>
+      <label class="f" style="flex:1 1 200px">Source or note<input type="text" id="oSrcTxt" placeholder="e.g. 2024 S5 mock Q3"></label>
+    </div>
+    <div class="grid2">
+      <label class="f">Question 題目<textarea id="oQ" rows="9" placeholder="Paste the question.&#10;For an MCQ, put each option on its own line:&#10;A. ...&#10;B. ...&#10;C. ...&#10;D. ..."></textarea></label>
+      <label class="f">Answer 答案<textarea id="oA" rows="9" placeholder="MCQ: the letter, then the explanation, e.g.&#10;C&#10;Because ...&#10;&#10;Long Q: one marking point per line, marks in [ ], e.g.&#10;Price ceiling is below equilibrium [1]&#10;Qd rises, Qs falls [2]"></textarea></label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="oPrev">Preview</button><button class="pri" id="oAi">AI edit</button><button class="pri" id="oAdd">Add to paper</button>
+      <select id="oList"><option value="">My saved questions…</option></select><button id="oLoad">Load</button><button id="oDel">Delete</button>
+      <span class="msg" id="oMsg"></span>
+    </div>
+    <div class="diff hide" id="oView"></div>
+  </section>
+
+  <section class="card hide" id="patCard">
+    <h3>5 · Answering patterns &amp; dictation</h3>
+    <p class="sub" style="margin-top:0">Gemini reads every Long Q of a topic with its marking scheme once and finds the answer skeletons that repeat. Results are saved here, so a topic is never asked twice.</p>
+    <div class="row">
+      <label class="f">Chapter<select id="pChap"></select></label>
+      <label class="f">Topic<select id="pTopic"></select></label>
+      <label class="f">Exam<select id="pExam"><option value="">DSE + CE + AL</option><option value="DSE">DSE only</option></select></label>
+      <button class="pri" id="pFind">Find patterns</button>
+      <select id="pSaved"><option value="">Saved analyses…</option></select>
+      <button id="pDel">Delete</button>
+    </div>
+    <div class="msg" id="pMsg"></div>
+    <div id="pats"></div>
+    <div id="dictBox" class="hide">
+      <div class="lbl">Dictation</div>
+      <div class="row">
+        <label class="f">Level<select id="dLevel">
+          <option value="1">Level 1 · Fill in the blanks</option>
+          <option value="2">Level 2 · Whole blank line</option>
+          <option value="3">Both levels</option></select></label>
+        <label><input type="checkbox" id="dBank" checked> Word bank (Level 1)</label>
+        <label><input type="checkbox" id="dZh"> 中文 hints</label>
+        <label><input type="checkbox" id="dPrac" checked> Practice question</label>
+        <label><input type="checkbox" id="dAns" checked> Answer page</label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="pri" id="dPdf">PDF</button><button class="pri" id="dDoc">Word (.docx)</button><button id="dPrev">Preview</button>
+        <span class="msg" id="dMsg"></span>
+      </div>
+    </div>
+  </section>
+
   <section class="card hide" id="out"><div id="paper"></div></section>
+
+  <dialog id="edDlg">
+    <h3 id="edTitle">AI edit</h3>
+    <div class="diff" id="edOrig" style="max-height:30vh;overflow:auto"></div>
+    <label class="f">Your requirement<textarea id="edReq" rows="3" placeholder="e.g. Change the context to Hong Kong 2024 and make it 6 marks"></textarea></label>
+    <div class="chips" id="edChips"></div>
+    <div class="row"><button class="pri" id="edRun">Ask Gemini</button><button id="edCopy">Copy prompt instead</button><button id="edClose">Close</button><span class="msg" id="edMsg"></span></div>
+    <div id="edOut" class="hide">
+      <div class="lbl">What changed</div><ul class="chg" id="edChg"></ul>
+      <div class="lbl">Question <span class="sub">(red = removed, green = added, yellow = check this fact)</span></div><div class="diff" id="edDiff"></div>
+      <div class="row"><button class="pri" id="edUse">Use this version</button><button id="edAgain">Try again</button><button id="edKeep">Keep original</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="cpDlg">
+    <h3>Ask Gemini yourself</h3>
+    <p class="sub">1. Copy this prompt and paste it into gemini.google.com. 2. Paste Gemini's whole answer below. 3. Press Use answer.</p>
+    <textarea id="cpPrompt" rows="8" readonly></textarea>
+    <div class="row" style="margin:6px 0"><button id="cpCopy">Copy prompt</button></div>
+    <textarea id="cpAns" rows="8" placeholder="Paste Gemini's answer here"></textarea>
+    <div class="row" style="margin-top:6px"><button class="pri" id="cpUse">Use answer</button><button id="cpClose">Cancel</button><span class="msg" id="cpMsg"></span></div>
+  </dialog>
 </div>
 
 <script>
@@ -182,7 +283,7 @@ function chapOf(page,topic){
   for(const c of CHAPTERS) if(c[2]===page) return c[0];
   return '';
 }
-const EXAMS={DSE:'DSE',DSEPP:'DSE Practice',DSESP:'DSE Sample',CE:'HKCEE',AL:'HKALE',other:'Other'};
+const EXAMS={OWN:'My questions',DSE:'DSE',DSEPP:'DSE Practice',DSESP:'DSE Sample',CE:'HKCEE',AL:'HKALE',other:'Other'};
 
 /* ------------------------------------------------------------ storage ---- */
 const idb={db:null,
@@ -211,23 +312,26 @@ function parseBank(j){
   return out;
 }
 function info(q){
-  const k=q.key, m=k.match(/^(DSEPP|DSESP|DSE|CE|AL)(?=[\d/]|$)/), y=k.match(/(19|20)\d{2}/), p=k.match(/\bP([12])\b/), n=k.match(/Q(\d+)/);
+  const k=q.key, m=k.match(/^(DSEPP|DSESP|DSE|CE|AL|OWN)(?=[\d/]|$)/), y=k.match(/(19|20)\d{2}/), p=k.match(/\bP([12])\b/), n=k.match(/Q(\d+)/);
   return {exam:m?m[1]:'other', year:y?y[0]:'', paper:p?'P'+p[1]:'', qn:n?Number(n[1]):999,
     chap:chapOf(q._page,q.topic||q.sub||'')};
 }
 function sortQs(a,b){ const x=a._i,y=b._i; return (y.year||'0').localeCompare(x.year||'0')||a.key.split('/')[0].localeCompare(b.key.split('/')[0])
   ||x.paper.localeCompare(y.paper)||x.qn-y.qn||a.key.localeCompare(b.key); }
+let BLABEL='';
 function useBank(list,label){
+  BLABEL=label;
+  list=list.filter(q=>!/^OWN\//.test(q.key)).concat(Object.values(OWN).map(q=>Object.assign({},q)));
   BANK=list; BYKEY={}; list.forEach(q=>{ q._i=info(q); BYKEY[q.key]=q; }); BANK.sort(sortQs);
-  const nm=BANK.filter(q=>q._type==='mcq').length;
-  $('bankMsg').className='msg'; $('bankMsg').textContent=label+': '+nm+' MCQs and '+(BANK.length-nm)+' Long Qs.';
+  const nm=BANK.filter(q=>q._type==='mcq'&&!/^OWN\//.test(q.key)).length, no=Object.keys(OWN).length;
+  $('bankMsg').className='msg'; $('bankMsg').textContent=label+': '+nm+' MCQs and '+(BANK.length-nm-no)+' Long Qs'+(no?', plus '+no+' of your own':'')+'.';
   const opt=(v,t)=>'<option value="'+esc(v)+'">'+esc(t)+'</option>';
   const exams=[...new Set(BANK.map(q=>q._i.exam))];
   $('fExam').innerHTML=opt('','All')+Object.keys(EXAMS).filter(e=>exams.includes(e)).map(e=>opt(e,EXAMS[e])).join('');
   $('fYear').innerHTML=opt('','All')+[...new Set(BANK.map(q=>q._i.year).filter(Boolean))].sort().reverse().map(y=>opt(y,y)).join('');
   $('fChap').innerHTML=opt('','All')+CHAPTERS.map(c=>opt(c[0],c[1])).join('');
   CHOSEN=CHOSEN.filter(k=>BYKEY[k]);
-  $('work').classList.remove('hide'); draw(); drawChosen();
+  $('work').classList.remove('hide'); draw(); drawChosen(); patInit();
 }
 $('file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -265,18 +369,27 @@ $('found').addEventListener('change',e=>{ const k=e.target.dataset.k; if(!k) ret
 $('addAll').addEventListener('click',()=>{ shown().forEach(q=>{ if(!CHOSEN.includes(q.key)) CHOSEN.push(q.key); }); draw(); drawChosen(); });
 
 /* ------------------------------------------------------------- chosen ---- */
+/* AI edits never touch the bank: each is an override kept in this browser,
+   laid over the bank question when the paper is built. */
+let EDITS=ls.get('paper:edits',{});
+function view(k){ const q=BYKEY[k]; if(!q) return null; const e=EDITS[k]; if(!e) return q;
+  const v=Object.assign({},q,e.q,{_edited:true}); delete v.img; delete v.mode; return v; }
 function drawChosen(){
   ls.set('paper:chosen',CHOSEN);
-  const qs=CHOSEN.map(k=>BYKEY[k]).filter(Boolean), nm=qs.filter(q=>q._type==='mcq').length,
+  const qs=CHOSEN.map(view).filter(Boolean), nm=qs.filter(q=>q._type==='mcq').length,
     marks=qs.reduce((t,q)=>t+(q._type==='mcq'?1:Number(q.marks)||0),0);
   $('selMsg').textContent=qs.length?nm+' MCQ, '+(qs.length-nm)+' Long Q · '+marks+' marks (1 per MCQ)':'Tick questions on the left.';
-  $('chosen').innerHTML=qs.map((q,i)=>'<div class="it"><span><span class="k">'+esc(q.key)+'</span>'
+  $('chosen').innerHTML=qs.map((q,i)=>'<div class="it"><span><span class="k">'+esc(q.key)+'</span>'+(q._edited?'<span class="ed" title="Edited with AI"> ✎ edited</span>':'')
     +'<div class="t">'+esc(line(q))+'</div></span><span class="row" style="gap:3px;flex-wrap:nowrap">'
+    +(BYKEY[q.key].img?'':'<button data-ai="'+i+'" title="Edit with AI">AI ✎</button>')
+    +(q._edited?'<button data-undo="'+i+'" title="Back to the original">↺</button>':'')
     +'<button data-mv="'+i+'" data-d="-1" title="Move up">↑</button><button data-mv="'+i+'" data-d="1" title="Move down">↓</button>'
     +'<button data-rm="'+i+'" title="Remove">✕</button></span></div>').join('');
 }
 $('chosen').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
-  if(b.dataset.rm!=null){ CHOSEN.splice(Number(b.dataset.rm),1); }
+  if(b.dataset.ai!=null) return openEdit(CHOSEN[Number(b.dataset.ai)]);
+  if(b.dataset.undo!=null){ delete EDITS[CHOSEN[Number(b.dataset.undo)]]; ls.set('paper:edits',EDITS); }
+  else if(b.dataset.rm!=null){ CHOSEN.splice(Number(b.dataset.rm),1); }
   else { const i=Number(b.dataset.mv), j=i+Number(b.dataset.d); if(j<0||j>=CHOSEN.length) return; [CHOSEN[i],CHOSEN[j]]=[CHOSEN[j],CHOSEN[i]]; }
   drawChosen(); draw(); });
 $('clear').addEventListener('click',()=>{ if(CHOSEN.length&&!confirm('Remove all '+CHOSEN.length+' questions from this paper?')) return; CHOSEN=[]; drawChosen(); draw(); });
@@ -312,9 +425,12 @@ function stemBlocks(q){
   if(q.img) return [{t:'img',src:q.img}];
   const t=TABLES[q.key];
   if(t&&t.h===qHash(q.q)) return t.p.map(x=>typeof x==='string'?{t:'p',text:tex(x)}:{t:'tbl',head:x.h,rows:x.r,cap:x.c});
-  return String(q.q||'').split(/\n+/).filter(s=>s.trim()).map(s=>({t:'p',text:tex(s.trim())}));
+  const out=String(q.q||'').split(/\n+/).filter(s=>s.trim()).map(s=>({t:'p',text:tex(s.trim())}));
+  if(q._edited&&Array.isArray(q.table)&&q.table.length>1) out.push({t:'tbl',head:[q.table[0]],rows:q.table.slice(1)});
+  return out;
 }
 function points(q){
+  if(q._edited&&Array.isArray(q.points)) return [{l:'',p:q.points}];
   if(Array.isArray(q.structure)&&q.structure.length) return [{l:'',p:q.structure.filter(p=>p&&p[0])}];
   if(LQP[q.key]) return LQP[q.key];
   if(q.scheme) return [{l:'',p:String(q.scheme).split(/\n+/).filter(s=>s.trim()).map(s=>[s.trim(),null])}];
@@ -327,7 +443,7 @@ function pointBlocks(q){
   return out.length?out:[{t:'ans',text:'No marking points in the bank for this question.'}];
 }
 function build(kind){
-  const h=header(), qs=CHOSEN.map(k=>BYKEY[k]).filter(Boolean);
+  const h=header(), qs=CHOSEN.map(view).filter(Boolean);
   if(h.oShuf){ for(let i=qs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [qs[i],qs[j]]=[qs[j],qs[i]]; } }
   const B=[], suffix={paper:'',key:' · Answer Key',full:' · Answers & Explanations'}[kind];
   if(h.hSchool) B.push({t:'meta',text:h.hSchool,b:true});
@@ -374,6 +490,8 @@ function toHtml(B){
     else if(b.t==='tbl') h+=(b.cap?'<p>'+esc(b.cap)+'</p>':'')+'<table>'+b.head.map(r=>'<tr>'+r.map(c=>cell('th',c)).join('')+'</tr>').join('')
       +b.rows.map(r=>'<tr>'+r.map(c=>cell('td',c)).join('')+'</tr>').join('')+'</table>';
     else if(b.t==='lines') h+='<div class="ln"></div>'.repeat(b.n);
+    else if(b.t==='pb') h+='<div class="pb"></div>';
+    else if(b.t==='small') h+='<p style="font-size:10.5pt;color:#555">'+esc(b.text)+'</p>';
     else if(b.t==='ans') h+='<p class="ans">'+(b.b?'<b>'+esc(b.text)+'</b>':esc(b.text))+'</p>';
     else if(b.t==='keytbl') h+='<table class="key">'+b.rows.map((r,i)=>'<tr>'+r.map(c=>(i%2?'<td><b>':'<td>')+esc(c)+(i%2?'</b></td>':'</td>')).join('')+'</tr>').join('')+'</table>';
   });
@@ -417,6 +535,8 @@ async function toDocx(B){
     else if(b.t==='opt') body+=para(run(b.text+(b.ok?'  ✓':''),{b:b.ok}),{ind:720,hang:360,after:20});
     else if(b.t==='ans') body+=para(run(b.text,{b:b.b,sz:22}),{shade:true,ind:200,after:20});
     else if(b.t==='lines') for(let i=0;i<b.n;i++) body+=para('',{border:true,line:480,after:0});
+    else if(b.t==='pb') body+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+    else if(b.t==='small') body+=para(run(b.text,{sz:20,color:'555555'}));
     else if(b.t==='tbl') body+=(b.cap?para(run(b.cap)):'')+tableXml(b.head.concat(b.rows),b.head.length);
     else if(b.t==='keytbl') body+=tableXml(b.rows,0);
     else if(b.t==='img'){ const p=await pngOf(b.src); if(!p) continue;
@@ -445,22 +565,300 @@ async function toDocx(B){
   return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
 }
 
+/* -------------------------------------------------------- own questions ---- */
+/* A pasted question becomes a bank-shaped question with key OWN/n, kept in
+   this browser (paper:own), so AI edit, the paper and both exports treat it
+   like any past-paper question. */
+let OWN=ls.get('paper:own',{});
+function ownParse(){
+  const qt=$('oQ').value.replace(/\r/g,'').trim(), at=$('oA').value.replace(/\r/g,'').trim();
+  if(!qt) throw new Error('Paste the question first.');
+  const lines=qt.split('\n'), opts=[], stem=[];
+  lines.forEach(l=>{ const m=l.match(/^\s*\(?([A-Da-d])[.)、:：]\s*(.+)$/); if(m&&opts.length===('ABCD'.indexOf(m[1].toUpperCase()))) opts.push(m[2].trim()); else if(opts.length) opts[opts.length-1]+=' '+l.trim(); else stem.push(l); });
+  let type=$('oType').value; if(type==='auto') type=opts.length>=2?'mcq':'lq';
+  const q={q:stem.join('\n').trim()||qt,_type:type,_page:'own',topic:'',src:$('oSrcTxt').value.trim()};
+  if(type==='mcq'){
+    if(opts.length<2) throw new Error('An MCQ needs options on their own lines: A. … B. …');
+    q.opts=opts; const m=at.match(/^\s*\(?([A-Da-d])\b\)?/); q.ans=m?'ABCD'.indexOf(m[1].toUpperCase()):0; q.why=m?at.slice(m[0].length).replace(/^[\s.)、:：-]+/,'').trim():at;
+    if(!m&&at) q.why=at;
+  } else {
+    q.opts=[]; q.structure=at.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const m=l.match(/\[(\d+)\]\s*$|\((\d+)\s*marks?\)\s*$/i);
+      return m?[l.slice(0,m.index).replace(/^[-•*]\s*/,'').trim(),Number(m[1]||m[2])]:[l.replace(/^[-•*]\s*/,''),null]; });
+    q.marks=Number($('oMarks').value)||q.structure.reduce((t,p)=>t+(p[1]||0),0)||'';
+  }
+  return q;
+}
+function ownSave(q){ const n=Object.keys(OWN).reduce((m,k)=>Math.max(m,Number(k.split('/')[1])||0),0)+1;
+  q.key=q.id=$('oQ').dataset.key||('OWN/'+n); OWN[q.key]=q; ls.set('paper:own',OWN); $('oQ').dataset.key=q.key;
+  const list=BANK.length?BANK.filter(x=>x.key!==q.key):[]; useBank(list,BLABEL||'No bank file yet'); ownList(); return q.key; }
+function ownList(){ $('oList').innerHTML='<option value="">My saved questions…</option>'+Object.values(OWN).map(q=>'<option value="'+esc(q.key)+'">'+esc(q.key+' · '+(q.src||plain(q.q).slice(0,40)))+'</option>').join(''); }
+ownList();
+$('oPrev').addEventListener('click',()=>{ try{ const q=ownParse(); q.key='(preview)';
+    $('oView').innerHTML=esc(qText(q)); $('oView').classList.remove('hide');
+    $('oMsg').textContent=(q._type==='mcq'?'Read as an MCQ with '+q.opts.length+' options, answer '+LAB[q.ans]:'Read as a Long Q with '+q.structure.length+' marking points'+(q.marks?', '+q.marks+' marks':''))+'.'; }
+  catch(e){ $('oMsg').textContent=e.message; } });
+$('oAdd').addEventListener('click',()=>{ try{ const k=ownSave(ownParse()); if(!CHOSEN.includes(k)) CHOSEN.push(k); drawChosen(); draw(); $('oMsg').textContent=k+' added to your paper.'; }
+  catch(e){ $('oMsg').textContent=e.message; } });
+$('oAi').addEventListener('click',()=>{ try{ const k=ownSave(ownParse()); openEdit(k); } catch(e){ $('oMsg').textContent=e.message; } });
+$('oLoad').addEventListener('click',()=>{ const q=OWN[$('oList').value]; if(!q) return;
+  $('oQ').dataset.key=q.key; $('oSrcTxt').value=q.src||''; $('oType').value=q._type; $('oMarks').value=q.marks||'';
+  $('oQ').value=q.q+(q._type==='mcq'?'\n'+q.opts.map((o,i)=>LAB[i]+'. '+o).join('\n'):'');
+  $('oA').value=q._type==='mcq'?LAB[q.ans]+'\n'+(q.why||''):(q.structure||[]).map(p=>p[0]+(p[1]!=null?' ['+p[1]+']':'')).join('\n'); $('oMsg').textContent='Loaded '+q.key+'. Changes are saved when you press AI edit or Add to paper.'; });
+$('oDel').addEventListener('click',()=>{ const k=$('oList').value; if(!k||!confirm('Delete '+k+'?')) return; delete OWN[k]; delete EDITS[k]; ls.set('paper:own',OWN); ls.set('paper:edits',EDITS);
+  CHOSEN=CHOSEN.filter(x=>x!==k); if($('oQ').dataset.key===k) delete $('oQ').dataset.key; if(BANK.length) useBank(BANK,BLABEL); ownList(); drawChosen(); });
+['oQ','oA'].forEach(id=>$(id).addEventListener('input',()=>{ if(!$('oQ').value.trim()) delete $('oQ').dataset.key; }));
+
 /* ------------------------------------------------------------- export ---- */
 function fname(kind){ const h=header(); return ((h.hTitle||'Economics Test')+(h.hClass?' '+h.hClass:'')+' - '+{paper:'Question paper',key:'Answer key',full:'Answers'}[kind]).replace(/[\\/:*?"<>|]/g,'-'); }
 function ready(){ if(!CHOSEN.length){ $('outMsg').textContent='Choose some questions first.'; return false; } return true; }
-function preview(){ const B=build($('kind').value); $('paper').innerHTML=toHtml(B); $('out').classList.remove('hide'); return B; }
-$('goPrev').addEventListener('click',()=>{ if(!ready()) return; preview(); $('out').scrollIntoView({behavior:'smooth'}); });
-$('goPdf').addEventListener('click',()=>{ if(!ready()) return; preview();
-  const t=document.title; document.title=fname($('kind').value);
+function show(B){ $('paper').innerHTML=toHtml(B); $('out').classList.remove('hide'); return B; }
+function preview(){ return show(build($('kind').value)); }
+function printPdf(B,name,msg){ show(B);
+  const t=document.title; document.title=name;
   const imgs=[...$('paper').querySelectorAll('img')]; let waited=0;
-  (function wait(){ if(imgs.every(i=>i.complete)||waited>=8000){ $('outMsg').textContent='In the print window, choose "Save as PDF". 揀「另存為 PDF」。';
-      window.print(); document.title=t; return; } waited+=200; setTimeout(wait,200); })(); });
-$('goDoc').addEventListener('click',async()=>{ if(!ready()) return; const btn=$('goDoc'); btn.disabled=true; $('outMsg').textContent='Making the Word file…';
-  try{ const blob=await toDocx(preview()), a=document.createElement('a');
-    a.href=URL.createObjectURL(blob); a.download=fname($('kind').value)+'.docx'; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href),5000); $('outMsg').textContent='Saved '+a.download+'.';
-  }catch(e){ $('outMsg').textContent='Could not make the Word file: '+e.message; }
-  btn.disabled=false; });
+  (function wait(){ if(imgs.every(i=>i.complete)||waited>=8000){ msg.textContent='In the print window, choose "Save as PDF". 揀「另存為 PDF」。';
+      window.print(); document.title=t; return; } waited+=200; setTimeout(wait,200); })(); }
+async function saveDocx(B,name,msg,btn){ btn.disabled=true; msg.textContent='Making the Word file…';
+  try{ const blob=await toDocx(show(B)), a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=name.replace(/[\\/:*?"<>|]/g,'-')+'.docx'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000); msg.textContent='Saved '+a.download+'.';
+  }catch(e){ msg.textContent='Could not make the Word file: '+e.message; }
+  btn.disabled=false; }
+$('goPrev').addEventListener('click',()=>{ if(!ready()) return; preview(); $('out').scrollIntoView({behavior:'smooth'}); });
+$('goPdf').addEventListener('click',()=>{ if(!ready()) return; printPdf(build($('kind').value),fname($('kind').value),$('outMsg')); });
+$('goDoc').addEventListener('click',()=>{ if(!ready()) return; saveDocx(build($('kind').value),fname($('kind').value),$('outMsg'),$('goDoc')); });
+
+/* ----------------------------------------------------------------- AI ---- */
+/* The teacher's own Gemini key, kept in this browser only and sent only to
+   Google. Models are tried in order; a busy or over-limit model (429/5xx) or
+   an unknown one (404) moves on to the next. With no key, or when every
+   model fails, the same prompt is offered for copy-paste into Gemini. */
+const AI={key:ls.get('paper:gkey',''),models:ls.get('paper:gmodels','gemini-2.5-flash, gemini-2.5-flash-lite')};
+function aiDraw(){ $('gKey').value=AI.key; $('gModels').value=AI.models;
+  $('aiState').textContent=AI.key?'· key saved in this browser':'· no key (copy-paste mode)'; }
+aiDraw();
+$('gSave').addEventListener('click',()=>{ AI.key=$('gKey').value.trim(); AI.models=$('gModels').value.trim()||'gemini-2.5-flash';
+  ls.set('paper:gkey',AI.key); ls.set('paper:gmodels',AI.models); aiDraw(); $('gMsg').textContent='Saved.'; });
+$('gForget').addEventListener('click',()=>{ AI.key=''; ls.set('paper:gkey',''); aiDraw(); $('gMsg').textContent='Key removed from this browser.'; });
+$('gTest').addEventListener('click',async()=>{ $('gMsg').textContent='Testing…';
+  try{ const r=await aiCall('Reply with JSON {"ok":true}.',0); $('gMsg').textContent=r.ok?'Works with '+r._model+'.':'Odd answer: '+JSON.stringify(r).slice(0,80); }
+  catch(e){ $('gMsg').textContent='Failed: '+e.message; } });
+function parseJson(t){ t=String(t||'').replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'');
+  const a=t.indexOf('{'), b=t.lastIndexOf('}'); if(a<0||b<a) throw new Error('no JSON in the answer');
+  return JSON.parse(t.slice(a,b+1)); }
+async function aiCall(prompt,temp){
+  if(!AI.key) throw new Error('no key');
+  const models=AI.models.split(/[\s,]+/).filter(Boolean); let last='';
+  for(const m of models){
+    let r; try{ r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':generateContent',{method:'POST',
+        headers:{'Content-Type':'application/json','x-goog-api-key':AI.key},
+        body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:temp,maxOutputTokens:16384,responseMimeType:'application/json'}})}); }
+    catch(e){ last='network: '+e.message; continue; }
+    const j=await r.json().catch(()=>({}));
+    if(r.ok){ const t=(((j.candidates||[])[0]||{}).content||{}).parts; const out=parseJson((t||[]).map(p=>p.text||'').join('')); out._model=m; return out; }
+    last=m+': '+r.status+' '+((j.error&&j.error.message)||'').slice(0,140);
+    if(r.status===400||r.status===401||r.status===403) break;
+  }
+  throw new Error(last||'no model answered');
+}
+/* Runs prompt with the key, or opens copy-paste; onOk gets the parsed JSON. */
+function aiRun(prompt,temp,msg,onOk,forceCopy){
+  const copy=why=>{ if(why) msg.textContent=why+' · use copy-paste instead.';
+    $('cpPrompt').value=prompt; $('cpAns').value=''; $('cpMsg').textContent='';
+    $('cpUse').onclick=()=>{ try{ const r=parseJson($('cpAns').value); $('cpDlg').close(); onOk(r); }catch(e){ $('cpMsg').textContent='Could not read that answer: '+e.message; } };
+    $('cpDlg').showModal(); };
+  if(forceCopy||!AI.key) return copy('');
+  msg.textContent='Asking Gemini…';
+  aiCall(prompt,temp).then(r=>{ msg.textContent=''; onOk(r); }).catch(e=>copy('Gemini failed ('+e.message+')'));
+}
+$('cpCopy').addEventListener('click',()=>{ navigator.clipboard.writeText($('cpPrompt').value).then(()=>{ $('cpMsg').textContent='Copied.'; },()=>{ $('cpPrompt').select(); }); });
+$('cpClose').addEventListener('click',()=>$('cpDlg').close());
+const RULES='Rules you must follow:\n'
+ +'- You are an experienced HKDSE Economics teacher and examiner in Hong Kong.\n'
+ +'- Keep every economics exam term in English (e.g. price elasticity of demand, opportunity cost, ceteris paribus); never translate them.\n'
+ +'- Never invent facts. Any specific year, figure, statistic, name, quote or policy detail you are not certain is real must be followed by [待查證]. Saying you are unsure is acceptable.\n'
+ +'- Any real-world context must name a real place and period. No "suppose someone…" examples.\n'
+ +'- Answer with JSON only, no other text.\n';
+
+/* ------------------------------------------------------------ AI edit ---- */
+function qText(q){ const L=[];
+  L.push(plain(q.q)); if(q._type==='mcq'){ (q.opts||[]).forEach((o,i)=>L.push(LAB[i]+'. '+plain(o))); L.push('Answer: '+(LAB[Number(q.ans)]||'?')); if(q.why) L.push('Explanation: '+plain(q.why)); }
+  else { if(q.marks) L.push('Marks: '+q.marks); points(q).forEach(g=>{ if(g.l) L.push(plain(g.l)); g.p.forEach(p=>L.push('- '+plain(p[0])+(p[1]!=null?' ['+p[1]+']':''))); }); }
+  if(q._edited&&Array.isArray(q.table)) q.table.forEach(r=>L.push('| '+r.join(' | ')+' |'));
+  return L.join('\n'); }
+function editPrompt(q,req){
+  const cur={type:q._type,question:plain(q.q)};
+  if(q._type==='mcq'){ cur.options=(q.opts||[]).map(plain); cur.answer_index=Number(q.ans); cur.explanation=plain(q.why||''); }
+  else { cur.marks=Number(q.marks)||null; cur.command_word=q.cmd||''; cur.marking_points=[].concat(...points(q).map(g=>g.p.map(p=>[plain(p[0]),p[1]]))); }
+  const t=TABLES[q.key]; if(t&&!q._edited) cur.tables=t.p.filter(x=>typeof x!=='string').map(x=>x.h.concat(x.r).map(r=>r.map(c=>Array.isArray(c)?c[0]:c)));
+  return RULES+'\nTask: rewrite this HKDSE Economics question following the teacher\'s requirement. Keep everything the requirement does not ask to change. '
+   +'If the question or options change, update the answer, explanation or marking points so they stay correct.\n\n'
+   +'Teacher\'s requirement:\n'+req+'\n\nCurrent question (JSON):\n'+JSON.stringify(cur,null,1)+'\n\n'
+   +'Answer with this JSON shape:\n{"type":"mcq" or "lq","question":"full new stem (use \\n between paragraphs)","table":[["header",...],["row",...]] or null,'
+   +'"options":["A text","B text","C text","D text"] (mcq only),"answer_index":0-3 (mcq only),"explanation":"why the answer is right" (mcq only),'
+   +'"marks":number (lq only),"marking_points":[["point that earns marks",1],...] (lq only),'
+   +'"changes":[{"what":"short description of one change","why":"reason"}],"check":["any fact marked [待查證] and what to verify"]}';
+}
+let ED=null;
+const ED_CHIPS=['Change the context to Hong Kong in a recent year','Simpler English for weak students','Make it harder (higher-order)','Add a small data table','Change the marks to 6','Turn this MCQ into a short question'];
+$('edChips').innerHTML=ED_CHIPS.map(c=>'<button type="button">'+esc(c)+'</button>').join('');
+$('edChips').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const t=$('edReq'); t.value=(t.value.trim()?t.value.trim()+'. ':'')+b.textContent; });
+function openEdit(k){ const q=view(k); ED={k,q,res:null};
+  $('edTitle').textContent='AI edit · '+k; $('edOrig').textContent=qText(q); $('edReq').value=(EDITS[k]&&EDITS[k].req)||'';
+  $('edOut').classList.add('hide'); $('edMsg').textContent=''; $('edDlg').showModal(); }
+function edAsk(copy){ const req=$('edReq').value.trim(); if(!req){ $('edMsg').textContent='Type your requirement first.'; return; }
+  aiRun(editPrompt(ED.q,req),0.4,$('edMsg'),r=>edShow(r,req),copy); }
+$('edRun').addEventListener('click',()=>edAsk(false));
+$('edCopy').addEventListener('click',()=>edAsk(true));
+$('edAgain').addEventListener('click',()=>edAsk(false));
+$('edClose').addEventListener('click',()=>$('edDlg').close());
+$('edKeep').addEventListener('click',()=>$('edDlg').close());
+function edShow(r,req){
+  const type=r.type==='mcq'||r.type==='lq'?r.type:ED.q._type, nq={q:String(r.question||'').trim(),_type:type};
+  if(!nq.q){ $('edMsg').textContent='Gemini returned no question. Try again.'; return; }
+  if(type==='mcq'){ nq.opts=(r.options||[]).map(String).slice(0,5); nq.ans=Number(r.answer_index)||0; nq.why=String(r.explanation||''); nq.points=null; }
+  else { nq.marks=Number(r.marks)||ED.q.marks||''; nq.points=(r.marking_points||[]).map(p=>Array.isArray(p)?[String(p[0]),p[1]==null?null:Number(p[1])]:[String(p),null]); nq.opts=[]; }
+  nq.table=Array.isArray(r.table)&&r.table.length>1?r.table.map(row=>row.map(String)):null;
+  ED.res={q:nq,req,changes:r.changes||[],check:r.check||[],at:Date.now()};
+  const after=Object.assign({},BYKEY[ED.k],nq,{_edited:true});
+  $('edDiff').innerHTML=diffHtml(qText(ED.q),qText(after));
+  $('edChg').innerHTML=((r.changes||[]).map(c=>'<li><b>'+mark(c.what||'')+'</b>'+(c.why?' · '+mark(c.why):'')+'</li>').join('')
+    +(r.check||[]).map(c=>'<li><span class="tbc">Check</span> '+mark(c)+'</li>').join(''))||'<li>No list of changes was given.</li>';
+  $('edOut').classList.remove('hide'); $('edMsg').textContent=r._model?'Answered by '+r._model+'.':'';
+}
+$('edUse').addEventListener('click',()=>{ if(!ED||!ED.res) return; EDITS[ED.k]=ED.res; ls.set('paper:edits',EDITS); $('edDlg').close(); drawChosen(); });
+const mark=t=>esc(t).replace(/\[待查證\]/g,'<span class="tbc">[待查證]</span>');
+/* Diff computed here, not by AI: lines are matched first (longest common
+   subsequence); a changed line that still shares most words with the old
+   one shows word-level changes, a rewritten line shows old then new whole. */
+function lcs(A,B){ const n=A.length, m=B.length, L=Array.from({length:n+1},()=>new Uint16Array(m+1));
+  for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--) L[i][j]=A[i]===B[j]?L[i+1][j+1]+1:Math.max(L[i+1][j],L[i][j+1]);
+  const ops=[]; let i=0,j=0;
+  while(i<n&&j<m){ if(A[i]===B[j]){ ops.push(['=',A[i]]); i++; j++; } else if(L[i+1][j]>=L[i][j+1]) ops.push(['-',A[i++]]); else ops.push(['+',B[j++]]); }
+  while(i<n) ops.push(['-',A[i++]]); while(j<m) ops.push(['+',B[j++]]);
+  return ops; }
+function wordDiff(a,b){ return lcs(a.split(/(\s+)/),b.split(/(\s+)/)).map(o=>o[0]==='='?mark(o[1]):o[0]==='-'?'<del>'+esc(o[1])+'</del>':'<ins>'+mark(o[1])+'</ins>').join('')
+  .replace(/<\/del><del>/g,'').replace(/<\/ins><ins>/g,''); }
+function alike(a,b){ const A=new Set(a.toLowerCase().split(/\W+/).filter(Boolean)), B=b.toLowerCase().split(/\W+/).filter(Boolean);
+  return B.length&&A.size?B.filter(w=>A.has(w)).length/Math.max(A.size,B.length):0; }
+function diffHtml(a,b){
+  const ops=lcs(a.split('\n'),b.split('\n')), out=[];
+  for(let k=0;k<ops.length;k++){ const o=ops[k];
+    if(o[0]==='='){ out.push(mark(o[1])); continue; }
+    const del=[], add=[]; while(k<ops.length&&ops[k][0]!=='='){ (ops[k][0]==='-'?del:add).push(ops[k][1]); k++; } k--;
+    const pairs=Math.min(del.length,add.length);
+    for(let x=0;x<pairs;x++) out.push(alike(del[x],add[x])>=0.5?wordDiff(del[x],add[x]):'<del>'+esc(del[x])+'</del>\n<ins>'+mark(add[x])+'</ins>');
+    del.slice(pairs).forEach(t=>out.push('<del>'+esc(t)+'</del>')); add.slice(pairs).forEach(t=>out.push('<ins>'+mark(t)+'</ins>'));
+  }
+  return out.join('\n');
+}
+
+/* ----------------------------------------------------- answer patterns ---- */
+/* One AI call per topic reads the Long Qs and their schemes and returns the
+   repeating answer skeletons. Key words are wrapped in [[ ]] so the page can
+   blank them for dictation without asking AI again. */
+let PATS=ls.get('paper:patterns',{}), CUR=null;
+function patScope(){ return [$('pChap').value,$('pTopic').value,$('pExam').value].join('|'); }
+function patQs(){ const ch=$('pChap').value, tp=$('pTopic').value, ex=$('pExam').value;
+  return BANK.filter(q=>q._type==='lq'&&q._i.chap===ch&&(!tp||(q.topic||q.sub)===tp)&&(!ex||q._i.exam.indexOf(ex)===0)).sort(sortQs); }
+function patInit(){
+  $('patCard').classList.remove('hide');
+  $('pChap').innerHTML=CHAPTERS.map(c=>'<option value="'+c[0]+'">'+esc(c[1])+'</option>').join('');
+  patTopics(); patSaved();
+}
+function patTopics(){ const ch=$('pChap').value, ts={};
+  BANK.forEach(q=>{ if(q._type==='lq'&&q._i.chap===ch){ const t=q.topic||q.sub||''; if(t) ts[t]=(ts[t]||0)+1; } });
+  $('pTopic').innerHTML='<option value="">All topics in the chapter</option>'+Object.keys(ts).sort().map(t=>'<option value="'+esc(t)+'">'+esc(t)+' ('+ts[t]+')</option>').join('');
+  patCount(); }
+function patCount(){ const n=patQs().length; $('pMsg').textContent=n+' Long Qs with this choice'+(n>60?' (the newest 60 are sent)':'')+'.'; }
+function patSaved(){ $('pSaved').innerHTML='<option value="">Saved analyses…</option>'+Object.keys(PATS).map(k=>'<option value="'+esc(k)+'">'+esc(PATS[k].label)+'</option>').join(''); }
+$('pChap').addEventListener('change',patTopics); $('pTopic').addEventListener('change',patCount); $('pExam').addEventListener('change',patCount);
+$('pSaved').addEventListener('change',()=>{ if(PATS[$('pSaved').value]){ CUR=$('pSaved').value; drawPats(); } });
+$('pDel').addEventListener('click',()=>{ const k=$('pSaved').value; if(!k||!confirm('Delete this saved analysis?')) return; delete PATS[k]; ls.set('paper:patterns',PATS); if(CUR===k){ CUR=null; drawPats(); } patSaved(); });
+function patPrompt(qs){
+  const items=qs.slice(0,60).map(q=>({key:q.key,command:q.cmd||'',marks:Number(q.marks)||null,question:plain(q.q).slice(0,700),
+    scheme:[].concat(...points(q).map(g=>(g.l?[plain(g.l)]:[]).concat(g.p.map(p=>plain(p[0])+(p[1]!=null?' ['+p[1]+']':''))))).join(' | ').slice(0,900)}));
+  return RULES+'\nTask: these are HKDSE/HKCEE/HKALE Economics long questions on one topic, each with its official marking scheme. '
+   +'Find the answering patterns that repeat across them: the same chain of reasoning that earns the marks. Base every pattern only on these schemes.\n'
+   +'For each pattern give an answer skeleton of 3 to 6 short sentences a weak student can memorise and adapt. Wrap the key words examiners look for in [[double brackets]] '
+   +'(economics terms, directions such as increase/decrease, and linking words such as "therefore"). Each skeleton line also gets a short cue (what this step does, e.g. "State the change in Qd") '
+   +'and a short Traditional Chinese hint (zh) for the cue only; keep exam terms in English inside zh.\n'
+   +'Rank patterns by how many questions use them; give 2 to 6 patterns. In "keys" list only keys from the input that use the pattern.\n\n'
+   +'Questions (JSON):\n'+JSON.stringify(items)+'\n\n'
+   +'Answer with this JSON shape:\n{"summary":"one or two sentences on what this topic keeps asking","patterns":[{"name":"short name","trigger":"words in a question that signal this pattern",'
+   +'"steps":[{"cue":"step cue","zh":"中文提示","line":"skeleton sentence with [[key words]]"}],"keys":["DSE2019/P2/Q3"],"tip":"one common mistake to avoid"}]}';
+}
+function patTake(r,qs,scope){
+  const known=new Set(qs.map(q=>q.key)), pats=(r.patterns||[]).map(p=>({name:String(p.name||'Pattern'),trigger:String(p.trigger||''),tip:String(p.tip||''),
+    steps:(p.steps||[]).map(s=>({cue:String(s.cue||''),zh:String(s.zh||''),line:String(s.line||'')})).filter(s=>s.line),
+    keys:(p.keys||[]).map(String).filter(k=>known.has(k)), on:true})).filter(p=>p.steps.length);
+  if(!pats.length){ $('pMsg').textContent='Gemini found no patterns. Try a narrower topic.'; return; }
+  const lbl=$('pChap').selectedOptions[0].textContent+($('pTopic').value?' · '+$('pTopic').value:'')+($('pExam').value?' · DSE':'');
+  PATS[scope]={label:lbl,summary:String(r.summary||''),pats,n:qs.length,at:Date.now()}; ls.set('paper:patterns',PATS);
+  CUR=scope; patSaved(); $('pSaved').value=scope; drawPats(); $('pMsg').textContent='Found '+pats.length+' patterns in '+Math.min(60,qs.length)+' questions.';
+}
+$('pFind').addEventListener('click',()=>{ const qs=patQs(); if(!qs.length){ $('pMsg').textContent='No Long Qs here. Pick another chapter or topic.'; return; }
+  const scope=patScope(); if(PATS[scope]&&!confirm('This topic was analysed before. Ask Gemini again?')){ CUR=scope; drawPats(); return; }
+  aiRun(patPrompt(qs),0.2,$('pMsg'),r=>patTake(r,qs,scope)); });
+/* Each pattern is edited as plain lines: "cue | 中文 | sentence with [[key words]]". */
+const toLines=p=>p.steps.map(s=>s.cue+' | '+s.zh+' | '+s.line).join('\n');
+function fromLines(t){ return t.split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(x=>x.join('')).map(x=>x.length>=3?{cue:x[0],zh:x[1],line:x.slice(2).join(' | ')}:{cue:x.length>1?x[0]:'',zh:'',line:x[x.length-1]}); }
+function drawPats(){ const P=CUR&&PATS[CUR];
+  $('dictBox').classList.toggle('hide',!P);
+  if(!P){ $('pats').innerHTML=''; return; }
+  $('pats').innerHTML=(P.summary?'<p>'+mark(P.summary)+'</p>':'')+P.pats.map((p,i)=>'<div class="pat"><label><input type="checkbox" data-on="'+i+'"'+(p.on?' checked':'')+'> '
+    +'<b>'+esc(p.name)+'</b></label><div class="sub">When you see: '+mark(p.trigger)+' · used in '+p.keys.length+': '+esc(p.keys.join(', '))+'</div>'
+    +'<textarea data-i="'+i+'" spellcheck="false">'+esc(toLines(p))+'</textarea>'
+    +(p.tip?'<div class="sub">Common mistake: '+mark(p.tip)+'</div>':'')+'</div>').join('')
+    +'<p class="sub">Edit freely. One line per step: cue | 中文 | sentence. Words in [[double brackets]] become the blanks.</p>';
+}
+$('pats').addEventListener('change',e=>{ const P=PATS[CUR]; if(!P) return; const t=e.target;
+  if(t.dataset.on!=null) P.pats[Number(t.dataset.on)].on=t.checked;
+  if(t.dataset.i!=null) P.pats[Number(t.dataset.i)].steps=fromLines(t.value);
+  ls.set('paper:patterns',PATS); });
+
+/* ----------------------------------------------------------- dictation ---- */
+const KW=/\[\[([^\]]+)\]\]/g;
+function blank(w){ return '_'.repeat(Math.max(8,Math.round(w.length*1.4))); }
+function dictBlocks(){
+  const P=PATS[CUR], lvl=$('dLevel').value, zh=$('dZh').checked, h=header(), pats=P.pats.filter(p=>p.on), B=[];
+  if(!pats.length) return null;
+  const sheet=level=>{
+    if(h.hSchool) B.push({t:'meta',text:h.hSchool,b:true});
+    B.push({t:'title',text:'Answering Pattern Dictation · '+P.label});
+    B.push({t:'meta',text:(level===1?'Level 1 · Fill in the blanks':'Level 2 · Write the whole line')+(h.hDate?'   ·   '+h.hDate:'')});
+    B.push({t:'p',text:'Name: ______________________   Class: ______   No.: ____'});
+    pats.forEach((p,i)=>{
+      B.push({t:'qh',text:'Pattern '+(i+1)+': '+p.name});
+      if(p.trigger) B.push({t:'small',text:'When the question says: '+p.trigger});
+      if($('dPrac').checked&&p.keys[0]&&BYKEY[p.keys[0]]){ const q=BYKEY[p.keys[0]];
+        B.push({t:'small',text:'Practice ('+q.key+(q.marks?', '+q.marks+' marks':'')+'):'}); stemBlocks(q).forEach(b=>B.push(b)); }
+      p.steps.forEach((s,j)=>{ const n=(j+1)+'. ';
+        if(level===1) B.push({t:'p',text:n+(s.cue?'('+s.cue+') ':'')+s.line.replace(KW,(m,w)=>blank(w))});
+        else B.push({t:'p',text:n+(s.cue||'Step '+(j+1))});
+        if(zh&&s.zh) B.push({t:'small',text:'   '+s.zh});
+        if(level===2) B.push({t:'lines',n:2}); });
+      if(level===1&&$('dBank').checked){ const ws=[...new Set([].concat(...p.steps.map(s=>[...s.line.matchAll(KW)].map(m=>m[1]))))];
+        for(let k=ws.length-1;k>0;k--){ const r=Math.floor(Math.random()*(k+1)); [ws[k],ws[r]]=[ws[r],ws[k]]; }
+        if(ws.length) B.push({t:'ins',text:'Word bank: '+ws.join('  /  ')}); }
+      B.push({t:'end'});
+    });
+  };
+  if(lvl!=='2') sheet(1);
+  if(lvl==='3') B.push({t:'pb'});
+  if(lvl!=='1') sheet(2);
+  if($('dAns').checked){ B.push({t:'pb'}); B.push({t:'title',text:'Answers · '+P.label});
+    pats.forEach((p,i)=>{ B.push({t:'qh',text:'Pattern '+(i+1)+': '+p.name});
+      p.steps.forEach((s,j)=>B.push({t:'ans',text:(j+1)+'. '+s.line.replace(KW,'$1')}));
+      if(p.tip) B.push({t:'small',text:'Common mistake: '+p.tip}); B.push({t:'end'}); }); }
+  return B;
+}
+function dictName(){ const P=PATS[CUR]; return 'Dictation - '+(P?P.label:'')+' - L'+$('dLevel').value.replace('3','1+2'); }
+function dictGo(fn){ if(!CUR||!PATS[CUR]){ $('dMsg').textContent='Find or load patterns first.'; return; }
+  const B=dictBlocks(); if(!B){ $('dMsg').textContent='Tick at least one pattern.'; return; } fn(B); }
+$('dPrev').addEventListener('click',()=>dictGo(B=>{ show(B); $('out').scrollIntoView({behavior:'smooth'}); }));
+$('dPdf').addEventListener('click',()=>dictGo(B=>printPdf(B,dictName(),$('dMsg'))));
+$('dDoc').addEventListener('click',()=>dictGo(B=>saveDocx(B,dictName(),$('dMsg'),$('dDoc'))));
 </script>
 </body>
 </html>
