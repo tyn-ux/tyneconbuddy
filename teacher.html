@@ -92,6 +92,8 @@ label.lb{font-size:12px;color:var(--muted);font-weight:500}
 .pages{display:grid;gap:14px}
 .sheet{display:grid;grid-template-columns:minmax(0,1fr) 36%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 18px rgba(0,0,0,.08);border-radius:3px;overflow:hidden}
 .sheet img{display:block;width:100%}
+.sheet .scan{position:relative}
+.sheet .pen{position:absolute;transform:translate(50%,-50%);color:#c4232a;font:700 clamp(18px,3.4vw,34px)/1 system-ui,sans-serif;pointer-events:none}
 .sheet .margin{position:relative;border-left:2px solid #c4232a;background:#fbf1f1}
 .note-pen{position:absolute;left:6px;right:6px;font-family:var(--f-pen);color:#c4232a;font-size:16px;line-height:1.08}
 .note-pen.q{font-weight:600;font-size:18px}
@@ -337,7 +339,7 @@ function saveLib(){ LIB.updated = Date.now(); idb.set('lib', JSON.parse(JSON.str
 /* The teacher's own choices, kept with the library: which parts of the marking
    panel show, and what goes on the annotated PDF (the Review preview follows it). */
 const PANEL_OPTS = [['comment','Comment boxes'],['bank','Saved comments'],['quote','Evidence quote'],['rationale','Why this point earns marks'],['tiers','How to improve (3 tiers)'],['overall','Overall comment'],['read','What the AI read']];
-const PDF_OPTS = [['total','Circled total'],['qsub','Question subtotals'],['ticks','Ticks for points earned'],['miss','Missed points'],['comments','Comment text'],['overall','Overall comment'],['tiers','How to improve (3 tiers)']];
+const PDF_OPTS = [['total','Circled total'],['qsub','Question subtotals'],['scan','✓ / ✗ on the student\'s answer'],['ticks','Ticks for points earned'],['miss','Missed points'],['comments','Comment text'],['overall','Overall comment'],['tiers','How to improve (3 tiers)']];
 const pref = (grp, k) => !(((LIB.prefs||{})[grp]||{})[k] === false);
 function setPref(grp, k, on){ LIB.prefs=LIB.prefs||{}; LIB.prefs[grp]=LIB.prefs[grp]||{}; LIB.prefs[grp][k]=!!on; saveLib(); }
 const prefBoxes = (grp, list) => list.map(([k,t])=>`<label class="row" style="gap:6px"><input type="checkbox" data-pref="${grp}" data-k="${k}" ${pref(grp,k)?'checked':''}> ${t}</label>`).join('');
@@ -930,7 +932,7 @@ function renderMark(){
 /* One list of red-pen notes, used by the Review screen and the PDF export,
    so what the teacher sees is what gets exported. */
 function notesFor(s){
-  const notes=[], extra=[], L=s.lines||[], res=s.res; if(!res) return {notes,extra};
+  const notes=[], extra=[], marks=[], L=s.lines||[], res=s.res; if(!res) return {notes,extra,marks};
   const on=k=>pref('pdf',k), cm=a=>on('comments')?(a.comment||''):'';
   const starts = JOB.scheme.questions.map(q=>({q, at: res.qstart && res.qstart[q.qid]!=null ? res.qstart[q.qid] : -1}));
   const sorted = starts.filter(x=>x.at>=0).sort((a,b)=>a.at-b.at);
@@ -941,6 +943,9 @@ function notesFor(s){
     else if(at<0){ extra.push({kind:'q', text:`Q${q.qid}: ${got}/${mx}${got===0?' (no answer found)':''}`}); }
     else notes.push({p:L[at].p, y:L[at].y, kind:'q', text:`Q${q.qid}: ${got}/${mx}`, li:at});
     q.points.forEach(p=>{ const a=res.points[p.id]; if(!a) return; const lab=pointLabel(q,p);
+      if(on('scan')){   // pen mark on the scan itself: tick where marks were earned, cross beside a 0-mark attempt
+        const at = a.line>=0 && L[a.line] ? a.line : a.m>0 ? -1 : endOf(q);
+        if(at>=0 && L[at]) marks.push({p:L[at].p, y:L[at].y, li:at, ok:a.m>0}); }
       if(!on('ticks')){}
       else if(a.m>0 && a.line>=0 && L[a.line]) notes.push({p:L[a.line].p, y:L[a.line].y, kind:'ok', m:a.m, text:`${lab} +${a.m} ${cm(a)}`.trim(), li:a.line+0.1});
       else if(a.m>0) extra.push({kind:'ok', m:a.m, text:`Q${q.qid} ${lab} +${a.m} ${cm(a)}`.trim()});
@@ -951,7 +956,8 @@ function notesFor(s){
     });
   });
   notes.sort((a,b)=> s.pages.indexOf(a.p)-s.pages.indexOf(b.p) || a.li-b.li);
-  return {notes, extra};
+  const seen={}; marks.forEach(m=>{ m.k=seen[m.li]=(seen[m.li]||0)+1; m.k--; });   // several marks on one line sit side by side
+  return {notes, extra, marks};
 }
 /* Evidence for every point: the words that earned it, or the closest attempt. */
 function evidenceHTML(a, p){
@@ -1047,8 +1053,8 @@ function jumpTo(p){ document.querySelectorAll('.sheet.focus').forEach(x=>x.class
 async function renderPages(){
   const s=JOB.students[cur], box=$('pages'), token=Symbol(); renderPages.tok=token;
   $('pageLbl').textContent=`${stuLabel(s)} ${nameOf(s)} · pages ${pagesStr(s.pages)}`;
-  const {notes, extra}=notesFor(s);
-  box.innerHTML = s.pages.map((p,k)=>`<div class="sheet" data-pg="${p}"><img alt="Page ${p+1}" data-img="${p}"><div class="margin">${k===0&&pref('pdf','total')?`<div class="note-pen total" style="top:6px">${tot(s)}/${maxT()}</div>`:''}
+  const {notes, extra, marks}=notesFor(s);
+  box.innerHTML = s.pages.map((p,k)=>`<div class="sheet" data-pg="${p}"><div class="scan"><img alt="Page ${p+1}" data-img="${p}">${marks.filter(m=>m.p===p).map(m=>`<span class="pen ${m.ok?'ok':'x'}" style="top:${(m.y*100).toFixed(2)}%;right:${(3+m.k*5).toFixed(1)}%">${m.ok?'✓':'✗'}</span>`).join('')}</div><div class="margin">${k===0&&pref('pdf','total')?`<div class="note-pen total" style="top:6px">${tot(s)}/${maxT()}</div>`:''}
     ${notes.filter(n=>n.p===p).map(n=>`<div class="note-pen ${n.kind==='q'?'q':''}" data-y="${n.y}">${n.kind==='ok'?'✓ ':n.kind==='miss'?'✗ ':''}${esc(n.text)}</div>`).join('')}</div></div>`).join('');
   $('fb').innerHTML = fbHTML(s, extra);
   if(!PDF){ box.querySelectorAll('img').forEach(im=>im.replaceWith(Object.assign(document.createElement('div'),{className:'note',style:'padding:20px',textContent:'Scan removed from this browser. Marks and comments are kept.'}))); return; }
@@ -1253,13 +1259,19 @@ async function buildPdf(students){
   const RED = rgb(0.77,0.14,0.16), TINT = rgb(0.985,0.945,0.945);
   const srcPages = src.getPages();
   for(const s of students){
-    const {notes, extra} = notesFor(s);
+    const {notes, extra, marks} = notesFor(s);
     let last=null, cursor=0, W=0, H=0, M=0, fs=9;
     for(let k=0;k<s.pages.length;k++){
       const sp = srcPages[s.pages[k]], sz = sp.getSize(); W=sz.width; H=sz.height; M=Math.round(W*0.45); fs=Math.max(9, W/58);
       const emb = await out.embedPage(sp), pg = out.addPage([W+M, H]);
       pg.drawPage(emb, {x:0, y:0, width:W, height:H});
       pg.drawRectangle({x:W, y:0, width:M, height:H, color:TINT}); pg.drawLine({start:{x:W,y:0}, end:{x:W,y:H}, thickness:1.5, color:RED});
+      const ps = Math.max(14, W/24);   // pen mark size on the scan
+      for(const m of marks.filter(m=>m.p===s.pages[k])){
+        const cx = W*0.97 - ps*0.6 - m.k*ps*1.2, cy = H - m.y*H, t = ps*0.11, o = {thickness:t, color:RED};
+        if(m.ok){ pg.drawLine({start:{x:cx-ps*0.45,y:cy},end:{x:cx-ps*0.12,y:cy-ps*0.38},...o}); pg.drawLine({start:{x:cx-ps*0.12,y:cy-ps*0.38},end:{x:cx+ps*0.5,y:cy+ps*0.45},...o}); }
+        else { pg.drawLine({start:{x:cx-ps*0.38,y:cy-ps*0.38},end:{x:cx+ps*0.38,y:cy+ps*0.38},...o}); pg.drawLine({start:{x:cx-ps*0.38,y:cy+ps*0.38},end:{x:cx+ps*0.38,y:cy-ps*0.38},...o}); }
+      }
       let floor = 8;            // distance from the top already used
       if(k===0 && pref('pdf','total')){ const t=`${tot(s)}/${maxT()}`, ts=fs*2.2, tw=bold.widthOfTextAtSize(t,ts);
         pg.drawEllipse({x:W+M-tw/2-22, y:H-30, xScale:tw/2+14, yScale:ts*0.8, borderColor:RED, borderWidth:2});
