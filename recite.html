@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MUSTKNOW Recite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Noto+Sans+TC:wght@400;500&display=swap">
+<style>
+/* MUSTKNOW Part 2 recite list: recite, fill in the blanks, mock test.
+   Every answer comes from the teacher's list in <script id="data"> below;
+   nothing here talks to the server. Progress stays in this browser. */
+:root{
+  --bg:#f3f0e9; --surface:#fbfaf7; --surface2:#f3efe7; --ink:#3a3531; --muted:#857b70; --line:#e3ddd1;
+  --accent:#7f0019; --accent-soft:#f1e4e0; --pen:#b3261e; --ok:#5b7a4a; --ok-soft:#e7eedf; --kraft:#e6dccb;
+  --f-ui:"IBM Plex Sans","Noto Sans TC",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#1d1a17; --surface:#25221e; --surface2:#2c2824; --ink:#ebe5da; --muted:#a59b8f; --line:#3b3631;
+  --accent:#d98b7e; --accent-soft:#3b2825; --pen:#ff8a80; --ok:#9fbf8a; --ok-soft:#26301f; --kraft:#3a332a; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{accent-color:var(--accent);background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14.5px;line-height:1.55}
+a{color:var(--accent)}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:8px;padding:6px 12px}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme: dark){button.pri{color:#1d1a17}}
+button:disabled{opacity:.5;cursor:default}
+select,input[type=text],input[type=search],textarea{font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+textarea{width:100%;min-height:120px;line-height:1.6;resize:vertical}
+.hide{display:none!important}
+.muted{color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+h1{font-size:20px;margin:0;font-weight:600}
+h2{font-size:21px;margin:0;font-weight:600;letter-spacing:-.01em}
+h3{font-size:12px;margin:0 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tag{display:inline-block;font-size:11.5px;padding:0 8px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
+.card,.card>*{min-width:0}
+.tag.hot{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+
+/* layout: topic rail on the left, sheet on the right */
+.shell{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow:auto;padding:18px 14px;border-right:1px solid var(--line);background:var(--surface);display:grid;align-content:start;gap:14px}
+.brand{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.brand img{width:54px;height:54px;object-fit:cover;object-position:30% 70%;border-radius:10px;border:1px solid var(--line)}
+.brand span{color:var(--muted);font-size:12px;display:block}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.modes button{border:0;background:none;padding:6px 4px;font-size:13px;line-height:1.2;border-radius:7px}
+.modes button small{display:block;color:var(--muted);font-size:11px}
+.modes button.on{background:var(--surface);box-shadow:0 0 0 1px var(--line)}
+.modes button.on b{color:var(--accent)}
+.filters{display:grid;gap:6px}
+.filters label{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+#topics{display:grid;gap:2px}
+#topics .ch{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:10px 4px 2px}
+#topics button{all:unset;cursor:pointer;display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;font-size:13.5px}
+#topics button:hover{background:var(--surface2)}
+#topics button.on{background:var(--accent-soft)}
+#topics .dot{width:8px;height:8px;border-radius:50%;border:1px solid var(--line)}
+#topics .dot.ok{background:var(--ok);border-color:var(--ok)}
+#topics .dot.no{background:var(--pen);border-color:var(--pen)}
+#topics .n{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.topbtn{display:none}
+.wrap{min-width:0;overflow-wrap:anywhere;max-width:900px;padding:28px 32px 80px;display:grid;gap:14px;align-content:start}
+@media (max-width:820px){
+  .shell{grid-template-columns:1fr}
+  .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .side.fold #topicsBox{display:none}
+  .topbtn{display:block}
+  .wrap{padding:16px 16px 60px}
+}
+
+/* topic sheet */
+.th{display:grid;gap:6px}
+.th .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pattern{background:var(--kraft);border-radius:10px;padding:12px 14px}
+.pattern ol{margin:6px 0 0;padding-left:20px}
+.pattern li{margin:2px 0}
+.pattern .cue{margin-top:6px;color:var(--muted);font-size:13.5px}
+.pattern.veil ol,.pattern.veil .cue{filter:blur(6px);user-select:none;cursor:pointer}
+.kwbank{display:flex;flex-wrap:wrap;gap:6px}
+.kwbank span{font-size:12.5px;padding:1px 9px;border-radius:12px;background:var(--surface2);border:1px solid var(--line)}
+.q{border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
+.q:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.qh{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:4px}
+.qh b{font-family:var(--f-mono);font-size:12.5px;font-weight:500}
+.qh .mk{font-size:12px;color:var(--muted)}
+.qh .ttl{font-weight:500}
+.qh strong{font-weight:600}
+.stem{background:var(--surface2);border-radius:8px;padding:8px 12px;margin:6px 0;font-size:13.5px}
+ul.pts{margin:4px 0;padding-left:20px}
+ul.pts li{margin:5px 0}
+.sub{list-style:none;margin-left:-20px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:10px!important}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--kraft);padding:2px 10px;margin:8px 0}
+.tbc{background:#fff2a8;color:#5a4500;padding:0 3px;border-radius:3px}
+@media (prefers-color-scheme: dark){.tbc{background:#4d4316;color:#ffe680}}
+.ws{font-family:var(--f-ui);background:var(--surface2);border-radius:8px;padding:6px 12px;margin:4px 0;font-size:13.5px}
+/* keywords: hidden as a kraft bar until tapped */
+.kw{font:inherit;border:0;padding:0 3px;margin:0 1px;border-radius:4px;background:none;color:var(--accent);font-weight:600;cursor:pointer}
+.kw{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere}
+.kw.mask{background:var(--kraft);color:transparent;min-width:3em}
+.kw.mask:hover{outline:1px solid var(--muted)}
+/* fill in the blanks */
+input.blank{font:inherit;border:0;border-bottom:1.5px solid var(--muted);background:transparent;color:var(--ink);padding:0 3px;margin:0 2px;border-radius:0;min-width:3em}
+input.blank{max-width:calc(100% - 8px)}
+input.blank:focus{outline:none;border-bottom-color:var(--accent)}
+input.blank.ok{border-bottom-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
+input.blank.bad{border-bottom-color:var(--pen);color:var(--pen)}
+.fix{font-size:12px;color:var(--ok);margin-left:2px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.score{font-family:var(--f-mono);font-size:13px}
+.status button.ok.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.status button.no.on{background:var(--pen);border-color:var(--pen);color:#fff}
+/* mock test */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips label{font-size:12.5px;border:1px solid var(--line);border-radius:14px;padding:2px 10px;display:flex;gap:5px;align-items:center;background:var(--surface2);cursor:pointer}
+.mq{display:grid;gap:8px}
+.mq .qn{font-family:var(--f-mono);color:var(--muted)}
+.model{border-left:3px solid var(--ok);background:var(--ok-soft);border-radius:0 8px 8px 0;padding:8px 12px}
+.model b.k{color:var(--accent)}
+.found{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0}
+.found span{font-size:12px;padding:0 8px;border-radius:10px}
+.found .y{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok)}
+.found .n{background:var(--accent-soft);color:var(--pen);border:1px solid transparent}
+.self{display:flex;gap:6px;align-items:center;font-size:13px}
+.self select{padding:3px 6px}
+.lines{display:none}
+#print{display:none}
+@media print{
+  @page{size:A4;margin:16mm 15mm}
+  body{background:#fff;color:#000;font-family:"Times New Roman","PMingLiU",serif;font-size:12pt}
+  .shell{display:none!important}
+  #print{display:block}
+  #print h1{font-size:15pt;text-align:center;margin:0}
+  #print .meta{text-align:center;margin:2px 0 10px}
+  #print .ins{border:1px solid #000;padding:6px 10px;margin:0 0 12px;font-size:11pt}
+  #print .pq{break-inside:avoid;margin:12px 0 0}
+  #print .pq p{margin:2px 0}
+  #print .ln{border-bottom:1px solid #777;height:9mm}
+  #print .ans{margin:4px 0 0 0;padding-left:18px}
+  #print .ans b{text-decoration:underline}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side fold" id="side">
+    <div class="brand">
+      <img src="img/mustknow-cover.webp" alt="TYN holding Final Tips for DSE Economics">
+      <div><h1>MUSTKNOW Part 2</h1><span>Recite list · DSE short questions</span></div>
+    </div>
+    <div class="modes" id="modes">
+      <button data-m="recite"><b>Recite</b><small>背誦</small></button>
+      <button data-m="fill"><b>Fill in</b><small>填充</small></button>
+      <button data-m="mock"><b>Mock test</b><small>模擬測驗</small></button>
+    </div>
+    <button class="topbtn" id="topBtn">Topics ▾</button>
+    <div id="topicsBox" class="filters">
+      <input type="search" id="q" placeholder="Search a concept…">
+      <label><input type="checkbox" id="hotOnly"> ★ asked in 2024 or 2025 only</label>
+      <label><input type="checkbox" id="todoOnly"> Not recited yet only</label>
+      <div id="topics"></div>
+      <p class="muted" style="font-size:12px;margin:10px 4px 0" id="prog"></p>
+      <p style="font-size:12.5px;margin:4px"><a href="app.html">← Back to the drill site</a></p>
+    </div>
+  </aside>
+  <main class="wrap" id="main"></main>
+</div>
+<div id="print"></div>
+<script type="text/plain" id="data">
+// Source: MUSTKNOW Part 2 Recite List (teacher's docx). Only edit wording here.
+// # Chapter / ## Topic / P: answering pattern || 中文提示 / Q: year Qn | marks | title
+// D: definition card / S: question wording / > sub-heading / - marking point / N: note / W: worksheet line (not marked)
+// [[keyword]] = recite keyword and fill-in blank.
+
+# Ch.1 Basic Economic Concepts
+## Economic good
+P: Stance (Yes / No) → because → produced from scarce resources with alternative uses / more of it is preferred || 先表態，再講 scarce resources 同 alternative uses
+Q: 2012 Q1 | 3 | Economic good
+- No, because the good may be produced from [[scarce resource]] which have [[alternative uses]]. / [[More]] of the good may still be [[preferred]].
+Q: 2013 Q6 | 2 | Economic good
+- No, as it involves the use of [[scarce resource]] having [[alternative uses]].
+Q: 2015 Q1 | 2 | Economic goods
+- [[Positive marginal cost]] of production.
+- It is produced from [[scarce resources]], which have [[alternative uses]].
+
+## Free good
+P: Stance (Yes / No) → more of it is (not) preferred / resources used have (no) alternative uses → nobody willing to pay a price || 先表態，再用 preferred 或 alternative uses 解釋
+Q: 2020 Q1 | 3 | Free good
+- Yes. More of free good is [[not preferred]]. No one is [[willing to pay a price]] / [[give up resources]] for getting more free good.
+Q: 2021 Q5 | 2 | Free good
+- No, it is not a free good because it is produced from [[scarce resources]].
+Q: 2023 Q3 | 2 | Free goods
+- No, because the resources involved in writing these analyses have [[alternative uses]] or more of these analyses are [[preferred]] by some people.
+Q: 2024 Q11 | 2 | Free goods
+- No. More free flight tickets are [[preferred]]. The resources used to produce these services have [[alternative uses]].
+
+## Public good vs private good
+P: Public / private good → because → non-rivalrous (or rivalrous) in consumption: one's use does (not) reduce availability to others → (not) excludable || 先判斷，再講 rivalrous / excludable 同點解
+Q: 2015 Q2 | 3 | Public goods
+- Yes, because a person can download and study the course materials [[without reducing the availability]] of those materials to others, i.e. these materials are [[non-rivalrous in consumption]].
+Q: 2019 Q5 | 3 | Public goods vs private goods
+- Public good. It is because the videos are [[non-rivalrous in consumption]] as people can [[concurrently]] watch the video without affecting one another.
+Q: 2021 Q6 | 2 | Public good
+- No, it is not a public good because it is [[rivalrous in consumption]], i.e. it cannot be used [[concurrently]] by more than one person.
+- No, it is not a public good because it is [[excludable]], i.e. the owner of a mask can [[exclude other people]] from accessing or using his / her mask.
+Q: 2024 Q12 | 3 | Public goods
+- No. The flight tickets are [[rival in consumption]]. One's consumption of the tickets [[reduce their availability]] to others.
+
+## Consumer goods vs capital goods
+P: Capital goods when used to help further production → consumer goods when used for self-consumption → give the use || 睇用途：用嚟生產定自己消費
+Q: 2021 Q1 | 2 | Consumer goods and capital goods
+- [[Capital goods]], when the riders use them to help [[further production]], i.e. delivery service.
+- [[Consumer goods]], when the riders use them for [[self-consumption]], e.g. playing games.
+
+## Positive vs normative statement
+P: Positive / normative statement → because → refutable (or not) by facts → how facts can verify it || 講 refutable by facts，再講用咩數據驗證
+Q: 2019 Q1 | 2 | Positive statement
+- Statement A is a [[positive statement]] because it is [[refutable by fact]].
+Q: 2022 Q4 | 2 | Positive or Normative statement
+- [[Positive statement]]. It is [[refutable by facts]] – people can use property-price data before and after the introduction of STCGT to [[verify]] whether the statement is correct.
+
+## Scarcity
+P: Limited resources → cannot satisfy → unlimited wants || 有限資源 vs 無限慾望
+D: Scarcity
+- [[Limited resources]] cannot satisfy all [[unlimited wants]].
+
+## Production
+P: Inputs → turned into → outputs
+D: Production
+- The process of turning [[inputs]] into [[outputs]].
+
+## Three basic economic problems
+P: Name the problem → because → link to what it is about (production method / kinds and quantities / distribution) || 先講係邊個問題，再連返佢講緊咩
+Q: 2023 Q5 | 2 | Three basic economic problems
+- '[[How to produce]]', because replacing labour with capital is related to the [[production method]] / [[combination of factor inputs]].
+D: What to produce
+- [[What to produce]]: about the [[kinds and quantities]] of goods to produce.
+D: For whom to produce
+- [[For whom to produce]]: how to [[distribute]] goods / [[allocation method]] (price competition / non-price competition).
+
+## Private property rights
+P: Three rights: exclusive right to use → exclusive right to receive income → right to transfer || 三個 rights 一個都唔可以少
+Q: 2013 Q2 | 2 | Private property rights
+- Private property rights refer to the [[exclusive right to use]], the [[exclusive right to receive income]] from, and the [[right to transfer]] a property owned by an individual.
+
+# Ch.3 Ownership of Firms
+## Identify type of business ownership
+P: Name the form of ownership || 直接寫名
+Q: 2014 Q9 | 1 | Type of business ownership
+- [[Public limited company]] / [[listed company]].
+Q: 2016 Q1 | 1 | Type of business ownership
+- [[Public limited company]] / [[limited company]].
+Q: 2024 Q1 | 1 | Type of business ownership
+- [[Public limited company]] / [[Listed company]].
+
+## Differences between types of business ownership
+P: In form A, … while in form B, … (one difference per sentence: transfer of shares / legal status / disclosure / issuing shares) || 每點都要兩邊比較，用 while
+Q: 2014 Q10 | 4 | Differences between different business ownership
+- In a partnership, any given owner [[cannot transfer]] his/her shares of ownership [[without the consent]] of other partners while in a public limited company, the shares are [[freely transferable]].
+- A partnership does not have [[independent legal status]] while a public limited company has an independent legal status.
+Q: 2017 Q5 | 2 | Differences between different types of business ownership
+- Shares of a listed company are [[freely transferrable]] while shares of a private limited company are not.
+- A listed company is required to [[disclose the accounting information]] to the public while a private limited company is not.
+- A listed company can [[issue shares and bonds]] to the [[general public]] while a private limited company cannot.
+
+## Private limited company vs public limited (listed) company
+P: Advantage: tighter control / harder to be taken over, no need to disclose → Disadvantage: cannot issue shares to the public, hard to transfer ownership || 優點講控制權同私隱，缺點講集資同轉讓
+Q: 2012 Q9 | 4 | TWO advantages and TWO disadvantages of being a private limited company instead of a listed company
+- [[Tighter control]] of ownership / more difficult to be [[taken over]].
+- No need to [[disclose]] the accounting information to public.
+- Cannot [[issue shares]] to the general public to [[raise capital]].
+- Difficult to [[transfer]] its ownership.
+Q: 2015 Q6 | 2 | ONE advantage and ONE disadvantage of forming a private limited company over forming a public limited company
+> Advantages:
+- Low risk of being [[taken over]].
+- No need to [[disclose accounting information]] to the public.
+> Disadvantages:
+- Owners cannot [[freely transfer]] their stocks.
+- The firm cannot [[raise capital]] by issuing stocks to the general public.
+Q: 2025 Q4 | 2 | Advantages of a private limited company over a public limited company
+- Lower risk of being [[taken over]] as the transfer of ownership requires [[consent of other owners]].
+- No need to [[disclose financial accounts]] to the public.
+
+## Issuing shares vs bonds / bank loans
+P: Advantage: no interest burden, no redemption / repayment obligation → Disadvantage: dilution of control, higher risk of take-over || 優點兩個 no，缺點講控制權
+Q: 2016 Q2 | 4 | From the viewpoint of owners, ONE advantage and ONE disadvantage of issuing shares over bonds
+> Advantages:
+- No [[interest burden]].
+- No [[redemption obligation]].
+> Disadvantages:
+- [[Diluting the control]] over the firm.
+- Higher risk of being [[taken over]].
+Q: 2020 Q11 | 2 | TWO advantages of issuing shares over obtaining loans from banks for raising capital
+- No [[interest obligation]].
+- No [[repayment obligation]].
+Q: 2024 Q2 | 2 | ONE advantage and ONE disadvantage of issuing shares over bonds
+> Advantages:
+- No [[interest burden]].
+- No [[redemption obligation]].
+> Disadvantages:
+- [[Dilution of ownership]] and reduction in [[control power]] over the firm.
+- Higher risk of being [[taken over]].
+
+## Public corporation / public vs private enterprise
+P: Point (control of price / easier loans / efficiency / alternative uses of money) → apply to the case || 每個優缺點都要扣返個 case
+Q: 2017 Q6 | 4 | ONE advantage and ONE disadvantage of public corporation
+> Advantages:
+- Government will have a better [[control of the price]] so that it may reduce the price to relieve the burden of the passengers.
+- MTR may be easier to [[get loans]] as it is fully owned and supported by the government.
+> Disadvantages:
+- It may make the management [[less efficient]] / less sensitive to [[price signal]].
+- The money involved in the purchase is substantial, which may have better [[alternative uses]] such as education and medical service.
+Q: 2019 Q2 | 3 | Example of public corporation and TWO advantages
+> Examples:
+- [[HK Airport Authority]]
+- [[Hong Kong Export Credit Insurance Corporation]]
+> Advantages:
+- Easier to get [[information]] about the general public from the government for decision-making.
+- Can provide [[stable service]] with a [[lower price]].
+- Easier to [[get loan]] with the backup of the government.
+Q: 2020 Q13 | 2 | Comparison of private and public enterprise
+> Advantage:
+- More [[efficient management]].
+- Easier to [[recruit experts]].
+> Disadvantage:
+- Higher toll as private firm aims at [[profit-maximisation]].
+- Less [[information]] for future planning.
+
+## Reasons for changing form of business ownership
+P: Reason (raise funds / expertise / transfer / decision making) → apply to the people in the case || 用返 case 入面啲人名
+Q: 2018 Q1 | 2 | TWO reasons why switch the form of business ownership
+- Peter wants to invite more investors to get [[new funds]] for [[expansion]] of his business.
+- Peter can make use of different [[expertise]] from Paul and Mary in the new markets.
+Q: 2022 Q1 | 2 | Advantage and Disadvantage of change in a business ownership
+> Advantage:
+- Ability to [[raise capital]] by [[issuing shares]] to the general public.
+- Easier [[transfer of ownership]].
+> Disadvantage:
+- Requirement to [[disclose]] the company's accounting information to the public.
+- Higher risk of being [[taken over]].
+Q: 2024 Q15 | 2 | Advantage and Disadvantage of business ownership
+- Ann does not want to be [[legally bound]] by the business decisions of a partner.
+- Ann prefers making decisions [[promptly]] by herself.
+
+## Limited liability
+P: When the firm is liquidated → owner's liability → confined to the amount of investment || 三部分：liquidated、liability、amount of investment
+Q: 2025 Q3 | 2 | Limited liability
+- Limited liability means that when a firm is [[liquidated]], the liability of an owner of the firm is [[confined to the amount of his/her investment]] in the firm.
+
+## Objectives other than profit maximising
+P: List the objective || 背三個
+D: Objectives other than profit maximising
+- Increasing [[market share]].
+- Providing [[non-profit making]] goods or services.
+- Fulfilling [[Corporate Social Responsibility]].
+
+# Ch.4 Production and Division of Labour
+## Type of production
+P: Type (primary / secondary / tertiary) → because → what they do (extract from nature / provide services) || 類別 + because + 佢做緊咩
+Q: 2015 Q3 | 2 | Type of production
+- [[Tertiary production]] as it provides [[retail services]].
+Q: 2017 Q7 | 1 | Type of production
+- [[Tertiary production]].
+Q: 2022 Q7 | 4 | Type of production
+- [[Primary production]]: As farmers, they directly [[extract resources from nature]].
+- [[Tertiary production]]: as hostel owners, they provide catering and accommodation [[services]] to visitors.
+Q: 2024 Q13 | 2 | Type of production
+- [[Tertiary production]], because airlines provide (flight) [[services]].
+
+## Division of labour
+P: Name it (division of labour / specialization) → reasons: practice makes perfect, most suitable person, save time in training, mechanization || 先寫名，再列 reasons
+Q: 2013 Q7 | 4 | Division of labour and THREE reasons
+- [[Division of labour]].
+- Choosing the [[most suitable person]] for the job.
+- [[Practice makes perfect]].
+- Saving time in [[training]].
+- Stimulus to [[mechanization]].
+Q: 2016 Q13 | 4 | Division of labour and THREE reasons
+- [[Division of labour]] / [[specialization]].
+> Reasons:
+- [[Practice makes perfect]].
+- Choosing the [[most suitable person]] for the job.
+- Save time in [[training]].
+- More efficient use of the [[capital goods]].
+Q: 2019 Q3 | 3 | Division of labour and concept
+> Division of labour / Specialization:
+- Finding the [[most suitable person]] for the job: the parents in both families can use their [[expertise]] in teaching their children so the children can learn both languages better.
+- [[Specialization and exchange]]: Mr Wong can specialize teaching English, i.e. the production in which his [[opportunity cost is lower]], then exchange for his children learning Japanese from Mrs. Chan. The children can learn both languages better with a lower cost. (Similar argument applies to Mrs Chan in her teaching of Japanese as well.)
+Q: 2022 Q8 | 3 | Division of labour and TWO reasons
+- [[Division of labour]].
+- [[Practice makes perfect]].
+- Choose the [[most suitable workers]] to do the job.
+- Save time in [[training]].
+Q: 2025 Q10 | 4 | Division of labour
+- ([[Complex]]) division of labour.
+- [[Practice makes perfect]].
+- Assigning the [[most suitable person]] for each task.
+- Saving time in [[training]].
+- Saving time in [[job rotation]].
+- Mechanism is stimulated.
+N: 2025 Q10 last point reads "Mechanism is stimulated" in the list; other years say "Stimulus to mechanization". Teacher to confirm [待查證].
+
+## Wage payment methods (time rate vs piece rate)
+P: Viewpoint (employer / employee) → advantage or disadvantage → reason (income stability / work incentive / cost of measuring output / monitoring cost) || 先講邊個角度，再講 incentive、measuring 或 monitoring cost
+Q: 2013 Q8 | 4 | Wage payment
+- It improves the [[work incentive]] of the manager.
+- It gives a more [[stable income]] as the manager still receives a [[basic salary]] even if the business is poor.
+Q: 2015 Q9 | 4 | TWO advantages of Contract B over Contract A from the viewpoint of the employer – wage payment
+- The owner of the football team can [[share some business risks]] with Player B as the former would make less payment to the latter when no match is played and / or no goal is scored.
+- The owner of the football team can have a [[lower cost of monitoring]] players' performance as Player B would have a [[higher work incentive]] in training and in matches.
+Q: 2017 Q1 | 4 | Wage payment
+> From the viewpoint of employee:
+- Possibility of getting [[higher income]] with [[more effort]] / better service.
+> From the viewpoint of employer:
+- [[Lower monitoring cost]] for the performance of the waiters / [[higher work incentive]] for the waiters.
+Q: 2018 Q9 | 2 | Wage payment – piece rate
+- The [[cost of measuring the output]] of the foreign helpers is too high.
+- The work of domestic helpers is [[not standardized]].
+Q: 2019 Q7 | 4 | Wage payment from different perspectives
+- Advantage: [[Cost of measuring output]] of the employees can be saved.
+- Disadvantage: [[Work incentive]] may not be high.
+- Advantage: Higher output will yield [[higher income]].
+- Disadvantage: Income may be [[unstable]].
+Q: 2022 Q9 | 2 | Comparison of different wage payment
+- It can reduce the [[monitoring cost]] as athletes can have a higher [[incentive]] to win games.
+Q: 2023 Q12 | 2 | Disadvantage of wage payment method
+- It is prohibitively costly to [[measure the outputs]] of the Financial Secretary as his outputs are [[not standardized]].
+Q: 2024 Q14 | 2 | Advantage and Disadvantage of wage payment
+> Advantage:
+- Possibility of earning a [[higher income]] by providing better services.
+> Disadvantage:
+- Higher risk of [[income fluctuations]].
+Q: 2025 Q11 | 2 | Time rate vs Piece rate
+- Easier to maintain a [[stable team]] of staff as income is more [[stable]].
+- Lower cost of [[measuring outputs]].
+- Higher cost of [[monitoring against shirking]].
+- Lower [[labour productivity]] due to lower [[working incentive]].
+
+# Ch.5 Factors of Production
+## Type of factor of production
+P: Factor (land / labour / capital / entrepreneurship) → because → its defining feature (gift of nature / man-made / bears business risk) || 名稱 + because + 定義特徵
+Q: 2014 Q1 | 2 | Factor of production – entrepreneurship
+- [[Entrepreneurship]] as he [[bears business risk]] and [[makes business decisions]].
+Q: 2016 Q12 | 2 | Type of factors of production
+- [[Land]]. It is because it is a [[natural resource]] which is a [[gift of nature]].
+Q: 2018 Q2 | 2 | Type of factor of production
+- [[Entrepreneurship]], as she [[bears business risk]].
+Q: 2023 Q4 | 2 | Type of factor of production
+- [[Capital]], because it is a [[man-made resource]] used in production.
+
+## Labour supply
+P: No. of workers × average working hours = total working hours
+D: Labour supply
+- Labour supply = [[No. of workers]] × [[average working hours]] = [[Total working hours]].
+
+## Average labour productivity
+P: Total output ÷ total labour supply
+D: Average labour productivity
+- Average labour productivity = [[Total output]] / [[total labour supply]].
+
+# Ch.6 Production and Cost
+## Law of diminishing marginal returns
+P: (Holding technology constant) → more units of a variable factor added to a given quantity of fixed factors → marginal product eventually diminishes → (apply: name the variable and fixed factor) || 四件事：technology constant、variable factor、fixed factor、MP eventually diminish
+Q: 2012 Q2 | 3 | Law of diminishing marginal return
+- The law states that ([[holding technology constant]],) when more units of a [[variable factor]] are added successively to a given quantity of [[fixed factors]], the [[marginal product]] of this factor will [[eventually diminish]].
+Q: 2016 Q4 | 3 | Law of diminishing marginal returns
+- The law states that ([[holding technology constant]],) when more units of a [[variable factor]] are added successively to a given quantity of [[fixed factors]], the [[marginal products]] of this factor will [[eventually diminish]].
+Q: 2021 Q2 | 5 | Law of diminishing marginal return
+- Law of diminishing returns. When a larger amount of [[variable factor]] are continuously added to a given amount of a [[fixed factor]], the [[marginal product]] (of the variable factor) would [[eventually diminish]], [[holding technology constant]]. In this case, the rider is the variable factor and the firm's operating system is the fixed factor.
+Q: 2023 Q7 | 3 | Law of diminishing marginal return
+- Yes, because the [[marginal product]] of labour drops from 48 units to 41 units when the quantity of labour (a [[variable factor]]) increases from 12 to 13 units, given a fixed quantity (12 units) of machinery ([[fixed factor]]).
+Q: 2025 Q1 | 2 | Law of Diminishing Marginal Return
+- The law states that ([[holding technology constant]]), when more units of a [[variable factor]] are added successively to a given quantity of [[fixed factors]], the [[marginal product]] of this factor will [[eventually decrease]].
+
+## Fixed factor / variable cost
+P: Fixed factor: quantity does not vary with output → Variable cost: example + varies with output || 關鍵：vary with output
+Q: 2023 Q6 | 1 | Fixed factor
+- Its quantity [[does not vary with output]].
+Q: 2014 Q2 | 2 | Example of variable cost
+- Cost of buying the accessories, or wages of part-time workers as expenses on these items would [[vary]] (increase) [[with the output]] of Ah Wing's shop.
+
+## Economies of scale (internal)
+P: Cost item → spread over a larger quantity of output / bulk discount / lower borrowing cost → average cost falls || 講邊樣成本點樣攤薄或減少
+Q: 2016 Q3 | 3 | THREE reasons to explain why its average cost decreases – economies of scale
+- The cost of [[advertising]] can be [[shared]] by a larger number of students.
+- The firm may be able to obtain [[loans at a lower interest rate]] after expansion (due to availability of [[collaterals]]).
+- Better [[experts]] can be hired to manage the group to increase [[productivity]].
+Q: 2019 Q4 | 3 | Economies of scale and concept
+> Economies of scale:
+- They can have more [[discounts]] when food ingredients are [[purchased in bulk]] which would reduce the [[average cost]] of producing the dinners.
+- Cooking together can save the average cooking time and at the same time can have a larger variety of food choices.
+Q: 2023 Q13 | 4 | Economies of scale
+- The cost of [[advertising]] can be [[spread over a larger quantity of outputs]] (number of shows).
+- The cost of [[rehearsal]] can be [[spread over a larger quantity of outputs]].
+Q: 2024 Q16 | 2 | Economies of scale
+- Discount for [[bulk purchase]] of inputs, e.g., coffee beans.
+- [[Spreading of advertising cost]] over a larger number of outputs.
+- Lower [[cost of borrowing]] with more [[collateral]].
+
+## Diseconomies of scale (internal)
+P: Firm too large / large outstanding loans / market saturated → managerial efficiency falls / borrowing cost rises / marketing cost rises || 三個原因：管理、借貸、市場飽和
+Q: 2017 Q2 | 4 | TWO reasons why average cost increases
+- The firm may become [[too large in scale]] so the [[managerial efficiency]] is lowered.
+- The firm may have [[large outstanding loans]] so the [[cost of further borrowing]] increases.
+- The market may be [[saturated]] so the [[marketing cost]] increases.
+Q: 2020 Q3 | 2 | TWO reasons (listed under diseconomies of scale)
+- Share of [[advertising cost]] by a larger number of output.
+- [[Bulk purchase]] of raw materials in production.
+- More extensive [[division of labour]].
+N: 2020 Q3 is filed under diseconomies of scale, but its three points are economies-of-scale reasons. Teacher to confirm which concept the question asked [待查證].
+Q: 2022 Q2 | 2 | Diseconomies of scale
+- The firm may have [[large outstanding loans]], so the [[marginal cost of further borrowing]] increases.
+- The firm may have become [[too large in scale]], so [[managerial efficiency]] starts declining.
+- The market may have [[saturated]], leading to a rise in [[marketing cost]].
+
+## External economies of scale
+P: Industry concentrates in a region → cost reduction (marketing and promotion / transportation / recruiting skilled workers) → because … || 每點：邊樣成本減 + 點解
+Q: 2015 Q4 | 4 | TWO reasons for external economies of scale
+- Reduce cost of [[marketing and promotion]].
+- Reduce [[transportation cost]] for suppliers.
+- More [[related businesses]] available such as accessories and repair.
+Q: 2018 Q3 | 4 | TWO reasons for external economies of scale
+- Reduction of [[marketing and promotion costs]], as the region would [[attract more buyers]] for high-technology products / services.
+- Reduction of [[transportation cost]], as transportation network and other [[infrastructures]] would develop more quickly, thus improving accessibility.
+- Reduction of average / marginal [[cost of recruiting]] more experienced and [[skilled workers]], as more of these workers would be attracted to the region.
+
+# Ch.7 Expansion
+## Type of expansion / integration and motives
+P: Type (horizontal / vertical forward or backward / lateral / conglomerate) → because → relation between the businesses → motives (spread risk, brand name, economies of scale, steady supply, market share) || 類型 + 兩盤生意嘅關係 + motives
+Q: 2012 Q3 | 5 | Conglomerate expansion and THREE motives
+- The firm has expanded into [[unrelated industries]].
+> Possible motives:
+- To have product / income [[diversification]] so as to [[spread risk]].
+- To make use of its [[brand name]] of one product in other products.
+- To use resources more efficiently as the two companies can [[share some of their resources]].
+- To enjoy [[economies of scale]] (e.g. lower average cost of advertising as the total cost can be spread over a larger quantity of output).
+Q: 2014 Q4 | 6 | Type of expansion and TWO advantages
+- [[Vertical backward expansion]] because, by starting Fai Lok Institute, Tai Fai Lok Group has expanded its operation vertically backward to the [[previous stage of production]] to control directly the [[supply of factor inputs]] (chef and managers) to its original (food) business.
+> Advantages:
+- More [[steady supply]] of factor inputs such as chefs and managers.
+- Better use of the [[brand name]].
+- Program can be tailor-made for those graduates from the Institutes who are hired to work in the Group's restaurant, so as to shorten their [[training time]].
+Q: 2015 Q7 | 2 | Type of expansion
+- [[Lateral expansion]], as fast food and coffee are [[related but not directly competitive]] products.
+Q: 2019 Q6 | 3 | Types of expansion and TWO reasons
+- [[Horizontal expansion]].
+- Enlarge the [[market share]].
+- Enjoy [[economies of scale]].
+- Make use of the [[brand name]].
+Q: 2020 Q2 | 4 | Type of expansion and TWO possible motives
+- [[Lateral expansion]] because the firm expanded its production to [[related but not competitive]] products.
+> Motives:
+- Market / product [[diversification]].
+- [[Economies of scale]].
+- Use of [[brand name]].
+Q: 2021 Q3 | 3 | Type of integration and TWO motives
+- [[Vertical backward integration]].
+> Motives:
+- To ensure a [[steady supply of raw materials]].
+- To [[diversify]] sources of income and [[spread risks]].
+- To make use of its [[brand name]] in other products.
+Q: 2023 Q1 | 2 | Type of expansion
+- [[Conglomerate integration]], because electric car manufacturing and social media operation are [[totally unrelated]] businesses.
+Q: 2023 Q2 | 2 | Expansion motives
+- To [[spread risk]] through product [[diversification]].
+- To make use of its [[brand name]] in other products / services.
+
+# Ch.8 Demand and Supply
+## Law of demand
+P: When price rises → quantity demanded falls, vice versa → ceteris paribus || 唔好漏 ceteris paribus
+Q: 2014 Q8 | 1 | Law of demand
+- Law of demand: when the [[price]] of a good increases, the [[quantity demanded]] of the good [[decreases]], vice versa, [[ceteris paribus]].
+
+## Relative price and the proportion of better / cheaper goods (DSE 2024 example)
+P: 1) Same amount of fee added / subtracted on the cheaper and the more expensive goods → 2) compare the % change in nominal price of both goods → 3) the change in the relative price of the goods (change, not compare; unit: in terms of another good) → 4) the change in the proportion of the goods, relative to another good → 5) conclusion || 跟住五步寫：同一筆費用 → % 變化 → relative price → 比例 → 結論
+D: DSE 2024 answer skeleton (from your notes)
+W: 1) the ____________ of lump-sum fuel surcharge is subtracted from the prices of both long- and short-distance flights,
+W: 2) Percentage decrease in the nominal price of long-distance flights would be smaller than that in short-distance flights.
+W: 3) the ____________ of long-distance flights in terms of ____________ flights ____________,
+W: 4) resulting in a decrease in the ____________ of long-distance flights relative to ____________
+W: 5) ____________ flight distance decreases.
+N: The blanks in this skeleton are not filled in the recite list, so they are shown for practice only [待查證: answers from your teacher].
+D: Misconception: both prices change by the same percentage
+- If the money prices of two goods increase (or decrease) by the same percentage (ad valorem tax), their relative prices [[remain unchanged]].
+- When the relative price does not change, there is [[no change]] in the average size / distance / quality.
+
+# Ch.10 Elasticity of demand and supply
+## Factors affecting price elasticity of supply
+P: Factor → explanation → impact on elasticity (more / less elastic) || 每個 factor 都講埋對 elasticity 嘅影響
+D: Factors affecting price elasticity of supply
+- [[Spare production capacity]]: firms with spare capacity can increase production flexibly when the price rises, so supply tends to be [[more elastic]].
+- [[Availability of critical factor inputs]]: if factors of production are more [[mobile]] (geographically or occupationally), firms can employ them more easily and increase Qs, so supply is more elastic.
+- [[Nature of the industry]]: [[capital-intensive]] industries (e.g. aircraft manufacturing) have less elastic supply as it takes longer to install equipment; [[labour-intensive]] industries (e.g. garment making) have more elastic supply due to quicker hiring of workers.
+- [[Time]]: over time, firms can adjust by installing new equipment or hiring more workers, so supply becomes more elastic as time progresses.
+- [[Ease of entry of new firms]]: if new firms can easily enter the market, more firms will be attracted and the market quantity supplied can be easily increased, so supply is more elastic.
+
+## Elasticity in a case (pen-and-paper style)
+P: State elasticity (elastic / inelastic) → reason → % change in quantity is larger / smaller than % change in price || 結論 + 原因 + 比較兩個 % change
+Q: 2018 Q5a | 3 | Elasticity of supply – medical staff
+S: During peak flu seasons, there is not enough medical staff in public hospitals in Hong Kong. An economist stated, 'Even if the government sharply increases the wage rates of the medical staff, it is still difficult to relieve the problem.' Justify his statement using the concept of elasticity of supply / demand.
+- Supply of medical staff may be [[inelastic]]
+- because they require [[special training and qualification]].
+- Even if the government raises their wage rates sharply, the [[percentage increase in the quantity supplied]] of medical staff would still be [[smaller]] than the percentage increase in their wage rates.
+Q: 2024 Q10c | 3 | Elasticity – flight tickets
+S: Following the promotion effort of the government, many people travel to City B. As a result, flight ticket price is doubled, while the quantity transacted of flight tickets changes by 50%. Based on the above information, what can we conclude about the price elasticity of demand and/or supply of flight tickets? Explain.
+- As the demand for flight tickets increases, the [[demand curve shifts to the right]]. The equilibrium point moves upward [[along the same supply curve]].
+- Therefore, the percentage change in quantity relative to that in price depends on the [[price elasticity of supply]].
+- Given that the percentage increase in quantity is [[smaller]] than the percentage increase in price, we can conclude that the supply of flight tickets is [[inelastic]].
+N: "2024 Q10c" and "2018 Q5a" come from the notes section of the list, which numbers questions differently from the model-answer section.
+
+# Ch.12 Market Structure
+## Identify market structure and TWO features
+P: Name the market structure → list features (number of sellers, products, entry, pricing, information, competition) || 先寫 market structure，再列 features
+Q: 2012 Q8 | 3 | Market structure and TWO features
+- [[Oligopoly]].
+- A [[few dominating firms]].
+- [[Price searcher]].
+- [[Interdependence]] of pricing policies.
+- Product can be [[heterogeneous]].
+- [[Non-price competition]].
+- [[Not easy to enter]] the industry.
+- [[Imperfect information]].
+Q: 2014 Q3 | 3 | Market structure and two features
+- [[Monopolistic competition]].
+- [[Many sellers]] / no dominant sellers.
+- Sellers selling [[heterogeneous products]].
+- [[Free entry]] into the market.
+Q: 2016 Q11 | 3 | Market structure and TWO features
+- [[Monopolistic competition]].
+> Features:
+- [[Many sellers]].
+- [[Price searchers]].
+- (Slightly) [[differentiated products]].
+- [[Non-price competition]].
+- [[Imperfect information]].
+Q: 2017 Q3 | 3 | Market structure and TWO features
+- [[Oligopoly]].
+> Features:
+- Several [[dominant firms]].
+- [[Entry barrier]].
+- [[Interdependent]] pricing strategies.
+- [[Imperfect]] market information.
+Q: 2020 Q10 | 3 | Market structure and TWO features
+- [[Oligopoly]].
+> Features:
+- A [[few dominant sellers]].
+- [[Interdependency]] of pricing.
+- [[Price and non-price competitions]].
+Q: 2024 Q3 | 3 | Type of market structure and TWO unique features
+- [[Oligopoly]].
+> Unique features:
+- A [[few dominant sellers]].
+- Sellers are [[interdependent]] in pricing strategy.
+- [[Price rigidity]] / stickiness.
+
+## Why the market is NOT perfectly competitive
+P: Feature (heterogeneous goods / imperfect information / non-price competition / price searcher) → e.g. from the case || 每點 feature 後面加 e.g. 扣返 case
+Q: 2013 Q1 | 4 | TWO reasons that it is not perfect competition
+- Sellers provide [[heterogeneous services]].
+- Market information is [[imperfect]].
+- Sellers engage in both price and [[non-price competition]].
+Q: 2018 Q10 | 4 | TWO reasons why market structure is not perfectly competitive
+- Sellers provide [[heterogeneous services]], e.g. rooms with different size / features.
+- Market information is [[imperfect]], e.g. information about the quality of services.
+- [[Price searcher]] / under competition there are [[different prices]], e.g. different hotels charge different room rates for similar rooms.
+Q: 2021 Q4 | 4 | TWO reasons why the market is NOT perfectly competitive
+- Sellers provide [[heterogeneous goods]], e.g. smartphones with different specifications.
+- There exists [[non-price competition]], e.g. advertisements.
+- Market information is [[imperfect]], e.g. information about the performance of the smartphones.
+Q: 2022 Q11 | 4 | TWO reasons why the market is NOT perfectly competitive
+- [[Heterogeneous goods]] – some stored-value facilities (SVFs) can be used in most forms of public transportation, but some cannot.
+- [[Non-price competition]] – different stored-value facilities (SVFs) companies engage in different kinds of promotions to attract customers.
+Q: 2025 Q2 | 4 | TWO reasons why the market is NOT perfectly competitive
+- Provide [[heterogeneous services]], e.g. different types of classes / different styles of teaching.
+- Market information is [[imperfect]], e.g. information about the prices and quality is not readily available to consumers.
+- Sellers engage in [[non-price competition]], e.g. advertising.
+
+## Reasons for price difference
+P: Reason (quality / cost / environment / brand / imperfect information / heterogeneous products) → explain why customers still pay the higher price || 每個原因都要解釋點解有人肯俾貴啲
+Q: 2015 Q8 | 4 | TWO reasons for price difference
+- Lower-[[quality]] coffee.
+- Lower [[production cost]].
+- Less pleasant [[environment]].
+- Less attractive [[brand name]].
+Q: 2023 Q8 | 4 | TWO reasons why the price is different
+- [[Imperfect market information]]: Some customers may buy from shops charging higher prices because they do not know about shops selling at lower prices. (This may be due to high costs of acquiring such information, viz. [[search costs]].)
+- [[Heterogeneous products]] / services. Some customers may be willing to pay a [[premium]] for better services, e.g. better after-sales services such as longer warranty period / better product descriptions by salespersons.
+
+## Sources of monopoly power
+P: Name the source || 直接寫
+Q: 2024 Q4 | 1 | Possible source of monopoly power
+- [[Government franchise]].
+- [[High set-up costs]] and [[natural monopoly]].
+- [[Government ownership]].
+
+# Ch.13 Efficiency and Externality
+## Deadweight loss and external cost / benefit
+P: Deadweight loss = potential gain not captured / loss in total social surplus, when MB ≠ MC → external cost / benefit = borne by affected parties without compensation || 記住 not captured 同 without compensation
+D: Deadweight loss
+- [[Potential gain]] that is [[not captured]].
+- Loss in [[total social surplus]].
+- When [[MB does not equal MC]].
+D: External cost / benefit
+- The cost borne by the [[affected parties]] who do not receive any [[compensation]].
+
+## Externality, efficiency and solutions
+P: Activity → effect on third parties → not compensated → positive / negative externality → efficiency (equilibrium Q vs socially optimal Q, MSC vs MSB) → solution with the lowest transaction costs || 影響第三者 + 冇補償 + externality → 再講 efficiency
+Q: 2016 Q4 | 3 | Externality
+- Taking photos and sharing them in social media may have a [[promotion effect]], attracting more customers to the restaurants (1)
+- while the extra benefit may [[not be compensated]] for. (1)
+- There may be [[positive externality]] (external benefit is involved). (1)
+N: The question wording for 2016 Q4 is not in the list.
+D: Efficiency (external cost case)
+- The equilibrium quantity [[>]] the [[socially optimal quantity]].
+- [[MSC > MSB]] at the equilibrium quantity.
+D: Solutions
+- Market solution / [[internalize the external cost]] (private property right defined clearly, to define who receives compensation / who pays).
+- Government ([[tax]] / [[subsidy]] / ban / education).
+- The efficient choice depends on the [[transaction costs]] involved. The one that involves the [[lowest transaction costs]] is the efficient solution.
+
+# Ch.14 Equity
+## Equity: answering pattern
+P: 1) Which equity: income / opportunity → 2) effects on the high-income group and / or the low-income group → 3) the income gap / productivity, future income-earning power, the chance of … without hindering by their background || 先講 income 定 opportunity，再講高低收入組，最後講 income gap
+D: Worksheet (from your notes)
+W: Proposal 1: It helps equalise ____________. With more subsidy, the chance of the students from ______-income families to get higher education will be enhanced without being hindered by their ____________, and their income-earning power in the future will be ____________.
+W: Proposal 2: It helps equalise ____________. 1) (the rich and the poor) As high-income tax payers pay ________ tax than low-income tax payers, 2) (income gap) the post-tax income gap ____________, the after-tax income inequality will be reduced.
+W: (a) Tightening the eligibility criteria of CSSA: Fewer ______-income people will be eligible for the assistance. This policy will lower the post-social transfer income of the ______-income group. This will ____________ income inequality.
+W: (b) Paying three months' rent for public housing tenants: As most public housing tenants are from the ______-income group, this policy helps ______ the ______ income of the ______-income group. This will ____________ income inequality.
+N: The blanks in this worksheet are not filled in the recite list, so they are shown for practice only [待查證: answers from your teacher].
+
+## Sources of income inequality
+P: Factor → how it lowers / raises the wage of a group || 因素 + 點樣影響工資
+D: Sources of income inequality (notes)
+- [[Human capital]]: knowledge / training / skills / education level.
+- Race, as there may be [[racial discrimination]] in the job market and some ethnic minority groups may suffer a [[lower wage rate]] for the same job.
+- Gender, as [[sex discrimination]] may exist in the workplace. On average, female suffers a lower wage rate for the same rank.
+D: Income inequality among different occupations
+- Different [[human capital]] (education level).
+- [[Wage payment method]]: time rate gives lower disparity (cannot earn more by working harder); tips / commission give larger disparity (can earn more by working harder).
+- If time rate: different [[working hours]] (full time vs. part time, overtime work).
+
+# Macro: National Income and Living Standard
+## Definition of GDP
+P: Total market value → of final goods and services produced → within a country / economic territory → in a given period || 四個重點一個都唔少得
+D: Key points of the definition of GDP
+- [[Total market value]].
+- Value of production (the production of [[final goods and services]]).
+- Production of a [[country or an economic territory]].
+- A [[given period]] / current year.
+
+## Contribution to GDP smaller than the sales amount
+P: Not all inputs are domestic (imported parts / raw materials) → not all output was produced in that year (inventory / work in progress) → e.g. || 兩個原因：進口 inputs、唔係當年生產
+Q: 2014 Q11 | 4 | Contribution to GDP is smaller than the amount
+- Not all factor inputs used to produce Japanese cars [[originated from Japan]]. E.g., some of the parts or raw materials were [[imported]].
+- Some Japanese cars sold in 2013 were [[not produced in the same year]]. E.g., some of them came from the [[inventory]].
+Q: 2020 Q12 | 4 | Contribution to GDP is smaller than the amount
+- Not all factor inputs used to build the infrastructure [[originated from Hong Kong]]. For example, some raw materials were [[imported]].
+- Some of the output might [[not be produced in 2019]]. For example, some has been already included as [[change in inventory]] / [[work in progress]] in previous years.
+
+## CPI vs GDP deflator
+P: CPI covers … while GDP deflator covers … → CPI uses a fixed basket (weights revised infrequently) while GDP deflator uses variable baskets || 兩點都用 while 對比
+Q: 2014 Q5 | 2 | Difference between CPI and GDP deflator
+- CPI only includes [[consumer goods]] while GDP deflator includes both consumer goods and [[producer goods]].
+- CPI calculates a [[fixed basket]] of goods and the weighting will be revised every 5 years while GDP deflator has [[variable baskets]] of goods for each year.
+Q: 2020 Q6 | 2 | Difference between CPI and GDP deflator
+- CPI only includes [[consumer goods]] while GDP deflator includes both consumer goods and [[producer goods]].
+- The computation of CPI is based on a [[fixed basket]] of goods (with weights which would only be revised infrequently), while GDP deflator is based on [[variable baskets]] of goods (with weights varying from year to year).
+
+## GDP / income and living standard
+P: Over- or under-estimate → because of pollution / leisure / inflation / population change || 講清楚係高估定低估，再俾原因
+Q: 2022 Q3 | 2 | TWO reasons why increase in per capita disposable income may overestimate the improvement of living standard
+- Bigger output may generate (as by-product) more [[pollution]].
+- Bigger output may require longer work hours, hence less [[leisure time]] for the workers.
+- Bigger nominal output may be due to higher [[inflation]] without necessarily growth in [[real output]] / income.
+Q: 2024 Q6 | 2 | GDP underestimates the living standard
+- [[Population]] may have dropped by a larger percentage than [[real GDP]].
+- [[Pollution]] may have become less serious.
+- Citizens may have enjoyed more [[leisure time]].
+
+# Macro: Inflation, Unemployment and Business Cycle
+## Inflation and disinflation
+P: Inflation: persistent increase in the general price level → Disinflation: a fall in the rate of inflation, still inflation || persistent + general price level
+Q: 2012 Q7 | 2 | Inflation
+- [[Persistent increase]] in the [[general price level]].
+D: Disinflation
+- Disinflation is a [[decrease in the rate of inflation]], but it is a kind of [[inflation]].
+
+## Unemployment rate formula
+P: (Number of unemployed ÷ total labour force) × 100% || 分母係 labour force，唔係 population
+Q: 2015 Q5 | 1 | Unemployment rate
+- Unemployment rate = ([[number of unemployed]] / [[total labour force]]) × 100%.
+Q: 2016 Q6 | 1 | Unemployment rate
+- Unemployment rate = ([[number of unemployed]] / [[total labour force]]) × 100%.
+Q: 2018 Q5 | 1 | Unemployment rate
+- Unemployment rate = ([[number of unemployed]] / [[total labour force]]) × 100%.
+Q: 2023 Q9 | 1 | Unemployment rate
+- Unemployment rate = ([[number of unemployed]] / [[total labour force]]) × 100%.
+Q: 2024 Q17 | 1 | Unemployment rate
+- Unemployment rate = ([[number of unemployed]] / [[total labour force]]) × 100%.
+Q: 2025 Q6 | 1 | Unemployment rate
+- ([[Unemployed population]] / [[labour force]]) × 100%.
+
+## Losses to society caused by unemployment
+P: Loss of output → loss of human capital → political and social unrest || 三個 loss
+Q: 2012 Q4 | 2 | Loss to society caused by unemployment
+- Loss of [[output]].
+- Loss of [[human capital]].
+- [[Political unrest]].
+Q: 2016 Q7 | 3 | Loss to society caused by unemployment
+- Loss of [[output]].
+- Loss of [[human capital]].
+- [[Political and social unrest]].
+Q: 2020 Q5 | 2 | Loss to society caused by unemployment
+- Loss of [[output]].
+- Loss of [[human capital]].
+- [[Political and social unrest]].
+Q: 2025 Q7 | 2 | Loss to society caused by unemployment
+- Loss of [[output]].
+- Loss of [[human capital]].
+- [[Political and social unrest]].
+
+## Business cycle phases and phenomena
+P: Name the phase → phenomena: real GDP growth, inflation, unemployment, consumption / investment, business confidence (rising or falling) || 先講 phase，再講數據點郁
+Q: 2012 Q5 | 2 | Economic phenomena of business cycle
+- Falling or even negative [[real GDP growth]].
+- Low / falling [[inflation]] or even [[deflation]].
+- Falling [[business confidence]], levels of [[investment]], [[consumption]].
+Q: 2016 Q8 | 2 | TWO general economic phenomena during recovery
+- [[Rising]] real GDP growth rate.
+- Low / [[rising inflation]].
+- Rising levels of [[investment]] / [[consumption]].
+Q: 2017 Q4 | 1 | Business cycle
+- [[Depression]] / [[trough]].
+Q: 2020 Q4 | 4 | Business cycle and TWO economic phenomena
+- [[Recession]].
+> Phenomena:
+- Falling / negative [[real GDP growth rate]] OR falling real GDP level.
+- Falling [[inflation rate]] OR [[deflation]].
+- Falling [[consumption]] / [[investment]].
+- Falling [[business confidence]].
+Q: 2022 Q10 | 2 | Business cycle and ONE phenomenon
+- [[Recession]].
+- Falling or even negative [[real GDP growth]].
+- Low / falling [[inflation]] or even [[deflation]].
+- Falling [[business confidence]] and levels of [[investment]].
+- Falling levels of [[consumption]].
+Q: 2024 Q5 | 3 | Business cycle and TWO features
+- [[Recovery]].
+- Rising [[inflation rate]] / rising general price level.
+- Falling [[unemployment rate]].
+- Rising [[consumption]] / [[investment]].
+
+# Macro: AD-AS
+## Why the AD curve is downward sloping
+P: Price level rises → demand for money rises → (fixed money supply) interest rate rises → investment and consumption fall → aggregate quantity of output demanded falls || 一條因果鏈，一環都唔可以跳
+Q: 2013 Q4 | 3 | Why the AD curve is downward sloping
+- [[Interest rate effect]]: As the price level rises, households and firms [[demand more money]] to finance their transactions. Given the [[fixed supply of money]], the [[interest rate would rise]]. An increase in interest rate would cause a decline in [[investment and consumption]] and thus the [[aggregate quantity of output demanded]].
+Q: 2024 Q9 | 3 | Why the AD curve is downward sloping
+- [[Interest rate effect]]: As the price level rises, households and firms [[demand more money]] to finance their transactions. Given the [[fixed supply of money]], the [[interest rate would rise]]. An increase in interest rate would cause a decline in [[investment and consumption]] and thus the [[aggregate quantity of output demanded]].
+
+## Why SRAS is upward sloping
+P: Price level rises → input price adjustment imperfect (long contracts) → real cost of production falls → quantity supplied rises || 重點：input prices 調整唔完全
+Q: 2016 Q5 | 3 | Why the short-run aggregate supply curve is upward-sloping
+- When the price level increases, the [[adjustment of input prices is imperfect]] (due to the [[longer contracts]] of inputs), so the [[cost of production in real terms]] has dropped. Quantities of output supplied will increase. Therefore, higher price level would result in [[higher output level]].
+
+## Why LRAS is vertical
+P: In the long run → input and output prices fully flexible → output supplied unchanged when price level changes || 長期 prices fully flexible
+D: Why LRAS is vertical
+- In [[long run]], when general price level increases, aggregate output supplied will [[remain unchanged]]. Both the input price and output price are [[fully flexible]] in long run, the quantity output supplied remains the same when the price level changes.
+
+## Deflationary / inflationary (output) gap
+P: Difference between aggregate output (Y) and full-employment output (Yf) → when Y is below / exceeds Yf || Y 同 Yf 邊個大
+Q: 2021 Q7 | 2 | Deflationary (output) gap
+- Deflationary (output) gap refers to the [[difference]] between aggregate output (Y) and the [[full-employment output]] (Yf) when Y is [[below]] Yf.
+D: Inflationary (output) gap
+- Inflationary (output) gap refers to the [[difference]] between aggregate output (Y) and the [[full-employment output]] (Yf) when Y [[exceeds]] Yf.
+
+## Market adjustment mechanism (SR to LR)
+P: Name the gap → excess supply / demand in the factor market → factor prices adjust down / up → costs of production fall / rise → SRAS increases / falls over time → output restored to Yf in the long run || 五步：gap → factor market → factor prices → SRAS → Yf
+Q: 2013 Q5 | 4 | Market adjustment mechanism
+- The economy is facing a [[deflationary (output) gap]]. There would be an [[excess supply in the factor market]], creating pressure for [[factor prices to adjust downward]]. As the costs of production would decrease, [[SRAS would increase]] over time, thus [[restoring output to Yf]] in the long run.
+Q: 2015 Q10 | 4 | Market force – inflationary gap
+- Hong Kong is facing an [[inflationary gap]]. There is an [[excess demand in the factor market]], creating pressure for [[factor prices to adjust upward]], so that costs of production would increase over time and [[SRAS would fall]] over time, [[restoring output to Yf]] in the long run.
+Q: 2020 Q9 | 4 | Market force – inflationary gap
+- The economy is facing an [[inflationary gap]]. There would be an [[excess demand in the factor market]], creating pressure for [[factor prices to adjust upward]]. As the costs of production would rise, [[SRAS would fall]] over time, [[restoring output to Yf]] in the long run.
+Q: 2024 Q10 | 5 | Market adjustment mechanism – deflationary gap
+- The economy is facing a [[deflationary (output) gap]]. There is an [[excess supply in the factor market]]. It creates pressure for [[factor prices to adjust downward]]. Costs of production would drop. [[SRAS would increase]] over time, thus restoring output level to the [[full-employment output level]], Yf in the long run.
+
+# Macro: Money and Banking
+## Barter, money and its features
+P: Barter problem: double coincidence of wants → money: generally accepted medium of exchange → separates buying and selling → good money: durable, homogeneous, portable || 錢解決 double coincidence of wants
+Q: 2024 Q7 | 1 | Problem of barter
+- The lack of [[double coincidence of wants]].
+Q: 2024 Q8 | 3 | What is money and how the use of money can facilitate exchanges
+- Money is anything that is [[generally accepted]] as a [[medium of exchange]].
+- The use of money allows the acts of [[buying and selling to be separated]], so that exchange no longer requires [[double coincidence of wants]]. For example, Villager A may sell his beans for money and use the money to purchase pork from Villager B (who can in turn use the money to buy rice from someone else).
+Q: 2025 Q5 | 4 | Features of money
+- Not [[durable]], as rice may decay within years and cannot be stored for a long time.
+- Not [[homogeneous]], as rice does not have uniform physical characteristics.
+- Not [[portable]], as people need to carry a large quantity of rice for high-value transactions.
+
+## Functions of HKMA
+P: List the functions || 背四個
+D: Functions of HKMA
+- Issue [[coins and $10-banknotes]].
+- Being a [[lender of last resort]].
+- [[Supervising the banking system]].
+- Maintain the stability of the [[linked exchange rate]].
+N: In the list, "Being a lender of last resort" is set out as a heading above the last two points; here all four are shown as separate functions. Teacher to confirm [待查證].
+
+## Deposit creation / contraction
+P: Change in reserves → excess reserves / reserve shortage → banks lend out / call back loans → deposits rise / fall → process goes on (until actual reserves = required reserves) || 一個循環：reserves → loans → deposits → 再嚟
+Q: 2014 Q12 | 3 | Process of deposit creation / contraction
+- Credit creation process: When the central bank purchases bonds from commercial banks, more cash is injected to the commercial banks as reserves and there would be [[excess reserve]] in the banking system. The banks would [[lend out excess reserves]]. And the bank loans will be [[deposited into the banking system]]. The process will [[go on and on]] (until the [[actual reserves are equal to required reserves]]).
+Q: 2018 Q6 | 2 | TWO assumptions for deposit creation
+- Banks do not hold [[excess reserve]].
+- There is sufficient [[demand for loans]].
+- There is no [[cash leakage]].
+Q: 2023 Q11 | 3 | Deposit creation / contraction
+- The withdrawal of bank deposit may result in a [[reserve shortage]]. Bank would need to [[call back loans]] to fulfil [[legal reserve requirements]]. In order to keep a constant amount of cash (for daily expenses etc.), the public would have to [[further withdraw deposit]] from their bank accounts. The process would go on and on, resulting in [[deposit contraction]].
+
+## Money supply vs monetary base
+P: Fractional reserve → banks lend → loans deposited back → multiple increase in deposits (banking multiplier > 1) → equal only if reserve ratio 100% / no lending of excess reserves || 分數準備制度 → multiplier
+Q: 2016 Q9 | 3 | Why is money supply often a few times more than monetary base
+- [[Fractional reserves banking system]] enables the banks to [[lend out money]] and create loans, which eventually will be [[deposited back]] into the banks as deposits, resulting in a [[multiple increase in deposits]] / the [[banking multiplier is larger than unity]].
+Q: 2016 Q10 | 1 | Under what conditions will money supply be equal to monetary base
+- If the [[legal reserve ratio is 100%]], or
+- All banks [[do not lend out their excess reserves]].
+
+## Quantity theory of money (QTM)
+P: MV = PY → define each letter → assume V constant || 四個字母 + V constant
+Q: 2012 Q10 | 2 | Quantity theory of money
+- QTM: [[MV = PY]], where M = [[money stock]], V = [[velocity of circulation of money]], P = [[general price level]] and Y = [[real output]], assuming [[V constant]].
+Q: 2018 Q7 | 2 | Quantity theory of money
+- QTM: [[MV = PY]], where M = [[money stock]], V = [[velocity of circulation of money]], P = [[general price level]] and Y = [[real output]], assuming [[V constant]].
+Q: 2020 Q7 | 2 | Quantity theory of money
+- QTM: [[MV = PY]], where M = [[money stock]], V = [[velocity of circulation of money]], P = [[general price level]] and Y = [[real output]], assuming [[V constant]].
+Q: 2022 Q5 | 2 | Quantity theory of money
+- QTM: [[MV = PY]], where M = [[money stock]], V = [[velocity of circulation of money]], P = [[general price level]] and Y = [[real output]], assuming [[V constant]].
+Q: 2023 Q14 | 2 | Quantity theory of money
+- QTM: [[MV = PY]], where M = [[money stock]], V = [[velocity of circulation of money]], P = [[general price level]] and Y = [[real output]], assuming [[V constant]].
+Q: 2025 Q12 | 2 | Quantity theory of money
+- QTM: [[MV = PY]], where M = [[money stock]], V = [[velocity of circulation of money]], P = [[general price level]] and Y = [[real output]], assuming [[V constant]].
+
+## Nominal interest rate and cost of holding money
+P: Nominal interest rate = (expected) inflation rate + real interest rate → opportunity cost of holding money = nominal interest rate (give up interest income) || 持有貨幣嘅 opportunity cost
+Q: 2013 Q3 | 2 | Relationship between nominal interest rate and real interest rate
+- Nominal interest rate = [[expected inflation rate]] + [[real interest rate]].
+Q: 2022 Q6 | 1 | Formula of nominal interest rate
+- Nominal interest rate = [[Inflation rate]] + [[real interest rate]].
+Q: 2020 Q8 | 2 | Opportunity cost of holding money
+- [[Nominal interest rate]] because holding money, one has to [[give up the opportunity to earn interest income]] by depositing the sum into banks or by using the sum to purchase [[interest-earning assets]] like bonds.
+
+## Silver Bond vs cash
+P: Advantage: purchasing power preserved in inflation (return rises with inflation, cash stays at zero) → Disadvantage: lower liquidity (takes days to redeem) || 優點講 inflation，缺點講 liquidity
+Q: 2023 Q10 | 4 | ONE advantage and ONE disadvantage of holding Silver Bond over holding cash
+> Advantages:
+- [[Purchasing power]] can be better [[preserved]] in times of [[inflation]] since the nominal rate of return on Silver Bonds [[rise with inflation]] while that of cash remains at zero regardless of inflation rate.
+> Disadvantages:
+- [[Liquidity is lower]] since it takes days for Silver Bonds to be [[redeemed]] and converted into cash.
+
+## Monetary policy
+P: Intentional change in money supply and / or interest rate → by the central bank or government → to achieve economic goals || intentional + 邊個做 + 目的
+D: Monetary policy
+- Monetary policy means the [[intentional change]] in [[money supply]] and / or [[interest rate]] by the [[central bank]] or the government to achieve certain [[economic goals]].
+
+# Macro: Government, Tax and Trade
+## Fiscal policy
+P: Government uses revenue and expenditure (taxes, subsidies) → to achieve economic goals || revenue + expenditure + 目的
+D: Fiscal policy
+- Fiscal policy means that the government makes use of the [[government revenue]] and [[government expenditure]] (e.g. taxes and subsidies) to achieve the [[economic goal]].
+
+## Source principle
+P: Stance → according to the source principle → income not derived from HK is not taxed || 講明 source principle
+Q: 2014 Q6 | 2 | Source principle
+- No, because, according to the [[source principle]], income [[not derived from HK]] would [[not be taxed]] by the HK government.
+
+## Direct vs indirect tax
+P: Direct / indirect tax → because → the tax burden can(not) be shifted to someone else || 關鍵：tax burden 可唔可以轉嫁
+Q: 2014 Q7 | 2 | Direct and Indirect tax
+- [[Direct tax]], because the [[tax burden cannot be shifted]] by these tax-payers to someone else.
+Q: 2024 Q18 | 2 | Direct and Indirect tax
+- [[Direct tax]], because the [[tax burden cannot be shifted]] by the tax-payers (Neymar) to someone else.
+
+## Progressive / proportional / regressive tax
+P: Type → because → the average tax rate rises / stays the same / falls as income rises || 睇 average tax rate 點隨 income 變
+Q: 2019 Q8 | 2 | Progressive / Proportional / Regressive tax
+- It is a [[progressive tax]] because [[higher average tax rate]] is charged for tax payers with [[higher income]].
+Q: 2024 Q19 | 2 | Progressive / Proportional / Regressive tax
+- It is a [[proportional tax]] because the [[average tax rate remains unchanged]] (20%) when the taxable income changes.
+Q: 2025 Q9 | 3 | Progressive / Proportional / Regressive tax
+- It is a [[regressive tax]], because the [[same amount of tax]] needs to be paid when staying in a hotel room of the same price [[regardless of income]]. Therefore, the [[average tax rate decreases]] as income increases.
+
+## Factors leading to income inequality
+P: Factor (race / gender / physical attributes) → discrimination or productivity → lower / higher wage for the same job || 因素 + 原因 + 工資差
+Q: 2018 Q4 | 4 | TWO factors that may lead to income inequality
+- [[Race]], as there may be a [[racial discrimination]] in the job market and some ethnic minority groups may suffer a [[lower wage rate]] from the same job.
+- [[Gender]], as [[sex discrimination]] may exist in the workplace. On average, female suffers a lower wage rate for the same rank.
+- [[Physical attributes]], as average income may be higher for people who are fitter, or taller, or better-looking since these people are [[more productive]] for certain jobs (e.g. sportsmen, fashion models).
+
+## Principle of comparative advantage
+P: Each country specializes in the good with the lower opportunity cost → total output increases || specialize + lower opportunity cost + total output
+Q: 2012 Q6 | 2 | Principle of comparative advantage
+- If each country [[specializes]] in producing the good in which the country has a [[lower opportunity cost]], the [[total output will increase]].
+Q: 2018 Q8 | 2 | Principle of comparative advantage
+- If each country [[specializes]] in producing the good in which the country has a [[lower opportunity cost]], the [[total output will increase]].
+Q: 2025 Q8 | 2 | Principle of comparative advantage
+- As each country [[specializes]] in producing the good which it can produce at a [[lower opportunity cost]], the [[total output will increase]].
+</script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem('recite:'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+             set(k,v){try{localStorage.setItem('recite:'+k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- read the list ---------- */
+const TOPICS=[]; const NOT_YET=[];
+(function parse(){
+  let ch='',t=null,it=null;
+  for(const raw of $('data').textContent.split('\n')){
+    const line=raw.trim(); if(!line||line.startsWith('//')) continue;
+    if(line.startsWith('# ')){ch=line.slice(2);continue}
+    if(line.startsWith('## ')){t={ch,title:line.slice(3),steps:[],cue:'',items:[]};TOPICS.push(t);it=null;continue}
+    if(!t) continue;
+    const k=line.slice(0,2);
+    if(k==='P:'){const [p,c]=line.slice(2).split('||');t.steps=p.split('→').map(s=>s.trim()).filter(Boolean);t.cue=(c||'').trim();continue}
+    if(k==='Q:'){const [yq,m,ti]=line.slice(2).split('|').map(s=>s.trim());const [y,qn]=yq.split(' ');
+      it={kind:'Q',year:+y,qn,marks:+m,title:ti,stem:'',rows:[]};t.items.push(it);continue}
+    if(k==='D:'){it={kind:'D',title:line.slice(2).trim(),marks:0,stem:'',rows:[]};t.items.push(it);continue}
+    if(!it) continue;
+    if(k==='S:'){it.stem=line.slice(2).trim();continue}
+    if(k==='N:'){it.rows.push({t:'n',s:line.slice(2).trim()});continue}
+    if(k==='W:'){it.rows.push({t:'w',s:line.slice(2).trim()});continue}
+    if(line[0]==='>'){it.rows.push({t:'h',s:line.slice(1).trim()});continue}
+    if(line[0]==='-'){it.rows.push({t:'p',s:line.slice(1).trim()});continue}
+  }
+  TOPICS.forEach((t,i)=>{t.i=i;const qs=t.items.filter(x=>x.kind==='Q');t.times=qs.length;
+    t.years=[...new Set(qs.map(x=>x.year))].sort();t.hot=t.years.some(y=>y>=2024);
+    t.kws=[...new Set(t.items.flatMap(x=>x.rows.filter(r=>r.t==='p').flatMap(r=>kwsOf(r.s))))];
+    t.blanks=t.items.reduce((n,x)=>n+x.rows.filter(r=>r.t==='p').reduce((m,r)=>m+kwsOf(r.s).length,0),0)});
+})();
+function kwsOf(s){return [...s.matchAll(/\[\[(.+?)\]\]/g)].map(m=>m[1])}
+function plain(s){return s.replace(/\[\[(.+?)\]\]/g,'$1')}
+function marked(s){return esc(s).replace(/\[\[(.+?)\]\]/g,'<b class="k">$1</b>')}
+function tbc(h){return h.replace(/\[待查證([^\]]*)\]/g,'<span class="tbc">[待查證$1]</span>')}
+const norm=s=>String(s).toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9%$=<>+]+/g,' ').trim().replace(/s\b/g,'');
+
+/* ---------- state ---------- */
+const S={mode:store.get('mode','recite'),topic:store.get('topic',0),status:store.get('status',{}),
+  hide:store.get('hide',true),veil:store.get('veil',false),bank:store.get('bank',true)};
+if(!TOPICS[S.topic]) S.topic=0;
+const save=()=>{['mode','topic','status','hide','veil','bank'].forEach(k=>store.set(k,S[k]))};
+
+/* ---------- topic rail ---------- */
+function renderRail(){
+  const q=norm($('q').value),hot=$('hotOnly').checked,todo=$('todoOnly').checked;
+  let h='',last='';
+  for(const t of TOPICS){
+    if(hot&&!t.hot) continue;
+    if(todo&&(S.status[t.i]||{}).r==='ok') continue;
+    if(q&&!norm(t.title+' '+t.ch+' '+t.kws.join(' ')).includes(q)) continue;
+    if(t.ch!==last){h+=`<div class="ch">${esc(t.ch)}</div>`;last=t.ch}
+    const st=(S.status[t.i]||{}).r;
+    h+=`<button data-i="${t.i}" class="${t.i===S.topic&&S.mode!=='mock'?'on':''}"><i class="dot ${st||''}"></i><span>${esc(t.title)}${t.hot?' ★':''}</span><span class="n">${t.times?t.times+'×':'def'}</span></button>`;
+  }
+  $('topics').innerHTML=h||'<p class="muted" style="font-size:13px">No topic matches.</p>';
+  const done=TOPICS.filter(t=>(S.status[t.i]||{}).r==='ok').length;
+  $('prog').textContent=`Recited ${done} of ${TOPICS.length} topics in this browser.`;
+}
+$('topics').addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b)return;
+  S.topic=+b.dataset.i;if(S.mode==='mock')S.mode='recite';save();$('side').classList.add('fold');render();window.scrollTo(0,0)});
+['q','hotOnly','todoOnly'].forEach(id=>$(id).addEventListener('input',renderRail));
+$('topBtn').onclick=()=>$('side').classList.toggle('fold');
+$('modes').addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(!b)return;S.mode=b.dataset.m;save();render()});
+
+/* ---------- shared pieces ---------- */
+function header(t){
+  const st=S.status[t.i]||{};
+  return `<div class="th"><div class="meta"><span class="tag">${esc(t.ch)}</span>${t.hot?'<span class="tag hot">★ 2024–25</span>':''}
+    ${t.times?`<span class="tag">asked ${t.times}× · ${t.years.join(', ')}</span>`:'<span class="tag">definition · not asked as a past-paper item in the list</span>'}
+    ${st.f!=null?`<span class="tag">best fill-in ${st.f}%</span>`:''}</div><h2>${esc(t.title)}</h2></div>`;
+}
+function patternBox(t,veil){
+  if(!t.steps.length) return '';
+  return `<div class="pattern ${veil?'veil':''}" id="pat"><h3 style="margin:0">Answering pattern ${veil?'<span style="text-transform:none;letter-spacing:0;font-weight:400">· try to say it first, then tap to show</span>':''}</h3>
+    <ol>${t.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>${t.cue?`<div class="cue">${esc(t.cue)}</div>`:''}</div>`;
+}
+function itemHead(x){
+  if(x.kind==='D') return `<div class="qh"><b>Definition / notes</b><span class="ttl">${esc(x.title)}</span></div>`;
+  return `<div class="qh"><b>DSE ${x.year} ${esc(x.qn)}</b><span class="mk">(${x.marks} mark${x.marks>1?'s':''})</span><span class="ttl">${esc(x.title)}</span></div>`+
+    (x.stem?`<div class="stem">${esc(x.stem)}</div>`:'');
+}
+function rowsHtml(x,pt){
+  let h='<ul class="pts">';
+  for(const r of x.rows){
+    if(r.t==='h') h+=`<li class="sub">${esc(r.s)}</li>`;
+    else if(r.t==='p') h+=`<li>${pt(r.s)}</li>`;
+  }
+  h+='</ul>';
+  for(const r of x.rows){
+    if(r.t==='w') h+=`<div class="ws">${esc(r.s)}</div>`;
+    if(r.t==='n') h+=`<div class="note">${tbc(esc(r.s))}</div>`;
+  }
+  return h;
+}
+function navBar(t){
+  const list=[...document.querySelectorAll('#topics button[data-i]')].map(b=>+b.dataset.i);
+  const k=list.indexOf(t.i),prev=k>0?list[k-1]:null,next=k>=0&&k<list.length-1?list[k+1]:null;
+  return `<div class="bar"><button data-go="${prev}" ${prev==null?'disabled':''}>← Previous</button><button data-go="${next}" ${next==null?'disabled':''}>Next topic →</button></div>`;
+}
+function wireNav(){document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.topic=+b.dataset.go;save();render();window.scrollTo(0,0)})}
+
+/* ---------- recite ---------- */
+function renderRecite(){
+  const t=TOPICS[S.topic],st=S.status[t.i]||{};
+  const pt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,(m,k)=>`<button class="kw ${S.hide?'mask':''}" title="Tap to show / hide">${k}</button>`);
+  $('main').innerHTML=`<div class="card" style="display:grid;gap:14px">${header(t)}
+    <div class="row"><label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="hideK" ${S.hide?'checked':''}> Hide keywords</label>
+      <label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="veilP" ${S.veil?'checked':''}> Hide pattern until I tap it</label></div>
+    ${patternBox(t,S.veil)}
+    ${t.kws.length?`<div><h3>Keywords to recite</h3><div class="kwbank" id="kwb">${S.hide?`<span class="muted" style="border:0;background:none;padding:0">${t.kws.length} keywords hidden. Say each answer aloud, then tap the bars to check.</span>`:t.kws.map(k=>`<span>${esc(k)}</span>`).join('')}</div></div>`:''}
+    <div>${t.items.map(x=>`<div class="q">${itemHead(x)}${rowsHtml(x,pt)}</div>`).join('')}</div>
+    <div class="bar status"><span class="muted" style="font-size:13px">Can you write every point as a full sentence without looking?</span>
+      <span class="row"><button class="no ${st.r==='no'?'on':''}" data-r="no">Not yet</button><button class="ok ${st.r==='ok'?'on':''}" data-r="ok">I can recite it ✓</button></span></div>
+  </div>${navBar(t)}`;
+  $('main').querySelectorAll('.kw').forEach(b=>b.onclick=()=>b.classList.toggle('mask'));
+  $('hideK').onchange=e=>{S.hide=e.target.checked;save();renderRecite()};
+  $('veilP').onchange=e=>{S.veil=e.target.checked;save();renderRecite()};
+  const p=$('pat');if(p)p.onclick=()=>p.classList.remove('veil');
+  $('main').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{S.status[t.i]=Object.assign({},S.status[t.i],{r:b.dataset.r});save();renderRail();renderRecite()});
+  wireNav();
+}
+
+/* ---------- fill in the blanks ---------- */
+function renderFill(){
+  const t=TOPICS[S.topic];let n=0;
+  const pt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,(m,k)=>{const w=Math.max(4,k.length*0.62+1);return `<input class="blank" data-k="${k}" data-n="${n++}" style="width:${w}em" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="blank">`});
+  const shuffled=t.kws.slice().sort(()=>Math.random()-.5);
+  $('main').innerHTML=`<div class="card" style="display:grid;gap:14px">${header(t)}
+    ${patternBox(t,false)}
+    ${t.blanks?`<div class="row"><label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="bankT" ${S.bank?'checked':''}> Show word bank</label></div>
+    <div class="kwbank ${S.bank?'':'hide'}" id="wb">${shuffled.map(k=>`<span>${esc(k)}</span>`).join('')}</div>`:'<p class="muted">This card has no keyword blanks.</p>'}
+    <div>${t.items.map(x=>`<div class="q">${itemHead(x)}${rowsHtml(x,pt)}</div>`).join('')}</div>
+    ${t.blanks?`<div class="bar"><span class="score" id="sc"></span><span class="row"><button id="clr">Clear</button><button id="shw">Show answers</button><button class="pri" id="chk">Check</button></span></div>`:''}
+  </div>${navBar(t)}`;
+  const ins=[...$('main').querySelectorAll('input.blank')];
+  ins.forEach((el,i)=>el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();(ins[i+1]||$('chk')).focus()}}));
+  if(t.blanks){
+    $('bankT').onchange=e=>{S.bank=e.target.checked;save();$('wb').classList.toggle('hide',!S.bank)};
+    $('chk').onclick=()=>{let ok=0;ins.forEach(el=>{const good=norm(el.value)===norm(el.dataset.k);el.classList.toggle('ok',good);el.classList.toggle('bad',!good&&el.value.trim()!=='');if(good)ok++});
+      const pct=Math.round(ok/ins.length*100);$('sc').textContent=`${ok} / ${ins.length} correct (${pct}%)`;
+      const st=S.status[t.i]||{};if(st.f==null||pct>st.f){S.status[t.i]=Object.assign({},st,{f:pct});save()}};
+    $('shw').onclick=()=>ins.forEach(el=>{if(norm(el.value)!==norm(el.dataset.k)){el.value=el.dataset.k;el.classList.remove('ok');el.classList.add('bad')}});
+    $('clr').onclick=()=>{ins.forEach(el=>{el.value='';el.className='blank'});$('sc').textContent=''};
+  }
+  wireNav();
+}
+
+/* ---------- mock test ---------- */
+const CHS=[...new Set(TOPICS.map(t=>t.ch))];
+let M=store.get('mock',null);
+function renderMock(){
+  if(M&&M.qs&&M.qs.length) return renderPaper();
+  const pick=store.get('mockCh',CHS);
+  $('main').innerHTML=`<div class="card" style="display:grid;gap:14px">
+    <div><h2>Mock test</h2><p class="muted" style="margin:4px 0 0">Practise the way the real pen-and-paper test works: write each answer in full sentences, then check against the model answer. 真正測驗要寫完整句子，唔好淨係寫 keywords。</p></div>
+    <div><h3>Chapters</h3><div class="chips" id="chs">${CHS.map(c=>`<label><input type="checkbox" value="${esc(c)}" ${pick.includes(c)?'checked':''}> ${esc(c)}</label>`).join('')}</div>
+      <div class="row" style="margin-top:6px"><button id="all">All</button><button id="none">None</button></div></div>
+    <div class="row">
+      <label class="muted" style="font-size:13px">Questions <select id="cnt"><option>5</option><option selected>8</option><option>10</option><option>15</option><option value="999">All that match</option></select></label>
+      <label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="mHot"> ★ 2024–25 topics only</label>
+      <label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="mDef" checked> Include definition cards</label>
+      <label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="mHint"> Show pattern hints</label>
+    </div>
+    <p class="muted" style="font-size:13px;margin:0">The list gives the year, marks and concept of each past-paper item but not the full question wording, so each mock question names the concept to answer. Your teacher's paper will have the full question.</p>
+    <div class="row"><button class="pri" id="go">Start mock test</button><span class="muted" id="avail" style="font-size:13px"></span></div>
+  </div>`;
+  const chosen=()=>[...$('chs').querySelectorAll('input:checked')].map(i=>i.value);
+  const pool=()=>{const cs=chosen(),hot=$('mHot').checked,def=$('mDef').checked;const out=[];
+    TOPICS.forEach(t=>{if(!cs.includes(t.ch)||(hot&&!t.hot))return;t.items.forEach((x,j)=>{
+      if(!x.rows.some(r=>r.t==='p'))return; if(x.kind==='D'&&!def)return; out.push([t.i,j])})});return out};
+  const upd=()=>{store.set('mockCh',chosen());$('avail').textContent=`${pool().length} items match.`};
+  $('chs').onchange=upd;['mHot','mDef'].forEach(id=>$(id).onchange=upd);
+  $('all').onclick=()=>{$('chs').querySelectorAll('input').forEach(i=>i.checked=true);upd()};
+  $('none').onclick=()=>{$('chs').querySelectorAll('input').forEach(i=>i.checked=false);upd()};
+  upd();
+  $('go').onclick=()=>{
+    const p=pool().sort(()=>Math.random()-.5),n=+$('cnt').value,seen=new Set(),qs=[];
+    for(const it of p){if(qs.length>=n)break;if(!seen.has(it[0])){seen.add(it[0]);qs.push(it)}}
+    for(const it of p){if(qs.length>=n)break;if(!qs.includes(it))qs.push(it)}
+    if(!qs.length){$('avail').textContent='Pick at least one chapter.';return}
+    qs.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    M={qs,ans:qs.map(()=>''),self:qs.map(()=>null),done:false,hint:$('mHint').checked,at:new Date().toISOString().slice(0,10)};
+    store.set('mock',M);renderPaper();window.scrollTo(0,0)};
+}
+function mq(it){const t=TOPICS[it[0]],x=t.items[it[1]];return {t,x,marks:x.marks||x.rows.filter(r=>r.t==='p').length}}
+/* definition cards have no marks in the list: one point each, labelled as points */
+const mlabel=(x,m)=>x.kind==='D'?`${m} point${m>1?'s':''}`:`${m} mark${m>1?'s':''}`;
+function qPrompt(t,x){
+  if(x.kind==='D') return `Define / explain: <strong>${esc(x.title)}</strong>`;
+  return `DSE ${x.year} ${esc(x.qn)} · <strong>${esc(x.title)}</strong>`;
+}
+function renderPaper(){
+  const total=M.qs.reduce((n,it)=>n+mq(it).marks,0);
+  let h=`<div class="card" style="display:grid;gap:4px"><div class="bar"><h2>Mock test · ${M.qs.length} questions · ${total} marks</h2>
+    <span class="row"><button id="pq">Print for pen &amp; paper</button><button id="pk">Print answer key</button></span></div>
+    <p class="muted" style="margin:0">Write complete sentences. Keywords alone do not score. ${M.done?'':'When you finish, press <b>Finish and check</b>.'}</p></div>`;
+  M.qs.forEach((it,i)=>{const {t,x,marks}=mq(it);
+    h+=`<div class="card mq"><div class="qh"><span class="qn">${i+1}.</span><span>${qPrompt(t,x)}</span><span class="mk">(${mlabel(x,marks)})</span></div>
+      ${x.stem?`<div class="stem">${esc(x.stem)}</div>`:''}
+      ${M.hint&&t.steps.length?`<div class="note">Pattern: ${esc(t.steps.join(' → '))}</div>`:''}
+      <textarea data-a="${i}" placeholder="Write your full answer here…" ${M.done?'readonly':''}>${esc(M.ans[i])}</textarea>`;
+    if(M.done){
+      const words=x.rows.filter(r=>r.t==='p').flatMap(r=>kwsOf(r.s));const a=norm(M.ans[i]);
+      const hit=k=>{const nk=norm(k);if(a.includes(nk))return true;const ws=nk.split(' ').filter(w=>w.length>3);return ws.length>1&&ws.every(w=>a.includes(w))};
+      h+=`<div><h3 style="margin:6px 0 4px">Keywords in your answer</h3><div class="found">${[...new Set(words)].map(k=>`<span class="${hit(k)?'y':'n'}">${hit(k)?'✓':'✗'} ${esc(k)}</span>`).join('')}</div></div>
+        <div class="model"><h3 style="margin:0 0 4px">Model answer</h3>${rowsHtml(x,marked).replace(/<div class="ws">[\s\S]*?<\/div>/g,'')}</div>
+        <div class="self">My mark: <select data-s="${i}"><option value="">–</option>${Array.from({length:marks+1},(_,m)=>`<option ${M.self[i]===m?'selected':''}>${m}</option>`).join('')}</select> / ${marks}
+        <span class="muted">Give yourself the mark a marker would: a point counts only if it is a full, correct sentence.</span></div>`;
+    }
+    h+='</div>';});
+  const got=M.self.reduce((n,v)=>n+(v||0),0),nMarked=M.self.filter(v=>v!=null).length;
+  h+=`<div class="bar">${M.done?`<span class="score">Self-marked ${got} / ${total} (${nMarked} of ${M.qs.length} questions marked)</span>`:'<span></span>'}
+    <span class="row"><button id="new">New mock test</button>${M.done?'':'<button class="pri" id="fin">Finish and check</button>'}</span></div>`;
+  $('main').innerHTML=h;
+  $('main').querySelectorAll('textarea[data-a]').forEach(el=>el.oninput=()=>{M.ans[+el.dataset.a]=el.value;store.set('mock',M)});
+  $('main').querySelectorAll('select[data-s]').forEach(el=>el.onchange=()=>{M.self[+el.dataset.s]=el.value===''?null:+el.value;store.set('mock',M);renderPaper()});
+  if($('fin'))$('fin').onclick=()=>{const empty=M.ans.filter(a=>!a.trim()).length;
+    if(empty&&!confirm(`${empty} answer(s) are still empty. Check anyway?`))return;M.done=true;store.set('mock',M);renderPaper();window.scrollTo(0,0)};
+  $('new').onclick=()=>{if(!M.done&&M.ans.some(a=>a.trim())&&!confirm('Start a new mock test? Your answers here will be cleared.'))return;M=null;store.set('mock',null);renderMock()};
+  $('pq').onclick=()=>printPaper(false);$('pk').onclick=()=>printPaper(true);
+}
+function printPaper(key){
+  const total=M.qs.reduce((n,it)=>n+mq(it).marks,0);
+  let h=`<h1>MUSTKNOW Part 2 · Mock test${key?' · Answer key':''}</h1><div class="meta">${M.qs.length} questions · ${total} marks · ${M.at}</div>
+    ${key?'':'<div class="ins">Name: ____________________ Class: ______ No.: ____<br>Answer ALL questions. Write complete sentences; keywords alone do not score.</div>'}`;
+  M.qs.forEach((it,i)=>{const {t,x,marks}=mq(it);
+    h+=`<div class="pq"><p><b>${i+1}.</b> ${qPrompt(t,x)} (${mlabel(x,marks)})</p>${x.stem?`<p>${esc(x.stem)}</p>`:''}`;
+    if(key) h+=`<div class="ans">${rowsHtml(x,s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<b>$1</b>')).replace(/<div class="(ws|note)">[\s\S]*?<\/div>/g,'')}</div>`;
+    else h+='<div class="ln"></div>'.repeat(Math.max(3,marks*2+1));
+    h+='</div>';});
+  $('print').innerHTML=h;window.print();
+}
+
+/* ---------- go ---------- */
+function render(){
+  document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode));
+  renderRail();
+  if(S.mode==='fill') renderFill(); else if(S.mode==='mock') renderMock(); else renderRecite();
+}
+render();
+})();
+</script>
+</body>
+</html>
