@@ -516,7 +516,7 @@ function tmSyncGet_(email, b) {
 }
 
 function tmSyncPut_(email, b) {
-  var k = String(b.k || ''), data = String(b.data == null ? '' : b.data), t = Number(b.t) || Date.now();
+  var k = String(b.k || ''), data = String(b.data == null ? '' : b.data), t = Number(b.at) || Date.now();   // b.t is the session token
   if (!TM_SYNC_KEY.test(k)) return { error: 'Bad sync key.' };
   if (data.length > 8 * 1024 * 1024) return { error: 'Too big for one piece.' };
   var lock = LockService.getUserLock();
