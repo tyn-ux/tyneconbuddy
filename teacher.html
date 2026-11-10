@@ -146,6 +146,9 @@ details.small summary{cursor:pointer;color:var(--accent);font-weight:500}
 .hist .x{font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:3px}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:20;max-width:90vw}
 .gate{max-width:520px;margin:40px auto;display:grid;gap:12px;text-align:center}
+.reauth{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px}
+.reauth[hidden]{display:none}
+.reauth .panel{max-width:440px;width:100%;display:grid;gap:12px;text-align:center}
 .confirmbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--pen-soft);color:var(--pen);padding:8px 10px;border-radius:8px}
 /* job tabs + home */
 .appbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:end;border-bottom:1px solid var(--line)}
@@ -195,6 +198,13 @@ kbd{font:11px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px
     <div id="gbtn" style="justify-self:center"></div>
     <div class="note" id="gateMsg"></div>
   </section>
+  <!-- sessions last 12 hours: sign back in over the open job, nothing is lost -->
+  <div class="reauth" id="reauth" hidden><div class="panel">
+    <h2>Sign in again to continue</h2>
+    <div class="note">Your sign-in lasts 12 hours. Everything on this page stays as it is; marking carries on as soon as you are back in.</div>
+    <div id="rbtn" style="justify-self:center"></div>
+    <div class="note" id="reauthMsg"></div>
+  </div></div>
 
   <div id="app" hidden style="display:grid;gap:14px">
     <section id="v-home" hidden></section>
@@ -368,20 +378,48 @@ function jsonp(params, cb, ms){
   fetch(SYNC_URL+'?'+qs,{credentials:'omit',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(r.status)).then(finish).catch(viaScript);
 }
 function gateMsg(m){ $('gateMsg').textContent=m; }
-function onCredential(resp){
-  const nonce=Math.random().toString(36).slice(2)+Date.now().toString(36);
+/* Trades a Google credential for a site session; resolves {t,email} or {error}. */
+function exchange(credential, say){
+  return new Promise(done=>{
+    const nonce=Math.random().toString(36).slice(2)+Date.now().toString(36);
+    let email=''; try{ email=JSON.parse(atob(credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email; }catch(e){}
+    fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({event:'auth',idToken:credential,nonce})}).catch(()=>{});
+    let tries=0;
+    (function claim(){ tries++;
+      jsonp({claim:nonce}, r=>{
+        if(r&&r.t){ SESS=r.t; try{ localStorage.setItem(SKEY, JSON.stringify({t:SESS,e:email,at:Date.now()})); }catch(e){} return done({t:r.t, email}); }
+        if(r&&r.error&&r.error!=='not ready') return done({error:'Sign-in refused: '+r.error});
+        if(tries<15){ say('Checking with Google… ('+tries+')'); return setTimeout(claim,2000); }
+        done({error:'The server never confirmed this sign-in. Open the site\'s ?ping=1 to check the deployment.'});
+      }, 20000);
+    })();
+  });
+}
+async function onCredential(resp){
+  if(REAUTH) return reauthWith(resp.credential);
   gateMsg('Checking with Google…');
-  let email=''; try{ email=JSON.parse(atob(resp.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email; }catch(e){}
-  fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({event:'auth',idToken:resp.credential,nonce})}).catch(()=>{});
-  let tries=0;
-  (function claim(){ tries++;
-    jsonp({claim:nonce}, r=>{
-      if(r&&r.t){ SESS=r.t; try{ localStorage.setItem(SKEY, JSON.stringify({t:SESS,e:email,at:Date.now()})); }catch(e){} return checkTeacher(email); }
-      if(r&&r.error&&r.error!=='not ready') return gateMsg('Sign-in refused: '+r.error);
-      if(tries<15){ gateMsg('Checking with Google… ('+tries+')'); return setTimeout(claim,2000); }
-      gateMsg('The server never confirmed this sign-in. Open the site\'s ?ping=1 to check the deployment.');
-    }, 20000);
-  })();
+  const r = await exchange(resp.credential, gateMsg);
+  if(r.error) return gateMsg(r.error);
+  checkTeacher(r.email);
+}
+/* Session ran out mid-work: keep the page, sign in again on top of it, then
+   let the waiting requests carry on. Google signs straight back in when it
+   can (one account, already allowed); otherwise one click on the button. */
+let REAUTH=null;
+function reauth(){
+  if(REAUTH) return REAUTH.p;
+  let res; const p=new Promise(r=>res=r); REAUTH={p, res};
+  SESS=null; try{ localStorage.removeItem(SKEY); }catch(e){}
+  $('reauth').hidden=false; $('reauthMsg').textContent='Signing you back in…';
+  gsi(()=>{ google.accounts.id.renderButton($('rbtn'),{theme:'outline',size:'large'}); try{ google.accounts.id.prompt(); }catch(e){} });
+  return p;
+}
+async function reauthWith(credential){
+  const say=m=>$('reauthMsg').textContent=m;
+  say('Checking with Google…');
+  const r = await exchange(credential, say);
+  if(r.error) return say(r.error+' Try the button again.');
+  $('reauth').hidden=true; const R=REAUTH; REAUTH=null; R.res(true); toast('Signed in again ✓'); syncPush();
 }
 async function checkTeacher(email){
   gateMsg('Checking teacher access…');
@@ -392,20 +430,29 @@ async function checkTeacher(email){
   if(r && r.error==='teacher') return gateMsg('This page is for teachers only. ('+(email||'this account')+' is not on the teacher list.)');
   gateMsg(r && r.error ? r.error : 'Could not reach the server.');
 }
-function initGoogle(){
-  if(initGoogle.done) return; initGoogle.done=true;
+/* Runs fn once Google Sign-In has loaded and been set up (once). */
+function gsi(fn){
+  if(gsi.ok) return fn();
+  (gsi.q=gsi.q||[]).push(fn); if(gsi.q.length>1) return;
   let waited=0; const tm=setInterval(()=>{ waited+=200;
     if(window.google&&google.accounts&&google.accounts.id){ clearInterval(tm);
-      google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onCredential,auto_select:false});
-      google.accounts.id.renderButton($('gbtn'),{theme:'outline',size:'large'}); return; }
-    if(waited>15000){ clearInterval(tm); gateMsg('Could not load Google Sign-In. Try a window without ad blockers.'); } },200);
+      google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onCredential,auto_select:true});
+      gsi.ok=true; gsi.q.splice(0).forEach(f=>f()); return; }
+    if(waited>15000){ clearInterval(tm); gsi.q=[]; const m='Could not load Google Sign-In. Try a window without ad blockers.'; gateMsg(m); $('reauthMsg').textContent=m; } },200);
+}
+function initGoogle(){
+  if(initGoogle.done) return; initGoogle.done=true;
+  gsi(()=>{ google.accounts.id.renderButton($('gbtn'),{theme:'outline',size:'large'}); try{ google.accounts.id.prompt(); }catch(e){} });
 }
 /* Readable POST: Apps Script answers through a redirect that allows any origin. */
-async function tpost(body){
+async function tpost(body, again){
   try{
-    const r = await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(Object.assign({event:'tmark',t:SESS},body))});
+    if(REAUTH) await REAUTH.p;
+    const r = await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(Object.assign({event:'tmark'},body,{t:SESS}))});
     const txt = await r.text();
-    if(txt==='auth'){ SESS=null; try{localStorage.removeItem(SKEY);}catch(e){} $('app').hidden=true; $('gate').hidden=false; gateMsg('Your sign-in expired. Sign in again; your work is saved in this browser.'); initGoogle(); return {error:'Signed out'}; }
+    if(txt==='auth'){
+      if($('app').hidden || again){ SESS=null; try{localStorage.removeItem(SKEY);}catch(e){} $('gate').hidden=false; $('app').hidden=true; gateMsg('Please sign in.'); initGoogle(); return {error:'Signed out'}; }
+      await reauth(); return tpost(body, true); }   // same request again once signed back in
     try{ return JSON.parse(txt); }catch(e){ return {error:'The server is not set up for teacher marking yet (TeacherMark.gs missing?).'}; }
   }catch(e){ return {error:'Could not reach the server. Check your connection.'}; }
 }
@@ -1548,14 +1595,14 @@ async function syncPush(){
     while(SY.q.size){
       const key=[...SY.q][0]; SY.q.delete(key); const [kind,id]=key.split(':');
       syncSay('Saving to Drive…'); let r;
-      if(kind==='lib'){ r=await tpost({act:'sync_put', k:'lib_main', t:LIB.updated||Date.now(), data:JSON.stringify(LIB), ifOlder:true}); }
+      if(kind==='lib'){ r=await tpost({act:'sync_put', k:'lib_main', at:LIB.updated||Date.now(), data:JSON.stringify(LIB), ifOlder:true}); }
       else if(kind==='job'){ const j=(CTXS[id]&&CTXS[id].job)||await idb.get('job:'+id); if(!j) continue;
-        r=await tpost({act:'sync_put', k:'job_'+id, t:j.updated||j.created, data:JSON.stringify(j), ifOlder:true});
+        r=await tpost({act:'sync_put', k:'job_'+id, at:j.updated||j.created, data:JSON.stringify(j), ifOlder:true});
         if(r && r.newer){ SY.q.delete(key); await syncPull(); continue; } }
       else if(kind==='pdf'){ const bytes=await idb.get('pdf:'+id), c=CTXS[id], j=(c&&c.job)||await idb.get('job:'+id); if(!bytes||!j) continue;
         const n=Math.max(1, Math.ceil(bytes.length/PDF_PART)), stamp=Date.now();
         for(let i=0;i<n;i++){ syncSay(`Saving the scan to Drive ${i+1}/${n}…`);
-          r=await tpost({act:'sync_put', k:`pdf_${id}.${i}of${n}`, t:stamp, data:b64(bytes.subarray(i*PDF_PART,(i+1)*PDF_PART))}); if(!r||!r.ok) break; }
+          r=await tpost({act:'sync_put', k:`pdf_${id}.${i}of${n}`, at:stamp, data:b64(bytes.subarray(i*PDF_PART,(i+1)*PDF_PART))}); if(!r||!r.ok) break; }
         if(r&&r.ok){ j.cloudPdf=n; if(c) save(c); else { j.updated=Date.now(); await idb.set('job:'+id, j); upsertIndex(j); SY.q.add('job:'+id); } } }
       if(syncOff(r)) return;
       if(!r || (r.error && r.error!=='missing')){ SY.q.add(key); syncSay('Drive sync paused: '+((r&&r.error)||'no connection')+'. It will try again.'); clearTimeout(SY.t); SY.t=setTimeout(syncPush, 30000); return; }

@@ -1,9 +1,9 @@
-# Teacher AI marking (teacher.html): deploy (BUILD 2026-10-14g)
+# Teacher AI marking (teacher.html): deploy (BUILD 2026-11-10a)
 
 `teacher.html` is a new page on the site for teachers only. You upload one PDF with the whole class's test, one Word marking scheme, and Gemini splits the scan by student, reads each script, and marks every question twice. Only the points the AI is unsure of come to you. The page is not linked from the student pages.
 
 ## Apps Script (one time)
-`Code.gs` 2026-10-14g already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
+`Code.gs` 2026-11-10a already contains everything from 2026-10-13b (E-points, leaderboard). If you have not pasted 2026-10-13b yet, this one does it too.
 
 1. Sheet > Extensions > Apps Script.
 2. `Code.gs`: select all, paste the new `Code.gs`, Save.
@@ -18,7 +18,7 @@
 6. Back in the Sheet: reload it, then menu **tyneconbuddy > Set up E-point tabs**. Do this every time you paste a new `EPoints.gs` (it adds the new E-point rules and columns).
 7. In the Apps Script editor pick `tmSyncSetup` in the function menu > **Run**. Google asks to allow access to Google Drive: allow it. (Needed once for syncing jobs between devices.)
 8. Deploy > Manage deployments > pencil > Version: **New version** > Deploy. The /exec URL stays the same.
-9. Open `<your /exec URL>?ping=1`: it should show build `2026-10-14g` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`). `ai_models` lists every model it will try, in order: if a name you typed is missing there, it was not a valid model name.
+9. Open `<your /exec URL>?ping=1`: it should show build `2026-11-10a` and `"teachers_set": true` (and `"backup_ai_set": true` if you added `CA_KEY`). `ai_models` lists every model it will try, in order: if a name you typed is missing there, it was not a valid model name.
 
 Do **not** run `install()`.
 
@@ -48,6 +48,7 @@ The job is kept in that browser (close the tab and come back later). Use the sam
 - **Copy for mark book** (Export): marks in class-no. order, ready to paste into the school mark book.
 - **Remove scan** (All jobs) frees space in the browser but keeps the marks (the Drive copy stays, so the scan downloads again when you open the job).
 - **Same jobs on every device** (2026-10-14g): jobs, marks, comments, the scheme library, class lists and scans are copied to a private folder in your Google Drive ("tyneconbuddy marking sync - your email (private)"). Sign in on another computer and they appear; a scan downloads the first time you open its job. The newest save wins, so finish a job on one device before editing it on another. Deleting a job deletes it everywhere. The top bar shows "Synced ✓". Only accounts in `TEACHER_EMAILS` can reach it, and each teacher sees only their own jobs.
+- **Sign-in no longer drops you out** (2026-11-10a): before this fix, the first Drive sync after signing in sent the wrong token and the page said "Your sign-in expired". Now sync works, and when the 12-hour sign-in really runs out, a small box asks you to sign in again on top of the open job (often it signs straight back in by itself). Marking that was running waits and carries on.
 - **Personal answer sheets (QR)** (All jobs): type the class and paste the class list; every student gets their own pages with class, class no., name and a QR code. In step 1 choose **Personal QR answer sheets (no AI)**: the scan splits itself, the printed name strip is covered, and you are told about missing pages and missing students. Extra paper without a QR code joins the page before it.
 - **How sure before it asks you** (Review): the slider sets how sure the AI must be before a point skips you (default 70%). Disagreements and missing evidence always come to you.
 - **Mark once** (Mark): marks each script with one AI run instead of two, using half the free Gemini quota. Needs Code.gs/TeacherMark.gs 2026-10-14g; an older server still marks twice.
