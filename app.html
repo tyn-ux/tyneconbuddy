@@ -514,6 +514,10 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
 .studio > div{min-width:0}
 @media (min-width:900px){ .studio{grid-template-columns:270px 1fr; align-items:start} .studio .stme{position:sticky; top:14px} }
 #stAv svg{width:100%; max-width:240px; height:auto; display:block; margin:0 auto; border:1px solid var(--line); border-radius:var(--r-md)}
+#stAv{display:flex; justify-content:center; align-items:flex-end; gap:4px}
+#stAv>svg{flex:0 1 240px; min-width:0; margin:0}
+#stAv .stpet{flex:0 0 26%; max-width:90px}
+#stAv .stpet svg{border:0; max-width:none}
 .wearing{font-family:var(--f-sans); font-size:12px; color:var(--muted); margin-top:10px}
 .wearing span{display:inline-block; margin:2px 4px 2px 0; padding:1px 7px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2)}
 .cats{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px}
@@ -532,6 +536,66 @@ th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase
   border-radius:var(--r-sm); background:var(--surface-2); color:var(--muted); border:1px solid var(--line)}
 .eptag.free{background:var(--pos-bg); color:var(--pos); border-color:var(--pos-line)}
 .eppr,.epe{font-family:var(--f-mono); font-size:12px; font-weight:600; color:var(--star)}
+/* rarity frames: common plain, rare blue, epic purple glow, legendary gold
+   shimmer, mythic turning rainbow */
+.epitem{position:relative; --tc:var(--muted)}
+.epitem.tr{--tc:#2f7fd9; border:2px solid var(--tc)}
+.epitem.te{--tc:#8a56d6; border:2px solid var(--tc); box-shadow:0 0 12px rgba(138,86,214,.35)}
+.epitem.tl{--tc:#b8860b; border:2px solid transparent; overflow:hidden; box-shadow:0 0 14px rgba(217,161,15,.45);
+  background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(120deg,#8a5b08,#f2c230,#fff1b0,#f2c230,#8a5b08) border-box}
+.epitem.tl::after{content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(105deg,transparent 40%,rgba(255,244,190,.5) 50%,transparent 60%);
+  background-size:250% 100%; animation:epshim 3.2s ease-in-out infinite}
+@keyframes epshim{0%{background-position:130% 0}60%,100%{background-position:-60% 0}}
+@property --epang{syntax:'<angle>'; initial-value:0deg; inherits:false}
+.epitem.tm{--tc:#c2408a; border:2px solid transparent; box-shadow:0 0 18px rgba(197,107,255,.45); animation:epspin 4s linear infinite;
+  background:linear-gradient(var(--surface),var(--surface)) padding-box,conic-gradient(from var(--epang),#ff5fa2,#ffd23f,#7dff8a,#4fe3ff,#c56bff,#ff5fa2) border-box}
+@keyframes epspin{to{--epang:360deg}}
+.eptier{font-family:var(--f-mono); font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--tc)}
+.eplock{font-family:var(--f-sans); font-size:11.5px; line-height:1.35; color:var(--muted); border-top:1px dashed var(--line); padding-top:5px}
+.eplock b{color:var(--ink); font-weight:600}
+.eplock.ok{color:var(--pos)}
+.epti{aspect-ratio:160/180; display:grid; place-content:center; gap:4px; text-align:center; border-radius:var(--r-sm); background:var(--surface-2); padding:8px}
+.epti b{font-family:var(--f-sans); font-size:13px}
+.epti span{font-family:var(--f-serif); font-size:15px; font-weight:700; color:var(--tc); line-height:1.2}
+.epbook{display:grid; gap:14px}
+.epsets{display:grid; gap:8px; grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.epset{border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 10px; background:var(--surface); display:grid; gap:4px; font-family:var(--f-sans); font-size:13px}
+.epset.done{border-color:var(--gold); background:var(--warn-bg)}
+.epset .bar{height:5px}
+.epcells{display:grid; gap:6px; grid-template-columns:repeat(auto-fill,minmax(64px,1fr))}
+.epcell{position:relative; border:2px solid var(--tc,var(--line)); border-radius:var(--r-sm); padding:2px; background:var(--surface-2)}
+.epcell svg,.epcell .epti{width:100%; height:auto; display:block}
+.epcell .epti{padding:2px}.epcell .epti b{display:none}.epcell .epti span{font-size:9px}
+.epcell.miss svg,.epcell.miss .epti{filter:brightness(0) opacity(.16)}
+.epcell.miss::after{content:"?"; position:absolute; inset:0; display:grid; place-items:center; font-family:var(--f-serif); font-size:20px; color:var(--muted)}
+.epcell.tr{--tc:#2f7fd9}.epcell.te{--tc:#8a56d6}.epcell.tl{--tc:#d9a10f}.epcell.tm{--tc:#d64a7a}
+.fx-sweep{animation:epsweep 3s ease-in-out infinite}
+@keyframes epsweep{0%{transform:skewX(-20deg) translateX(0)}60%,100%{transform:skewX(-20deg) translateX(240px)}}
+.fx-flick2{animation:epflk 2.4s steps(1) infinite}
+@keyframes epflk{0%,100%{opacity:1}8%{opacity:.3}10%{opacity:1}52%{opacity:.5}54%{opacity:1}}
+/* classmates: frame, pet at the feet, title and set badges */
+.mate{position:relative}
+.mate.fr{border-width:2px}.mate.fr-r{border-color:#2f7fd9}.mate.fr-e{border-color:#8a56d6; box-shadow:0 0 10px rgba(138,86,214,.3)}
+.mate.fr-l{border-color:#d9a10f; box-shadow:0 0 12px rgba(217,161,15,.4)}.mate.fr-m{border-color:#d64a7a; box-shadow:0 0 14px rgba(197,107,255,.45)}
+.mate .mav{position:relative}
+.mate .mpet{position:absolute; right:-2px; bottom:-4px; width:40%}
+.mate .mpet svg{border-radius:0}
+.mate .mti{font-family:var(--f-serif); font-size:11.5px; font-weight:700; color:var(--star); line-height:1.25}
+.mate .mbd{display:flex; flex-wrap:wrap; justify-content:center; gap:3px; margin-top:3px}
+.mate .mbd span{font-family:var(--f-sans); font-size:10px; padding:0 5px; border-radius:8px; background:var(--warn-bg); border:1px solid var(--gold)}
+/* the pet that sits beside an MC question */
+#petPal{float:right; width:104px; margin:0 0 8px 12px; text-align:center; position:relative; z-index:1}
+#petPal svg{width:100%; height:auto; display:block}
+#petPal .pb{font-family:var(--f-sans); font-size:12px; line-height:1.3; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:3px 7px; margin-top:2px}
+#petPal .pg{height:4px; background:var(--surface-2); border-radius:2px; overflow:hidden; margin-top:4px}
+#petPal .pg i{display:block; height:100%; background:var(--gold)}
+#petPal .pn{font-family:var(--f-mono); font-size:10px; color:var(--muted); margin-top:2px}
+#petPal.jump svg{animation:pjump .55s ease-out}
+@keyframes pjump{35%{transform:translateY(-12px)}70%{transform:translateY(2px)}}
+#petPal.shake svg{animation:pshake .5s}
+@keyframes pshake{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+@media (max-width:600px){ #petPal{width:76px; margin-left:8px} #petPal .pb{font-size:11px} }
+@media (prefers-reduced-motion:reduce){ .epitem.tl::after,.epitem.tm,.fx-sweep,.fx-flick2,#petPal.jump svg,#petPal.shake svg{animation:none} }
 .tblwrap{overflow-x:auto}
 #stRecent div{border-top:1px dashed var(--line); padding:3px 0; font-family:var(--f-sans); font-size:13px}
 #epToasts{position:fixed; right:16px; bottom:16px; display:grid; gap:6px; z-index:60; pointer-events:none}
@@ -1605,6 +1669,7 @@ function render(){
   $('prog').textContent=(POS+1)+' / '+QUEUE.length+' · '+(SECTION.label||'');
   $('stem').innerHTML=stemHtml(q);
   $('opts').innerHTML=optsHtml(q,-1);
+  petPal();
   drawNav();
   requestAnimationFrame(inkResize);        // canvas refits after layout settles
 }
@@ -1618,6 +1683,7 @@ $('opts').addEventListener('click',e=>{
     else if(i===chose)    kids[i].classList.add('wrong');
     else                  kids[i].classList.add('dim');
   }
+  petPal(ok?'ok':'no');
   if(SECTION.warm){ epSoon(); return warmAnswer(q,ok); }
   let note='';
   if(ok){
@@ -3444,6 +3510,101 @@ Object.assign(FX,{
   dshift:()=>['',`<g><rect x="4" y="4" width="58" height="50" rx="4" fill="#fffdf6" opacity=".92" stroke="#211d16" stroke-width="1"/><path d="M12 10 V46 H56" fill="none" stroke="#211d16" stroke-width="1.4"/>${T(9,14,6,'#211d16','P')}${T(56,52,6,'#211d16','Q')}<path d="M16 14 L44 42" stroke="#3f5bd9" stroke-width="2.2" stroke-linecap="round" opacity=".4"/><g class="fx-shift"><path d="M26 14 L54 42" stroke="#3f5bd9" stroke-width="2.6" stroke-linecap="round"/>${T(53,34,7,'#3f5bd9','D′')}</g>${T(41,46,6,'#3f5bd9','D')}<path d="M27 28 h8 m-3 -3 l3 3 l-3 3" stroke="#c9412e" stroke-width="1.4" fill="none"/></g>`]
 });
 
+/* ------------------------------------- round 3: collection (tiers, sets) */
+const GOLD=P=>lin(P+'gd',[[0,'#fff1b0'],[.35,'#f2c230'],[.7,'#c98a12'],[1,'#8a5b08']],1,1);
+Object.assign(OUTFITS,{
+  minibus:P=>base('#f4efe3')+`<path d="M44 136 Q58 128 66 128 L74 180 H40Z M116 136 Q102 128 94 128 L86 180 H120Z" fill="#c9412e" stroke="${INK}" stroke-width="1.2"/>`+shade(P)
+    +`<path d="M66 126 L80 140 L94 126" fill="#fbfaf6" stroke="${INK}" stroke-width="1.2"/><rect x="94" y="146" width="18" height="10" rx="1.5" fill="#2f6e4a" stroke="${INK}" stroke-width=".8"/>${T(103,153.5,5.5,'#fff','小巴')}
+    <path d="M80 140 V180" stroke="#cfc6b2" stroke-width="1"/>${[150,162,174].map(y=>`<circle cx="80" cy="${y}" r="1.6" fill="#8a7f6a"/>`).join('')}`,
+  waiter:P=>base('#fbfaf6')+`<path d="M48 134 Q60 128 68 128 L78 172 L74 180 H44Z M112 134 Q100 128 92 128 L82 172 L86 180 H116Z" fill="#1d1a17" stroke="${INK}" stroke-width="1.2"/>`+shade(P)
+    +`<path d="M70 128 L80 133 L70 138Z M90 128 L80 133 L90 138Z" fill="#c9412e" stroke="${INK}" stroke-width="1"/><circle cx="80" cy="133" r="2.4" fill="#8f2a1c"/>
+    <rect x="52" y="146" width="16" height="7" rx="1" fill="#f4efe3"/>${T(60,151.5,4.6,'#1d1a17','茶記')}<path d="M104 150 q10 4 6 30" fill="none" stroke="#fbfaf6" stroke-width="7" stroke-linecap="round"/>`,
+  banker:P=>`<defs>${GOLD(P)}</defs>`+base('#1d2a4a')+shade(P)+`<path d="M66 126 L80 164 L94 126Z" fill="#fbfaf6"/><path d="M77 132 L83 132 L85 156 L80 164 L75 156Z" fill="url(#${P}gd)" stroke="#8a5b08" stroke-width=".6"/>
+    <path d="M66 126 L76 150 L70 152 L80 172 M94 126 L84 150 L90 152 L80 172" fill="none" stroke="#111a33" stroke-width="2"/>
+    <circle cx="101" cy="142" r="4.5" fill="url(#${P}gd)" stroke="#8a5b08"/>${T(101,144.6,6,'#5a3a05','$')}<path d="M54 150 l10 -2 l1 5 l-10 2Z" fill="url(#${P}gd)"/>`,
+  goldbull:P=>`<defs>${GOLD(P)}${lin(P+'sw',[[0,'#fff',0],[.5,'#fff',.85],[1,'#fff',0]],1,0)}</defs>`
+    +`<path d="${'M28 180 C30 142 52 124 80 124 C108 124 130 142 132 180 Z'}" fill="url(#${P}gd)" stroke="#6b4505" stroke-width="1.6"/>`+shade(P)
+    +`<path d="M66 126 L80 146 L94 126" fill="#1d1a17" stroke="#6b4505" stroke-width="1.2"/>
+    <g transform="translate(80 160)"><path d="M-14 -6 Q-22 -16 -16 -22 Q-14 -12 -6 -8 M14 -6 Q22 -16 16 -22 Q14 -12 6 -8" fill="#1d1a17"/><ellipse cx="0" cy="0" rx="10" ry="9" fill="#1d1a17"/><circle cx="-4" cy="-1" r="1.4" fill="#f2c230"/><circle cx="4" cy="-1" r="1.4" fill="#f2c230"/><path d="M-4 5 h8" stroke="#f2c230" stroke-width="1.4"/></g>
+    ${[40,120].map(x=>`<path d="M${x-8} 150 l8 -6 l8 6" fill="none" stroke="#6b4505" stroke-width="1.6"/>`).join('')}
+    <rect class="fx-sweep" x="-40" y="120" width="40" height="70" fill="url(#${P}sw)" transform="skewX(-20)"/>`,
+  invisible:P=>`<defs>${lin(P+'rb',[[0,'#3b1d6e'],[.6,'#6a2fb0'],[1,'#22114a']])}${GOLD(P)}${rad(P+'hg',[[0,'#fff6c8',.95],[.6,'#f2c230',.5],[1,'#f2c230',0]])}</defs>
+    <path d="M18 180 L34 128 Q80 112 126 128 L142 180Z" fill="url(#${P}rb)" stroke="${INK}" stroke-width="1.4"/>`
+    +`<path d="${'M28 180 C30 142 52 124 80 124 C108 124 130 142 132 180 Z'}" fill="url(#${P}rb)" stroke="${INK}" stroke-width="1.6"/>`+shade(P)
+    +`<path d="M64 124 L80 144 L96 124" fill="none" stroke="url(#${P}gd)" stroke-width="4"/><path d="M80 144 V180" stroke="url(#${P}gd)" stroke-width="2"/>
+    ${[[44,150],[118,146],[52,172],[110,170],[36,166],[124,162]].map(([x,y],i)=>`<circle class="fx-tw" style="animation-delay:${i*.3}s" cx="${x}" cy="${y}" r="1.4" fill="#fff6c8"/>`).join('')}
+    <circle class="fx-pulse" cx="80" cy="160" r="15" fill="url(#${P}hg)"/>
+    <g fill="#fff6c8" stroke="#c98a12" stroke-width=".6"><rect x="74" y="157" width="13" height="11" rx="3.5"/>${[0,1,2,3].map(i=>`<rect x="${74.3+i*3.2}" y="${149+Math.abs(1.5-i)*1.4}" width="2.8" height="10" rx="1.4"/>`).join('')}<rect x="69" y="158" width="7" height="2.8" rx="1.4" transform="rotate(-30 72 159)"/></g>`,
+  lantern:P=>base('#f6e7c8')+`<path d="M44 136 Q60 128 66 128 L80 150 L94 128 Q100 128 116 136 L118 180 H42Z" fill="#e8a33c" stroke="${INK}" stroke-width="1.2" opacity=".9"/>`+shade(P)
+    +`${[148,162,176].map(y=>`<path d="M50 ${y} q15 -6 30 0 t30 0" fill="none" stroke="#c9412e" stroke-width="1.2" opacity=".7"/>`).join('')}
+    <path d="M132 120 V136" stroke="${INK}" stroke-width="1"/><g class="fx-bob"><ellipse cx="132" cy="148" rx="13" ry="11" fill="#fff4d6" stroke="#c9412e" stroke-width="1.6"/><path d="M124 140 q-4 -9 1 -10 M138 140 q4 -9 -1 -10" fill="#fff4d6" stroke="#c9412e" stroke-width="1.4"/>
+    <circle cx="128" cy="147" r="1.2" fill="#c9412e"/><circle cx="132" cy="148" r="6" fill="#ffd27a" opacity=".55"/></g>`,
+  cny:P=>`<defs>${GOLD(P)}</defs>`+base('#b3201c')+`${[0,1,2,3,4,5].map(i=>`<circle cx="${44+i*14}" cy="${150+(i%2)*16}" r="5" fill="none" stroke="#f2c230" stroke-width=".9" opacity=".6"/>`).join('')}`+shade(P)
+    +`<path d="M68 126 Q80 132 92 126" fill="none" stroke="url(#${P}gd)" stroke-width="3"/>${[142,154,166].map(y=>`<path d="M72 ${y} H88" stroke="url(#${P}gd)" stroke-width="2.4" stroke-linecap="round"/><circle cx="72" cy="${y}" r="2" fill="url(#${P}gd)"/>`).join('')}
+    <g transform="translate(108 156) rotate(45)"><rect x="-8" y="-8" width="16" height="16" fill="url(#${P}gd)" stroke="#8a5b08"/></g>${T(108,160,10,'#8f1414','福')}`,
+  santa:P=>base('#c9412e')+shade(P)+`<path d="M30 176 Q80 168 130 176 L132 180 H28Z" fill="#fbfaf6"/><path d="M80 128 V176" stroke="#fbfaf6" stroke-width="7"/><rect x="40" y="156" width="80" height="7" fill="#1d1a17"/><rect x="74" y="154" width="12" height="11" fill="#f2c230" stroke="#8a5b08"/>`
+});
+Object.assign(HATS,{
+  minibus:`<path d="M48 52 Q50 30 80 29 Q110 30 112 52Z" fill="#c9412e" stroke="${INK}" stroke-width="1.4"/><path d="M48 50 H112 V56 H48Z" fill="#f4efe3" stroke="${INK}" stroke-width="1.2"/><path d="M48 55 Q30 58 34 62 L60 58Z" fill="#2f6e4a" stroke="${INK}" stroke-width="1.1"/>`,
+  invisible:`<ellipse class="fx-pulse" cx="80" cy="34" rx="30" ry="7" fill="none" stroke="#f2c230" stroke-width="3.2"/><ellipse cx="80" cy="34" rx="30" ry="7" fill="none" stroke="#fff6c8" stroke-width="1"/>`,
+  goldbull:`<path d="M52 52 Q36 40 40 22 Q46 38 60 44Z M108 52 Q124 40 120 22 Q114 38 100 44Z" fill="#f2c230" stroke="#6b4505" stroke-width="1.3"/>`,
+  santa:`<path d="M46 52 Q52 22 80 22 Q104 22 126 40 L120 46 Q104 34 112 52Z" fill="#c9412e" stroke="${INK}" stroke-width="1.3"/><rect x="44" y="48" width="70" height="10" rx="5" fill="#fbfaf6" stroke="${INK}" stroke-width="1"/><circle cx="124" cy="44" r="6" fill="#fbfaf6" stroke="${INK}"/>`,
+  cny:`<path d="M52 50 Q54 28 80 28 Q106 28 108 50Z" fill="#1d1a17" stroke="${INK}" stroke-width="1.3"/><circle cx="80" cy="27" r="4" fill="#c9412e" stroke="${INK}"/><path d="M50 50 H110" stroke="#f2c230" stroke-width="2.4"/>`
+});
+Object.assign(BG,{
+  vault:P=>{ let s=`<defs>${GOLD(P)}${rad(P+'vg',[[0,'#ffe9a0',.6],[1,'#ffe9a0',0]],.5,.4,.6)}</defs><rect width="160" height="180" fill="#1a1712"/>`;
+    s+=`<circle cx="80" cy="66" r="58" fill="#3a3326" stroke="#6b5a3a" stroke-width="4"/><circle cx="80" cy="66" r="44" fill="none" stroke="url(#${P}gd)" stroke-width="3" stroke-dasharray="6 4"/>`;
+    s+=Array.from({length:8},(_,i)=>{const a=i*Math.PI/4;return `<path d="M${80+Math.cos(a)*14} ${66+Math.sin(a)*14} L${80+Math.cos(a)*38} ${66+Math.sin(a)*38}" stroke="#8a7650" stroke-width="3" stroke-linecap="round"/>`}).join('');
+    s+=`<rect width="160" height="180" fill="url(#${P}vg)"/>`;
+    [[6,158],[26,158],[16,148],[118,158],[138,158],[128,148],[128,138]].forEach(([x,y])=>s+=`<path d="M${x} ${y} h16 l-3 -9 h-10Z" fill="url(#${P}gd)" stroke="#8a5b08" stroke-width=".8"/>`);
+    return s+`<rect y="166" width="160" height="14" fill="#2a241b"/>`; },
+  lanterns:P=>{ let s=`<defs>${lin(P+'n',[[0,'#0e1838'],[1,'#3a2a5a']])}</defs><rect width="160" height="180" fill="url(#${P}n)"/><circle cx="126" cy="34" r="20" fill="#fff3c4"/><circle cx="126" cy="34" r="26" fill="#fff3c4" opacity=".18"/>`;
+    [[20,50,'#c9412e'],[50,30,'#f28c1e'],[86,58,'#c9412e'],[40,90,'#f2c230'],[104,96,'#c9412e'],[140,80,'#f28c1e']].forEach(([x,y,c],i)=>s+=`<g class="fx-bob" style="animation-delay:${i*.4}s"><path d="M${x} 0 V${y-9}" stroke="#d9c79a" stroke-width=".6"/><ellipse cx="${x}" cy="${y}" rx="9" ry="10" fill="${c}"/><ellipse cx="${x}" cy="${y}" rx="4" ry="10" fill="none" stroke="#fff" stroke-width=".6" opacity=".6"/><rect x="${x-3}" y="${y+9}" width="6" height="3" fill="#f2c230"/><ellipse cx="${x}" cy="${y}" rx="15" ry="15" fill="${c}" opacity=".18"/></g>`);
+    return s+`<path d="M0 150 Q40 138 80 148 T160 144 V180 H0Z" fill="#14112a"/>`; },
+  cnyred:P=>{ let s=`<defs>${lin(P+'r',[[0,'#d6312a'],[1,'#8f1414']])}${GOLD(P)}</defs><rect width="160" height="180" fill="url(#${P}r)"/>`;
+    for(let y=10;y<180;y+=26) for(let x=(y/26%2)*13;x<170;x+=26) s+=`<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="#f2c230" stroke-width=".8" opacity=".35"/>`;
+    s+=`<path d="M14 0 V70" stroke="#f2c230" stroke-width="1"/>${[0,1,2,3,4].map(i=>`<rect x="9" y="${14+i*12}" width="10" height="9" rx="2" fill="#c9412e" stroke="#f2c230" stroke-width=".8"/>`).join('')}`;
+    s+=`<path d="M146 0 V70" stroke="#f2c230" stroke-width="1"/>${[0,1,2,3,4].map(i=>`<rect x="141" y="${14+i*12}" width="10" height="9" rx="2" fill="#c9412e" stroke="#f2c230" stroke-width=".8"/>`).join('')}`;
+    return s+`<g transform="translate(80 30) rotate(45)"><rect x="-16" y="-16" width="32" height="32" fill="url(#${P}gd)" stroke="#8a5b08"/></g>${T(80,38,20,'#8f1414','春')}<rect y="160" width="160" height="20" fill="#5a0e0e"/>`; },
+  mgalaxy:P=>{ let s=`<defs>${rad(P+'g1',[[0,'#c56bff',.75],[1,'#c56bff',0]],.3,.3,.5)}${rad(P+'g2',[[0,'#4fe3ff',.6],[1,'#4fe3ff',0]],.75,.65,.5)}</defs><rect width="160" height="180" fill="#0a0620"/><rect width="160" height="180" fill="url(#${P}g1)"/><rect width="160" height="180" fill="url(#${P}g2)"/>`;
+    for(let i=0;i<40;i++) s+=`<circle ${i%4?'':'class="fx-tw" style="animation-delay:'+(i*.13).toFixed(2)+'s"'} cx="${(i*37)%160}" cy="${(i*53)%180}" r="${.5+(i%3)*.5}" fill="#fff" opacity="${.5+(i%2)*.4}"/>`;
+    return s+`<ellipse cx="80" cy="176" rx="70" ry="10" fill="#c56bff" opacity=".25"/>`; }
+});
+Object.assign(FX,{
+  goldrain:P=>['',`<defs>${GOLD(P)}</defs>`+Array.from({length:16},(_,i)=>`<g class="fx-fall" style="animation-delay:${(i*.21).toFixed(2)}s;animation-duration:${2.4+(i%3)*.5}s"><ellipse cx="${5+i*10}" cy="${(i*31)%90}" rx="${4.5-(i%2)}" ry="4.5" fill="url(#${P}gd)" stroke="#8a5b08" stroke-width=".7"/>${T(5+i*10,(i*31)%90+2.2,5,'#8a5b08','$')}</g>`).join('')],
+  sdaura:()=>[`<g class="fx-spin" style="transform-origin:80px 78px"><circle cx="80" cy="78" r="64" fill="none" stroke="#f2c230" stroke-width="1.4" stroke-dasharray="2 6" opacity=".9"/>${[0,90,180,270].map(a=>`<g transform="rotate(${a} 80 78)"><path d="M66 14 L94 22" stroke="#3f5bd9" stroke-width="2.6" stroke-linecap="round"/><path d="M66 22 L94 14" stroke="#c9412e" stroke-width="2.6" stroke-linecap="round"/><circle cx="80" cy="18" r="2.4" fill="#f2c230"/></g>`).join('')}</g>`,''],
+  holo:P=>[`<defs>${lin(P+'hl',[[0,'#ff5fa2'],[.25,'#ffd23f'],[.5,'#7dff8a'],[.75,'#4fe3ff'],[1,'#c56bff']],1,1)}</defs><circle class="fx-pulse" cx="80" cy="92" r="70" fill="none" stroke="url(#${P}hl)" stroke-width="5" opacity=".85"/>`,
+    Array.from({length:12},(_,i)=>`<path class="fx-tw" style="animation-delay:${(i*.17).toFixed(2)}s" d="M${(i*29)%150+5} ${(i*47)%170+5} l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2Z" fill="${['#ff5fa2','#ffd23f','#7dff8a','#4fe3ff','#c56bff'][i%5]}"/>`).join('')],
+  neon:()=>[`<rect x="5" y="5" width="150" height="170" rx="6" fill="none" stroke="#ff5fa2" stroke-width="3" class="fx-flick2"/><rect x="11" y="11" width="138" height="158" rx="4" fill="none" stroke="#4fe3ff" stroke-width="2" class="fx-flick2" style="animation-delay:.4s"/>`,'']
+});
+HEADS.tonggau=P=>{ const h=HEADS.shiba(P), rc=[['#eaa968','#e2c49a'],['#c97c37','#a8834f'],['#d9934f','#c9a473']], f=s=>rc.reduce((x,[a,b])=>x.split(a).join(b),s||'');
+  return {neck:'#c9a473',defs:f(h.defs),back:f(h.back),head:f(h.head)}; };
+
+/* Pets: drawn from the animal heads above, in four stages. id 'pet_shiba'. */
+const PET_EGG={shiba:['#e2b27a','#c97c37'],tonggau:['#e2c49a','#a8834f'],cat:['#f2b06a','#d9822b'],penguin:['#3a4250','#f2c230'],panda:['#2a2a2a','#9a9a9a'],dolphin:['#f2a7b8','#bfe3f2']};
+avatar.pet=function(id,stage,o){
+  o=o||{}; const kind=String(id||'').replace(/^pet_/,''); if(!HEADS[kind]) return '';
+  const P='pe'+(N++)+'_', h=HEADS[kind](P), col=PET_EGG[kind]||['#d9c79a','#a8834f'], hun=!!o.hungry;
+  const bg=o.bg===false?'':`<rect width="160" height="180" rx="3" fill="${hun?'#e4ded0':stage==='adult'?'#f6ecd0':'#eef3e6'}"/>`;
+  const shadow=`<ellipse cx="80" cy="170" rx="46" ry="6" fill="#000" opacity=".14"/>`;
+  const bob=hun?'':' class="fx-bob"';
+  let body='';
+  if(stage==='egg') body=`<g${bob}><path d="M80 48 C106 48 118 96 118 122 C118 150 101 166 80 166 C59 166 42 150 42 122 C42 96 54 48 80 48Z" fill="#fbf7ec" stroke="${INK}" stroke-width="1.6"/>
+    <circle cx="65" cy="102" r="9" fill="${col[0]}"/><circle cx="95" cy="128" r="12" fill="${col[1]}"/><circle cx="93" cy="84" r="5" fill="${col[0]}"/><circle cx="63" cy="142" r="6" fill="${col[1]}"/>
+    <path d="M70 66 l6 8 l-4 6 l6 6" fill="none" stroke="${INK}" stroke-width="1.2"/></g>`;
+  else if(stage==='baby') body=`<g${bob}><g transform="translate(80 104) scale(.62) translate(-80 -77)">${h.back}${h.head}</g></g>
+    <path d="M42 128 L52 118 L60 128 L70 116 L80 128 L90 116 L100 128 L108 118 L118 128 C118 152 102 166 80 166 C58 166 42 152 42 128Z" fill="#fbf7ec" stroke="${INK}" stroke-width="1.6"/>`;
+  else { const ad=stage==='adult';
+    body=`<g${bob}><ellipse cx="80" cy="138" rx="${ad?34:30}" ry="${ad?27:24}" fill="${h.neck}" stroke="${INK}" stroke-width="1.6"/>
+      <ellipse cx="64" cy="160" rx="9" ry="5.5" fill="${h.neck}" stroke="${INK}" stroke-width="1.3"/><ellipse cx="96" cy="160" rx="9" ry="5.5" fill="${h.neck}" stroke="${INK}" stroke-width="1.3"/>
+      ${ad?`<path d="M54 116 Q80 132 106 116 L104 126 Q80 140 56 126Z" fill="#d9a10f" stroke="${INK}" stroke-width="1.2"/><circle cx="80" cy="132" r="5" fill="#f2c230" stroke="#8a5b08"/>`:''}
+      <g transform="translate(80 ${ad?86:92}) scale(${ad?.86:.78}) translate(-80 -77)">${h.back}${h.head}</g></g>
+      ${ad&&!hun?[[24,40,0],[136,52,.6],[30,110,1.2],[134,104,.3]].map(([x,y,d])=>`<path class="fx-tw" style="animation-delay:${d}s" d="M${x} ${y-7} L${x+2} ${y-2} L${x+7} ${y} L${x+2} ${y+2} L${x} ${y+7} L${x-2} ${y+2} L${x-7} ${y} L${x-2} ${y-2}Z" fill="#f2c230"/>`).join(''):''}`; }
+  const zz=hun?`<g><circle cx="128" cy="36" r="15" fill="#fbf7ec" stroke="${INK}"/>${T(128,41,12,INK,'zZ')}<circle cx="110" cy="54" r="4" fill="#fbf7ec" stroke="${INK}"/></g>`:'';
+  const yay=o.mood==='yay'?[[40,120,0],[120,110,.3],[80,96,.6]].map(([x,y,d])=>`<path class="fx-up" style="animation-delay:${d}s;animation-iteration-count:1" d="M${x} ${y+5} C${x-9} ${y-2} ${x-5} ${y-9} ${x} ${y-4} C${x+5} ${y-9} ${x+9} ${y-2} ${x} ${y+5}Z" fill="#e8557f"/>`).join(''):'';
+  return `<svg viewBox="0 0 160 180" role="img" aria-label="${o.label||'pet'}"><defs>${h.defs||''}</defs>${bg}${shadow}<g${hun?' style="filter:grayscale(.6)"':''}>${body}</g>${zz}${yay}</svg>`;
+};
+
 function avatar(o,label){
   if(!o||!HEADS[o.base]) return EMPTY(label);
   o={base:o.base, outfit:OUTFITS[o.outfit]?o.outfit:'uniform', bg:BG[o.bg]?o.bg:'classroom', fx:FX[o.fx]?o.fx:'none'};
@@ -3465,7 +3626,16 @@ return avatar;
 let EPW=null;                 // the wallet from ?wallet=1
 let EP_LOOK=null;             // what the store is showing on the big character
 let EP_CAT='base', EP_CLS='';
-const EP_CATS=[['base','Characters'],['outfit','Outfits'],['bg','Backgrounds'],['fx','Effects']];
+const EP_CATS=[['base','Characters'],['outfit','Outfits'],['bg','Backgrounds'],['fx','Effects'],['pet','Pets'],['ti','Titles'],['book','Collection']];
+const EP_TIER={c:'Common',r:'Rare',e:'Epic',l:'Legendary',m:'Mythic'};
+const EP_PET_AT=[[0,'egg'],[20,'baby'],[100,'teen'],[400,'adult']];
+const epTitleArt=(name,t)=>'<div class="epti" style="--tc:var(--star)"><b>'+esc((ME&&ME.nick)||'You')+'</b><span>'+esc(name)+'</span></div>';
+/* What a store card or collection cell shows for one item. */
+function epItemArt(i,look){
+  if(i.k==='pet'){ const pt=EPW&&EPW.pets&&EPW.pets[i.id]; return epArt.pet(i.id,pt?pt.s:'egg',{label:esc(i.n)}); }
+  if(i.k==='ti') return epTitleArt(i.n,i.t);
+  return epArt(look,esc(i.n));
+}
 const EP_ACT={mc_answer:'Answered an MC',mc_correct:'Correct',mc_fix:'Fixed a mistake',mc_ten:'10 questions today',
   lq_submit:'Long Q marked',lq_better:'Beat your Long Q score',album_point:'Album point marked',album_retry:'Album retry right',
   comment:'Comment posted',verified:'Teacher verified your comment',week5:'5 days this week',teacher:'From your teacher',
@@ -3603,8 +3773,13 @@ function epClassDraw(){
     const items=(r&&r.items)||[];
     if(!items.length){ $('ovMates').innerHTML='<p class="muted">Nobody here yet.</p>'; return; }
     $('ovMates').innerHTML='<div class="mates">'+items.map(m=>
-      '<div class="mate">'+epArt(m.look,esc(m.nick)+'\'s character')+'<div class="nk">'+esc(m.nick)+(m.t?' <span class="vtag">Teacher</span>':'')+(m.cl?' <span class="clsb">'+esc(m.cl)+'</span>':'')+'</div>'
-      +'<div class="lv"><span class="lvb">Lv.'+m.lv+'</span> '+esc(LEVEL_NAMES[m.lv-1]||'')+'</div></div>').join('')+'</div>';
+      { const lk=m.look||{}, f=lk.f&&lk.f!=='c'?' fr fr-'+lk.f:'';
+        return '<div class="mate'+f+'"><div class="mav">'+epArt(m.look,esc(m.nick)+'\'s character')
+        +(lk.pet?'<div class="mpet">'+epArt.pet(lk.pet,lk.ps||'egg',{bg:false,label:esc(m.nick)+'\'s pet'})+'</div>':'')+'</div>'
+        +'<div class="nk">'+esc(m.nick)+(m.t?' <span class="vtag">Teacher</span>':'')+(m.cl?' <span class="clsb">'+esc(m.cl)+'</span>':'')+'</div>'
+        +(lk.tn?'<div class="mti">'+esc(lk.tn)+'</div>':'')
+        +'<div class="lv"><span class="lvb">Lv.'+m.lv+'</span> '+esc(LEVEL_NAMES[m.lv-1]||'')+'</div>'
+        +(lk.b&&lk.b.length?'<div class="mbd">'+lk.b.map(x=>'<span>★ '+esc(x)+'</span>').join('')+'</div>':'')+'</div>'; }).join('')+'</div>';
   });
 }
 $('ovClsSel').addEventListener('change',e=>{ EP_CLS=e.target.value; epClassDraw(); });
@@ -3623,23 +3798,34 @@ $('ovMatesTog').addEventListener('click',()=>{
 /* -------------------------------------------------------------- store --- */
 function drawStore(){
   if(!EPW){ $('stItems').innerHTML='<p class="muted">Loading…</p>'; epLoad(r=>{ if(r) drawStore(); else $('stItems').innerHTML='<p class="muted">The store is not switched on yet. Ask your teacher.</p>'; }); return; }
-  if(!EP_LOOK) EP_LOOK=Object.assign({base:'',outfit:'uniform',bg:'classroom',fx:'none'},EPW.look||{});
+  if(!EP_LOOK) EP_LOOK=Object.assign({base:'',outfit:'uniform',bg:'classroom',fx:'none',pet:'',ti:''},EPW.look||{});
   $('stBal').textContent=EPW.bal;
-  $('stAv').innerHTML=epArt(EP_LOOK.base?EP_LOOK:null,'your character');
-  $('stWear').innerHTML=EP_LOOK.base?'Wearing: '+['base','outfit','bg','fx'].map(k=>'<span>'+esc(epName(EP_LOOK[k]))+'</span>').join('')
+  const myPet=EP_LOOK.pet&&EPW.pets&&EPW.pets[EP_LOOK.pet];
+  $('stAv').innerHTML=epArt(EP_LOOK.base?EP_LOOK:null,'your character')
+    +(myPet?'<div class="stpet">'+epArt.pet(EP_LOOK.pet,myPet.s,{bg:false,hungry:myPet.hungry,label:'your pet'})+'</div>':'');
+  $('stWear').innerHTML=EP_LOOK.base?'Wearing: '+['base','outfit','bg','fx','pet','ti'].filter(k=>EP_LOOK[k]).map(k=>'<span>'+esc(epName(EP_LOOK[k]))+'</span>').join('')
     :'Pick a character first: the two teens are free.';
   $('stCats').innerHTML=EP_CATS.map(c=>'<button data-cat="'+c[0]+'" aria-pressed="'+(c[0]===EP_CAT)+'">'+c[1]+'</button>').join('');
   const base=EP_LOOK.base||'boy';
-  $('stItems').innerHTML=(EPW.store||[]).filter(i=>i.k===EP_CAT&&(i.on||epOwns(i.id))).map(i=>{
+  $('stItems').classList.toggle('epbook',EP_CAT==='book'); $('stItems').classList.toggle('epitems',EP_CAT!=='book');
+  if(EP_CAT==='book') $('stItems').innerHTML=epBookHtml(base);
+  else $('stItems').innerHTML=(EPW.store||[]).filter(i=>i.k===EP_CAT&&(i.on||epOwns(i.id))).map(i=>{
     const own=epOwns(i.id), on=EP_LOOK[i.k]===i.id, look=Object.assign({},EP_LOOK,{base:base},{[i.k]:i.id});
+    const lk=!own&&EPW.locks&&EPW.locks[i.id], wearWord=i.k==='pet'?'Bring along':'Wear';
     let btn;
-    if(on) btn='<button class="btn sm" disabled>Wearing</button>';
-    else if(own) btn='<button class="btn sm" data-wear="'+esc(i.id)+'">Wear</button>';
+    if(on) btn=i.k==='pet'||i.k==='ti'?'<button class="btn sm" data-off="'+i.k+'">'+(i.k==='pet'?'Leave at home':'Take off')+'</button>':'<button class="btn sm" disabled>Wearing</button>';
+    else if(own) btn='<button class="btn sm" data-wear="'+esc(i.id)+'">'+wearWord+'</button>';
+    else if(lk&&!lk.ok) btn='<button class="btn sm" disabled>🔒 Locked</button>';
     else if(EPW.bal>=i.p) btn='<button class="btn sm primary" data-buy="'+esc(i.id)+'">Buy · '+i.p+' E</button>';
     else btn='<button class="btn sm" disabled>Need '+(i.p-EPW.bal)+' more E</button>';
     const tag=!i.p?'<span class="eptag free">Free</span>':own?'<span class="eptag">Owned</span>':'<span class="eppr">'+i.p+' E</span>';
-    return '<div class="epitem'+(on?' on':'')+'">'+epArt(look,esc(i.n))+'<div class="nm">'+esc(i.n)
-      +(i.zh?' <span class="zh">'+esc(i.zh)+'</span>':'')+'</div><div>'+tag+'</div>'+btn+'</div>';
+    const pt=i.k==='pet'&&own&&EPW.pets&&EPW.pets[i.id];
+    const note=lk?'<div class="eplock'+(lk.ok?' ok':'')+'">'+(lk.ok?'✓ Unlocked: ':'🔒 Needs ')+'<b>'+esc(lk.need)+'</b><br>You: '+esc(lk.have)+'</div>'
+      :pt?'<div class="eplock">'+esc(pt.s[0].toUpperCase()+pt.s.slice(1))+(pt.next?' · '+(pt.next-pt.n)+' MCQs to grow':' · fully grown')+(pt.hungry?' · hungry':'')+'</div>'
+      :i.win?'<div class="eplock">Festival item · on sale '+esc(i.win.replace('..',' to '))+'</div>':'';
+    const t=i.t||'c';
+    return '<div class="epitem t'+t+(on?' on':'')+'"><span class="eptier">'+EP_TIER[t]+'</span>'+epItemArt(i,look)+'<div class="nm">'+esc(i.n)
+      +(i.zh?' <span class="zh">'+esc(i.zh)+'</span>':'')+'</div><div>'+tag+'</div>'+note+btn+'</div>';
   }).join('')||'<p class="muted">Nothing on sale here right now.</p>';
   $('stRules').innerHTML='<div class="tblwrap"><table><tr><th>Activity</th><th>E</th><th>Today</th></tr>'
     +(EPW.rules||[]).map(r=>'<tr><td>'+esc(r.what)+'</td><td class="epe">+'+r.p+'</td><td class="mono">'
@@ -3649,9 +3835,26 @@ function drawStore(){
     +' <span class="muted">'+esc(String(x[3]||''))+' · '+new Date(x[0]).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+'</span></div>').join('')
     ||'<p class="muted">Nothing yet. Answer a question to earn your first E.</p>';
 }
+/* Collection: every item, owned in colour, the rest as silhouettes; sets with progress. */
+function epBookHtml(base){
+  const order='crelm', all=(EPW.store||[]).slice().sort((a,b)=>order.indexOf(a.t||'c')-order.indexOf(b.t||'c')||a.p-b.p);
+  const mine=all.filter(i=>epOwns(i.id)).length;
+  const sets=(EPW.sets||[]).map(st=>{
+    const have=st[3].filter(epOwns).length, done=have===st[3].length;
+    return '<div class="epset'+(done?' done':'')+'"><b>'+esc(st[1])+' · '+esc(st[2])+'</b><span class="muted">'+have+' / '+st[3].length+' · '
+      +st[3].map(id=>(epOwns(id)?'✓ ':'')+esc(epName(id))).join(', ')+'</span>'
+      +'<div class="bar"><i style="width:'+Math.round(have/st[3].length*100)+'%"></i></div>'+(done?'<span>★ Badge “'+esc(st[2])+'” shows next to your nickname</span>':'')+'</div>';
+  }).join('');
+  const cells=all.map(i=>{ const own=epOwns(i.id), look=i.k==='base'?{base:i.id,outfit:'uniform',bg:'classroom',fx:'none'}:Object.assign({base:base,outfit:'uniform',bg:'classroom',fx:'none'},{[i.k]:i.id});
+    return '<div class="epcell t'+(i.t||'c')+(own?'':' miss')+'" title="'+esc(i.n)+(own?'':' · not collected yet')+'">'+epItemArt(i,look)+'</div>'; }).join('');
+  return '<p class="mono" style="margin:0">'+mine+' / '+all.length+' collected · '+(EPW.setsDone||[]).length+' set'+((EPW.setsDone||[]).length===1?'':'s')+' complete</p>'
+    +'<div class="bar"><i style="width:'+Math.round(mine/Math.max(1,all.length)*100)+'%"></i></div>'
+    +'<div class="epsets">'+sets+'</div><div class="epcells">'+cells+'</div>';
+}
 $('stCats').addEventListener('click',e=>{ const b=e.target.closest('[data-cat]'); if(!b) return; EP_CAT=b.dataset.cat; drawStore(); });
 $('stItems').addEventListener('click',e=>{
-  const b=e.target.closest('button[data-buy],button[data-wear]'); if(!b) return;
+  const b=e.target.closest('button[data-buy],button[data-wear],button[data-off]'); if(!b) return;
+  if(b.dataset.off){ EP_LOOK=Object.assign({},EP_LOOK,{[b.dataset.off]:''}); epWear(EP_LOOK); drawStore(); return; }
   if(b.dataset.wear){
     const it=epItem(b.dataset.wear);
     EP_LOOK=Object.assign({},EP_LOOK,{[it.k]:it.id});
@@ -3663,12 +3866,15 @@ $('stItems').addEventListener('click',e=>{
   const it=epItem(b.dataset.buy); b.disabled=true; b.textContent='Buying…';
   epPost({event:'ebuy',item:it.id}).then(r=>{
     if(r&&r.ok){
+      const setsBefore=(EPW.setsDone||[]).length;
       EPW.owned=r.owned; epSetBal(r.bal); epToast('Bought '+esc(it.n)+' <b>−'+it.p+' E</b>');
+      if(r.pets) EPW.pets=r.pets;
+      if(r.setsDone){ if(r.setsDone.length>setsBefore) setTimeout(()=>epToast('★ Set complete! New badge on your nickname'),900); EPW.setsDone=r.setsDone; }
       EP_LOOK=Object.assign({},EP_LOOK,{[it.k]:it.id}); if(!EP_LOOK.base) EP_LOOK.base='boy';
       epWear(EP_LOOK);
     }else{
       if(r&&r.bal!=null) epSetBal(r.bal);
-      $('stMsg').textContent=({poor:'Not enough E yet.',owned:'You already own that.',off:'That item is not on sale now.',
+      $('stMsg').textContent=({poor:'Not enough E yet.',owned:'You already own that.',off:'That item is not on sale now.',locked:'Not unlocked yet. See what it needs on the card.',
         offline:'No connection. Nothing was spent.',auth:'Sign in again first.',old:'The store is not switched on yet. Ask your teacher.'})[r&&r.error]||'Could not buy that. Nothing was spent.';
     }
     drawStore();
@@ -3683,6 +3889,43 @@ function epWear(look,after){
   });
 }
 $('wallet').addEventListener('click',()=>show('store'));
+
+/* ------------------------------------------------------------ drill pet --- */
+/* The pet brought along in the store sits beside each MC question. It
+   cheers a right answer, comforts a wrong one, and grows as MCQs are
+   answered: egg, baby (20), teen (100), adult (400). After 3 days away it
+   is sleepy until the next answer. Growth here is a guess the server's
+   count replaces on the next wallet load. */
+const PET_OK=['Nice one!','好嘢！','Correct, keep going!','You got it 👍','Smart move.'];
+const PET_NO=['Close one. Read the why.','唔緊要，睇下解釋。','Mistakes make you stronger.','Let\'s fix it in the album.','Next one is yours.'];
+let petLoading=false;
+function petPal(ev){
+  if(!EPW){ if(SESS&&!petLoading){ petLoading=true; epLoad(()=>{ petLoading=false; if(EPW) petPal(); }); } return; }
+  const id=EPW.look&&EPW.look.pet, pt=id&&EPW.pets&&EPW.pets[id];
+  let box=$('petPal');
+  if(!pt){ if(box) box.remove(); return; }
+  if(!box){ box=document.createElement('div'); box.id='petPal'; box.setAttribute('aria-live','polite'); }
+  if(box.parentNode!==$('qwrap')||box.nextElementSibling!==$('stem')) $('qwrap').insertBefore(box,$('stem'));
+  const it=epItem(id), name=it?it.n.replace(/ egg$/,''):'Pet';
+  let say=pt.hungry?'zZ… answer one to wake me up':pt.s==='egg'?'Something is moving inside…':'Let\'s go! 一齊做';
+  let mood='', cls='';
+  if(ev){
+    const was=pt.s, woke=pt.hungry;
+    pt.n++; pt.hungry=false;
+    for(let i=0;i<EP_PET_AT.length;i++) if(pt.n>=EP_PET_AT[i][0]){ pt.s=EP_PET_AT[i][1]; pt.next=EP_PET_AT[i+1]?EP_PET_AT[i+1][0]:0; }
+    if(EPW.look) EPW.look.ps=pt.s;
+    say=woke?'Yawn… I\'m awake! Missed you.':ev==='ok'?PET_OK[Math.floor(Math.random()*PET_OK.length)]:PET_NO[Math.floor(Math.random()*PET_NO.length)];
+    mood=ev==='ok'?'yay':''; cls=ev==='ok'?'jump':'shake';
+    if(pt.s!==was){ say=pt.s==='baby'?'I hatched! 出世喇！':'I grew into '+(pt.s==='adult'?'an adult':'a '+pt.s)+'!'; mood='yay'; cls='jump';
+      epToast(esc(name)+' '+(pt.s==='baby'?'hatched':'grew into '+(pt.s==='adult'?'an adult':'a '+pt.s))+'! 🎉'); }
+  }
+  const from=(EP_PET_AT.find(x=>x[1]===pt.s)||[0])[0], pct=pt.next?Math.round((pt.n-from)/(pt.next-from)*100):100;
+  box.className=''; void box.offsetWidth; if(cls) box.className=cls;
+  box.innerHTML=epArt.pet(id,pt.s,{bg:false,hungry:pt.hungry,mood:mood,label:esc(name)})
+    +'<div class="pb">'+esc(say)+'</div>'
+    +'<div class="pg" title="Growth"><i style="width:'+pct+'%"></i></div>'
+    +'<div class="pn">'+esc(name)+' · '+(pt.next?(pt.next-pt.n)+' to '+(EP_PET_AT.find(x=>x[0]===pt.next)||['',''])[1]:'grown')+'</div>';
+}
 
 /* Album saves, Long Q marks and comments pay through the server; refresh after. */
 document.addEventListener('tyn:album',()=>epSoon());

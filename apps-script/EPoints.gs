@@ -181,12 +181,66 @@ var EP_STORE_DEFAULT = [
   ['stocks',        'effect',    650,  'yes', 'Stock rally',             '股市升'],
   ['flames',        'effect',    680,  'yes', 'Flames',                  '火焰'],
   ['fireworks',     'effect',    700,  'yes', 'Fireworks',               '煙花'],
-  ['dshift',        'effect',    750,  'yes', 'Demand shift',            '需求曲線右移']
+  ['dshift',        'effect',    750,  'yes', 'Demand shift',            '需求曲線右移'],
+  /* Collection update. Extra columns: tier, unlock, sale window.
+     tier: common / rare / epic / legendary / mythic (blank = from the price).
+     unlock: what a student must have done before buying, rules joined by +
+       chap:80:40      80% right in any one chapter, 40+ MCQs answered there
+       ch4:80:30       the same for one chapter (ch1-ch5, u11, tf, micro, natl, money, macro, trade)
+       core:70:20      every core chapter (Ch 1-5) at 70%, 20+ answered in each
+       topic:elasticity:80:15   one topic
+       mc:200  MCQs answered · streak:30  best daily check-in streak · lq:5  Long Qs marked · sets:3  full sets
+     sale window: MM-DD..MM-DD, on sale only between these dates each year (blank = always). */
+  ['tonggau',       'character', 500,  'yes', 'Local dog',               '唐狗',       'rare',      '',                    ''],
+  ['minibus',       'outfit',    420,  'yes', 'Red minibus driver',      '紅van司機',  'rare',      '',                    ''],
+  ['waiter',        'outfit',    380,  'yes', 'Cha chaan teng waiter',   '茶記伙計',   'rare',      '',                    ''],
+  ['banker',        'outfit',    2000, 'yes', 'Central banker',          '央行行長',   'legendary', 'chap:80:40',          ''],
+  ['goldbull',      'outfit',    2200, 'yes', 'Golden Bull suit',        '金牛西裝',   'legendary', 'ch4:80:30',           ''],
+  ['invisible',     'outfit',    4500, 'yes', 'Invisible Hand robe',     '無形之手長袍', 'mythic',  'core:70:20+lq:5',     ''],
+  ['lantern',       'outfit',    700,  'yes', 'Mid-Autumn lantern',      '中秋燈籠',   'epic',      '',                    '09-01..10-15'],
+  ['santa',         'outfit',    450,  'yes', 'Christmas',               '聖誕',       'rare',      '',                    '12-01..12-31'],
+  ['cny',           'outfit',    1600, 'yes', 'Lunar New Year',          '新春',       'legendary', 'mc:300',              '01-10..02-28'],
+  ['vault',         'background', 1500, 'yes', 'Gold vault',             '金庫',       'legendary', 'mc:200',              ''],
+  ['lanterns',      'background', 800,  'yes', 'Lantern night',          '花燈夜',     'epic',      '',                    '09-01..10-15'],
+  ['cnyred',        'background', 700,  'yes', 'New Year red',           '新春紅',     'epic',      '',                    '01-10..02-28'],
+  ['mgalaxy',       'background', 4000, 'yes', 'Market Galaxy',          '市場銀河',   'mythic',    'mc:500+streak:14',    ''],
+  ['neon',          'effect',    650,  'yes', 'Neon frame',              '霓虹框',     'epic',      '',                    ''],
+  ['goldrain',      'effect',    1800, 'yes', 'Gold coin rain',          '金幣雨',     'legendary', 'streak:30',           ''],
+  ['sdaura',        'effect',    2000, 'yes', 'Supply-demand aura',      '供求光環',   'legendary', 'mc:200',              ''],
+  ['holo',          'effect',    3800, 'yes', 'Rainbow halo',            '彩虹光環',   'mythic',    'sets:3',              ''],
+  ['pet_shiba',     'pet',       300,  'yes', 'Shiba egg',               '柴犬蛋',     'common',    '',                    ''],
+  ['pet_tonggau',   'pet',       300,  'yes', 'Local dog egg',           '唐狗蛋',     'common',    '',                    ''],
+  ['pet_cat',       'pet',       300,  'yes', 'Ginger cat egg',          '橘貓蛋',     'common',    '',                    ''],
+  ['pet_penguin',   'pet',       400,  'yes', 'Penguin egg',             '企鵝蛋',     'rare',      '',                    ''],
+  ['pet_panda',     'pet',       400,  'yes', 'Panda egg',               '熊貓蛋',     'rare',      '',                    ''],
+  ['pet_dolphin',   'pet',       600,  'yes', 'Chinese white dolphin egg', '中華白海豚蛋', 'epic',  'mc:100',              ''],
+  ['ti_rookie',     'title',     100,  'yes', 'Econ Rookie',             '經濟新手',   'common',    '',                    ''],
+  ['ti_oppcost',    'title',     300,  'yes', 'Opportunity Cost Pro',    '機會成本達人', 'rare',    'topic:oppcost:80:10', ''],
+  ['ti_elastic',    'title',     600,  'yes', 'Elasticity Master',       '彈性大師',   'epic',      'topic:elasticity:80:15', ''],
+  ['ti_market',     'title',     600,  'yes', 'Market Detective',        '市場偵探',   'epic',      'ch4:75:30',           ''],
+  ['ti_streak',     'title',     1200, 'yes', 'Never Misses a Day',      '全勤王',     'legendary', 'streak:30',           ''],
+  ['ti_money',      'title',     1500, 'yes', 'Money Wizard',            '貨幣魔法師', 'legendary', 'money:80:30',         ''],
+  ['ti_hand',       'title',     3000, 'yes', 'The Invisible Hand',      '無形之手',   'mythic',    'core:70:20',          '']
 ];
-var EP_KIND = { character: 'base', outfit: 'outfit', background: 'bg', effect: 'fx' };
+var EP_STORE_COLS = 9;
+EP_STORE_DEFAULT = EP_STORE_DEFAULT.map(function (r) { r = r.slice(); while (r.length < EP_STORE_COLS) r.push(''); return r; });
+
+/* Theme sets: owning every item gives the badge shown next to the nickname. */
+var EP_SETS = [
+  ['hk',     'HK street',    '街坊',     ['minibus', 'waiter', 'raincoat', 'templestreet']],
+  ['fin',    'Finance',      '金融才俊', ['banker', 'suit', 'goldbull', 'stocks', 'vault']],
+  ['season', 'Festivals',    '節日達人', ['lantern', 'santa', 'cny', 'dragonboat']],
+  ['pets',   'Pet friends',  '寵物之友', ['pet_shiba', 'pet_tonggau', 'pet_dolphin']]
+];
+/* Pets grow with MCQs answered after they were bought. */
+var EP_PET_STAGES = [[0, 'egg'], [20, 'baby'], [100, 'teen'], [400, 'adult']];
+var EP_HUNGRY_MS = 3 * 86400000;
+var EP_KIND = { character: 'base', outfit: 'outfit', background: 'bg', effect: 'fx', pet: 'pet', title: 'ti' };
+var EP_STORE_HEAD = ['item','kind','price','on sale','name','name (zh)','tier','unlock','sale window'];
 function eStoreSheet_() {
-  var sh = sheet_('EStore', ['item','kind','price','on sale','name','name (zh)']);
-  if (sh.getLastRow() < 2) sh.getRange(2, 1, EP_STORE_DEFAULT.length, 6).setValues(EP_STORE_DEFAULT);
+  var sh = sheet_('EStore', EP_STORE_HEAD);
+  if (sh.getLastRow() < 2) sh.getRange(2, 1, EP_STORE_DEFAULT.length, EP_STORE_COLS).setValues(EP_STORE_DEFAULT);
+  else if (!sh.getRange(1, 7).getValue()) sh.getRange(1, 7, 1, 3).setValues([EP_STORE_HEAD.slice(6)]);   // older tab: add the new headings
   return sh;
 }
 /* Adds store items this version knows about but the EStore tab does not have
@@ -197,7 +251,7 @@ function epAddNewItems_() {
   var sh = eStoreSheet_(), v = sh.getDataRange().getValues(), have = {};
   for (var i = 1; i < v.length; i++) have[String(v[i][0]).trim()] = true;
   var add = EP_STORE_DEFAULT.filter(function (r) { return !have[r[0]]; });
-  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, 6).setValues(add);
+  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, EP_STORE_COLS).setValues(add);
   return add.length;
 }
 
@@ -225,11 +279,136 @@ function epStore_() {
   for (var i = 1; i < v.length; i++) {
     var id = String(v[i][0]).trim(), kind = EP_KIND[String(v[i][1]).trim().toLowerCase()];
     if (!id || !kind) continue;
-    out.push({ id: id, k: kind, p: Math.max(0, Math.round(Number(v[i][2]) || 0)), on: yes_(v[i][3]),
-               n: String(v[i][4] || id), zh: String(v[i][5] || '') });
+    var p = Math.max(0, Math.round(Number(v[i][2]) || 0)), x = { id: id, k: kind, p: p, on: yes_(v[i][3]) && epInWindow_(v[i][8]),
+               n: String(v[i][4] || id), zh: String(v[i][5] || ''), t: epTierOf_(v[i][6], p) };
+    var u = String(v[i][7] || '').trim(), win = String(v[i][8] || '').trim();
+    if (u) x.u = u;
+    if (win) x.win = win;
+    out.push(x);
   }
   c.put('ep_store', JSON.stringify(out), 120);
   return out;
+}
+
+/* ------------------------------------------------------- collection ---- */
+var EP_TIERS = ['c', 'r', 'e', 'l', 'm'];   // common rare epic legendary mythic
+function epTierOf_(cell, price) {
+  var t = String(cell || '').trim().toLowerCase().charAt(0);
+  if (EP_TIERS.indexOf(t) >= 0) return t;
+  return price < 300 ? 'c' : price < 600 ? 'r' : 'e';
+}
+/* 'MM-DD..MM-DD', also across New Year ('12-15..01-15'). Blank = always. */
+function epInWindow_(cell) {
+  var m = String(cell || '').match(/(\d\d)-(\d\d)\s*\.\.\s*(\d\d)-(\d\d)/);
+  if (!m) return true;
+  var today = epDay_().slice(5), a = m[1] + '-' + m[2], b = m[3] + '-' + m[4];
+  return a <= b ? today >= a && today <= b : today >= a || today <= b;
+}
+
+/* One student's MCQ record per chapter and per topic: answered (cleared or
+   ever wrong) and ever wrong, the same counting as the Weak topics tab.
+   Kept 5 minutes: it reads the Cleared and Mistakes tabs. */
+function epMine_(uid) {
+  var c = CacheService.getScriptCache(), hit = c.get('ep_mine_' + uid);
+  if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  var bank = epBankChap_(), a = {}, w = {};
+  var cl = epClearedOf_(uid);
+  for (var k in cl) if (bank[k]) a[k] = 1;
+  var ms = mistakeSheet_(), n = ms.getLastRow() - 1;
+  if (n > 0) ms.getRange(2, 2, n, 2).getValues().forEach(function (r) {
+    if (String(r[0]) !== uid) return;
+    var key = String(r[1]); if (!bank[key]) return;
+    a[key] = 1; w[key] = 1;
+  });
+  var ch = {}, tp = {};
+  for (var key in a) {
+    var b = bank[key], x = ch[b[0]] || (ch[b[0]] = [0, 0]), y = tp[b[2]] || (tp[b[2]] = [0, 0]);
+    x[0]++; y[0]++;
+    if (w[key]) { x[1]++; y[1]++; }
+  }
+  var out = { ch: ch, tp: tp };
+  try { c.put('ep_mine_' + uid, JSON.stringify(out), 300); } catch (e) {}
+  return out;
+}
+function epSetsDone_(owned) {
+  return EP_SETS.filter(function (st) { return st[3].every(function (id) { return owned.indexOf(id) >= 0; }); })
+    .map(function (st) { return st[0]; });
+}
+function epChapName_(id) {
+  for (var i = 0; i < EP_CHAPTERS.length; i++) if (EP_CHAPTERS[i][0] === id) return EP_CHAPTERS[i][1];
+  return id;
+}
+/* Is an unlock rule met? {ok, need, have} in words for the store card.
+   mine is epMine_() or null; w is the wallet. */
+function epUnlock_(rule, mine, w) {
+  var parts = String(rule || '').split('+').map(function (x) { return x.trim(); }).filter(String);
+  if (!parts.length) return { ok: true, need: '', have: '' };
+  var needs = [], haves = [], ok = true;
+  function pc(x) { return x[0] ? Math.round((1 - x[1] / x[0]) * 100) : 0; }
+  parts.forEach(function (r) {
+    var f = r.split(':'), good = false, need = r, have = '';
+    if (f[0] === 'mc' || f[0] === 'streak' || f[0] === 'lq' || f[0] === 'sets') {
+      var goal = Number(f[1]) || 0, got = f[0] === 'mc' ? (w.st.ever || 0) : f[0] === 'streak' ? ((w.st.ck && w.st.ck.b) || 0)
+              : f[0] === 'lq' ? (w.st.lqn || 0) : epSetsDone_(w.owned).length;
+      good = got >= goal;
+      need = { mc: goal + ' MCQs answered', streak: 'a ' + goal + '-day check-in streak', lq: goal + ' Long Qs marked', sets: goal + ' full sets' }[f[0]];
+      have = got + ' so far';
+    } else if (f[0] === 'topic') {
+      var t = (mine && mine.tp[f[1]]) || [0, 0], acc = Number(f[2]) || 0, min = Number(f[3]) || 0;
+      good = t[0] >= min && pc(t) >= acc;
+      need = acc + '% in ' + f[1] + ' (' + min + '+ MCQs)';
+      have = t[0] ? pc(t) + '% of ' + t[0] : 'none yet';
+    } else {
+      var acc2 = Number(f[1]) || 0, min2 = Number(f[2]) || 0, chs = mine ? mine.ch : {};
+      if (f[0] === 'core') {
+        var core = EP_CHAPTERS.filter(function (c) { return c[2] === 'core'; }).map(function (c) { return c[0]; });
+        var miss = core.filter(function (id) { var x = chs[id] || [0, 0]; return !(x[0] >= min2 && pc(x) >= acc2); });
+        good = !miss.length;
+        need = acc2 + '% in every core chapter (' + min2 + '+ MCQs each)';
+        have = (core.length - miss.length) + ' of ' + core.length + ' chapters';
+      } else if (f[0] === 'chap') {
+        var best = null;
+        for (var id in chs) {
+          var x = chs[id]; if (x[0] < min2) continue;
+          if (!best || pc(x) > pc(chs[best])) best = id;
+        }
+        good = !!best && pc(chs[best]) >= acc2;
+        need = acc2 + '% in any chapter (' + min2 + '+ MCQs)';
+        have = best ? 'best: ' + epChapName_(best).split(' · ')[0] + ' ' + pc(chs[best]) + '%' : 'no chapter with ' + min2 + ' yet';
+      } else {
+        var y = chs[f[0]] || [0, 0];
+        good = y[0] >= min2 && pc(y) >= acc2;
+        need = acc2 + '% in ' + epChapName_(f[0]) + ' (' + min2 + '+ MCQs)';
+        have = y[0] ? pc(y) + '% of ' + y[0] : 'none yet';
+      }
+    }
+    if (!good) ok = false;
+    needs.push(need); haves.push(have);
+  });
+  return { ok: ok, need: needs.join(' + '), have: haves.join(' · ') };
+}
+/* Where a pet is: stage name, MCQs since it hatched, hungry after 3 days away. */
+function epPetOf_(w, id) {
+  if (!id || !w.st.pets || w.st.pets[id] == null) return null;
+  var n = Math.max(0, (w.st.tot || 0) - w.st.pets[id]), stage = 'egg', next = 0;
+  EP_PET_STAGES.forEach(function (x, i) { if (n >= x[0]) { stage = x[1]; next = EP_PET_STAGES[i + 1] ? EP_PET_STAGES[i + 1][0] : 0; } });
+  return { id: id, n: n, s: stage, next: next, hungry: !!w.st.la && Date.now() - w.st.la > EP_HUNGRY_MS };
+}
+/* What classmates see besides the character: frame tier (best tier worn),
+   set badges, pet and its stage, title. Stored inside look. */
+function epDecorate_(w) {
+  if (!w.look) return;
+  var store = {}; epStore_().forEach(function (x) { store[x.id] = x; });
+  var best = 0;
+  ['base', 'outfit', 'bg', 'fx', 'pet', 'ti'].forEach(function (k) {
+    var it = store[w.look[k]]; if (it) best = Math.max(best, EP_TIERS.indexOf(it.t));
+  });
+  w.look.f = EP_TIERS[best];
+  var done = epSetsDone_(w.owned || []);
+  w.look.b = EP_SETS.filter(function (st) { return done.indexOf(st[0]) >= 0; }).map(function (st) { return st[2]; });
+  if (store[w.look.ti]) w.look.tn = store[w.look.ti].n; else { delete w.look.ti; delete w.look.tn; }
+  var pet = epPetOf_(w, w.look.pet);
+  if (pet) w.look.ps = pet.s; else { delete w.look.pet; delete w.look.ps; }
 }
 
 /* Students with their status (blank / hidden / removed). Status is column 8;
@@ -502,7 +681,8 @@ function epAnswer_(sess, b) {
 
 function epOne_(sess, w, aw, key, ok, page) {
   var st = w.st, now = Date.now();
-  st.tot++;
+  st.tot++; st.la = now;
+  if (w.look && w.look.pet) { var pet = epPetOf_(w, w.look.pet); if (pet && pet.s !== w.look.ps) w.look.ps = pet.s; }
   if (!st.r['a:' + key]) {                           // first answer to this question today
     st.r['a:' + key] = 1; st.n = (st.n || 0) + 1;
     give_(w, aw, 'mc_answer', key);
@@ -548,7 +728,7 @@ function epLqMarked_(sess, key, sum, words, photo) {
     var st = w.st, aw = [];
     if (photo || words >= 40) {
       give_(w, aw, 'lq_submit', key); active_(w, aw);
-      st.wk.lq = (st.wk.lq || 0) + 1;
+      st.wk.lq = (st.wk.lq || 0) + 1; st.lqn = (st.lqn || 0) + 1;
       if (!st.once.first_lq && give_(w, aw, 'first_lq', key)) st.once.first_lq = 1;
     }
     var prev = st.lqb[key];
@@ -659,8 +839,17 @@ function epWallet_(sess) {
   if (tg) tg = { mc: tg.mc, lq: tg.lq, doneMc: w.st.wk.mc || 0, doneLq: w.st.wk.lq || 0 };
   var tasks = [];
   try { if (epTasks_().length) tasks = epTasksFor_(sess.uid, w.cls, epClearedOf_(sess.uid)); } catch (e) {}
-  return { bal: w.bal, earned: w.earned, look: w.look, owned: w.owned, store: epStore_(), rules: list,
-           recent: w.st.recent, e: brief_(res.aw), target: tg, tasks: tasks };
+  var store = epStore_(), mine = null, locks = {};
+  store.forEach(function (x) {
+    if (!x.u || w.owned.indexOf(x.id) >= 0) return;
+    if (!mine && /(^|\+)(chap|core|topic|ch\d|u11|tf|micro|natl|money|macro|trade)/.test(x.u)) { try { mine = epMine_(sess.uid); } catch (e) { mine = { ch: {}, tp: {} }; } }
+    locks[x.id] = epUnlock_(x.u, mine, w);
+  });
+  var pets = {};
+  for (var pid in (w.st.pets || {})) pets[pid] = epPetOf_(w, pid);
+  return { bal: w.bal, earned: w.earned, look: w.look, owned: w.owned, store: store, rules: list,
+           recent: w.st.recent, e: brief_(res.aw), target: tg, tasks: tasks,
+           locks: locks, pets: pets, sets: EP_SETS, setsDone: epSetsDone_(w.owned) };
 }
 
 /* Opening the site: welcome gift once, daily check-in with 3- and 7-day
@@ -670,10 +859,11 @@ function epVisit_(w, aw) {
   var st = w.st, once = st.once, today = epDay_();
   if (!once.welcome && give_(w, aw, 'welcome', 'welcome')) once.welcome = 1;
   st.ck = st.ck || { d: '', n: 0 };
+  st.ck.b = Math.max(st.ck.b || 0, st.ck.n || 0);
   if (st.ck.d !== today) {
     var yest = Utilities.formatDate(new Date(new Date(today + 'T12:00:00Z').getTime() - 86400000), 'UTC', 'yyyy-MM-dd');
     st.ck.n = st.ck.d === yest ? st.ck.n + 1 : 1;
-    st.ck.d = today;
+    st.ck.d = today; st.ck.b = Math.max(st.ck.b || 0, st.ck.n);
     give_(w, aw, 'checkin', today);
     if (st.ck.n === 3) give_(w, aw, 'streak3', '3 days in a row');
     if (st.ck.n % 7 === 0) give_(w, aw, 'streak7', st.ck.n + ' days in a row');
@@ -689,16 +879,22 @@ function epBuy_(sess, b) {
   epStore_().some(function (x) { if (x.id === id) { it = x; return true; } return false; });
   if (!it) return { error: 'unknown' };
   if (!it.on) return { error: 'off' };
-  var err = '';
+  var err = '', mine = null;
+  if (it.u && /(^|\+)(chap|core|topic|ch\d|u11|tf|micro|natl|money|macro|trade)/.test(it.u)) mine = epMine_(sess.uid);
   var res = withWallet_(sess.uid, function (w) {
     if (!it.p || w.owned.indexOf(id) >= 0) { err = 'owned'; return []; }
     if (w.bal < it.p) { err = 'poor'; return []; }
+    if (it.u && !epUnlock_(it.u, mine, w).ok) { err = 'locked'; return []; }
     w.owned.push(id);
+    if (it.k === 'pet') { w.st.pets = w.st.pets || {}; w.st.pets[id] = w.st.tot || 0; }
+    epDecorate_(w);
     return [{ a: 'buy', p: -it.p, ref: id, by: 'store', note: 'Bought ' + it.n }];
   });
   if (res.error) return res;
   if (err) return { error: err, bal: res.w.bal };
-  return { ok: true, bal: res.w.bal, owned: res.w.owned };
+  var pets = {};
+  for (var pid in (res.w.st.pets || {})) pets[pid] = epPetOf_(res.w, pid);
+  return { ok: true, bal: res.w.bal, owned: res.w.owned, pets: pets, setsDone: epSetsDone_(res.w.owned) };
 }
 
 /* POST {event:'ewear', look:{base,outfit,bg,fx}}: only owned or free items. */
@@ -706,13 +902,14 @@ function epWear_(sess, b) {
   var want = b.look || {}, store = {}, look = {};
   epStore_().forEach(function (x) { store[x.id] = x; });
   var res = withWallet_(sess.uid, function (w) {
-    ['base', 'outfit', 'bg', 'fx'].forEach(function (k) {
+    ['base', 'outfit', 'bg', 'fx', 'pet', 'ti'].forEach(function (k) {
       var id = String(want[k] || ''), it = store[id];
       if (it && it.k === k && (it.p === 0 || w.owned.indexOf(id) >= 0)) look[k] = id;
     });
     if (!look.base) return [];
     look.outfit = look.outfit || 'uniform'; look.bg = look.bg || 'classroom'; look.fx = look.fx || 'none';
     w.look = look;
+    epDecorate_(w);
     return [];
   });
   if (res.error) return res;
