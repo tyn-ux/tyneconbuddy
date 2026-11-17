@@ -1,4 +1,4 @@
-var BUILD = '2026-11-17a';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-11-17b';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ function bankSheet_()     { return sheet_('Bank',     ['key','type','page','topi
 function mistakeSheet_()  { return sheet_('Mistakes', ['ts','uid','key','chose','correct']); }
 function noteSheet_()     { return sheet_('Notes',    ['uid','key','status','note','updated']); }
 function sessionSheet_()  { return sheet_('Sessions', ['nonce','token','uid','email','expires']); }
-function rosterSheet_()   { return sheet_('Roster',   ['email','name','active']); }
+function rosterSheet_()   { return sheet_('Roster',   ['email','name','active','class','num','joined']); }
 function blockSheet_()    { return sheet_('Blocklist',['email','reason','added','status']); }
 function clearedSheet_()  { return sheet_('Cleared',  ['uid','cleared','updated']); }
 function studentSheet_()  { return sheet_('Students', ['uid','email','class','num','nick','joined','updated','status']); }
@@ -740,6 +740,7 @@ function saveProfile_(sess, cls, num, nick) {
       sh.appendRow([sess.uid, sess.email, cls, num, nick, new Date(), new Date()]);
     }
     try { CacheService.getScriptCache().remove('ep_hidden'); epDropClassCache_(cls); } catch (e) {}
+    rosterRecordSeat_(sess, cls, num, nick);   // class + number go into the Roster tab too (Access.gs)
     return { ok: true, cls: cls, num: num, nick: nick };
   } finally { try { lock.releaseLock(); } catch (e) {} }
 }

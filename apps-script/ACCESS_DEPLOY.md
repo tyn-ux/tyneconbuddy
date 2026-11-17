@@ -1,4 +1,4 @@
-# Class list (Roster) gate + access log — deploy (BUILD 2026-11-17a)
+# Class list (Roster) gate + access log — deploy (BUILD 2026-11-17b)
 
 What it does: when the class list is ON, only Google accounts in the **Roster** tab
 can use the site. Every sign-in (and every refused one) is written to the
@@ -14,7 +14,7 @@ Do NOT run install().
 
 ## Deploy
 Deploy → Manage deployments → pencil → Version: New version → Deploy.
-Keep the same deployment. Open `SYNC_URL?ping=1`: build should say `2026-11-17a`
+Keep the same deployment. Open `SYNC_URL?ping=1`: build should say `2026-11-17b`
 and `class_list_only` should be `false` for now.
 
 ## Fill the class list (in the Sheet, reload it first to see the menu)

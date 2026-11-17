@@ -7,7 +7,8 @@
  * Teachers in the Script Property TEACHER_EMAILS always get in.
  *
  *   Script Property ROSTER_ONLY = on   → class list required (menu toggles it)
- *   Tab "Roster"      email | name | active
+ *   Tab "Roster"      email | name | active | class | num | joined
+ *     A student's first class + number pick writes their row here.
  *   Tab "Access log"  ts | email | event | detail
  *     events: sign-in, refused:roster, refused:blocked, refused:domain
  *
@@ -49,6 +50,34 @@ function rosterOk_(email) {
 
 /* Edits to the Roster tab take effect at once instead of after the 60 s cache. */
 function rosterFlush_() { try { CacheService.getScriptCache().remove('roster_set'); } catch (e) {} }
+
+/* Roster gained class / num / joined columns on 2026-11-17; label them once. */
+function rosterCols_(sh) {
+  var h = sh.getRange(1, 1, 1, 6).getValues()[0];
+  if (String(h[3]) !== 'class' || String(h[4]) !== 'num' || String(h[5]) !== 'joined') {
+    sh.getRange(1, 4, 1, 3).setValues([['class', 'num', 'joined']]);
+  }
+}
+
+/* Called by saveProfile_ whenever a student picks or changes their class and
+   number: their Roster row gets email, nickname, class, number. A new row is
+   active "yes"; an existing row keeps whatever active you set. */
+function rosterRecordSeat_(sess, cls, num, nick) {
+  try {
+    var sh = rosterSheet_(); rosterCols_(sh);
+    var v = sh.getDataRange().getValues(), email = String(sess.email).trim().toLowerCase();
+    for (var i = 1; i < v.length; i++) {
+      if (String(v[i][0]).trim().toLowerCase() === email) {
+        sh.getRange(i + 1, 4, 1, 2).setValues([[cls, Number(num)]]);
+        if (!v[i][1]) sh.getRange(i + 1, 2).setValue(nick);
+        if (!v[i][5]) sh.getRange(i + 1, 6).setValue(new Date());
+        return;
+      }
+    }
+    sh.appendRow([email, nick, 'yes', cls, Number(num), new Date()]);
+    rosterFlush_();
+  } catch (e) { authErr_('rosterRecordSeat_ threw: ' + e); }
+}
 
 /* ================================================================ MENU ==== */
 function accMenuAdd() {
@@ -96,9 +125,10 @@ function accMenuFromStudents() {
   for (var j = 1; j < sv.length; j++) {
     var e = String(sv[j][1]).trim().toLowerCase();
     if (!e || have[e] || String(sv[j][7] || '').trim().toLowerCase() === 'removed') continue;
-    have[e] = 1; rows.push([e, String(sv[j][2]) + '-' + String(sv[j][3]) + ' ' + String(sv[j][4] || ''), 'yes']);
+    have[e] = 1; rows.push([e, String(sv[j][4] || ''), 'yes', String(sv[j][2]), Number(sv[j][3]) || '', sv[j][5] || '']);
   }
-  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
+  rosterCols_(sh);
+  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
   rosterFlush_();
   tell_(rows.length + ' email(s) copied from Students into the Roster tab. Check them: anyone you do not know, set active to "no" or delete the row.');
 }
