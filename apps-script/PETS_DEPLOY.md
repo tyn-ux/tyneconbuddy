@@ -11,7 +11,7 @@ Do not mix with older copies. Do NOT run install().
 
 ## 2. Deploy
 Deploy → Manage deployments → pencil → Version: New version → Deploy (same deployment).
-`SYNC_URL?ping=1` should show build `2026-11-17a`.
+`SYNC_URL?ping=1` should show build `2026-11-17b`.
 
 ## 3. Add the new items to the store
 In the Sheet: reload, then **tyneconbuddy → Set up E-point tabs**.
