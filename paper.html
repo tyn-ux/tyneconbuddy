@@ -96,6 +96,16 @@ textarea{font:inherit;color:var(--ink);background:var(--surface2);border:1px sol
 .empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px;margin:0}
 .empty a{color:var(--accent)}
 h3.sep{margin-top:18px}
+.aq{border:1px solid var(--line);border-radius:8px;padding:10px;margin:0 0 8px;display:grid;gap:6px}
+.aq.off{opacity:.55}
+.aq.bad{border-color:var(--pen);box-shadow:0 0 0 1px var(--pen)}
+.aq .k{font-family:var(--f-mono);width:250px}
+.aq textarea{font-size:13px}
+.aq .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.aq .why{color:var(--pen);font-size:12.5px}
+.tag.warn{background:#fff2a8;color:#5a4500}
+.tag.ok{background:transparent;border:1px solid var(--ok);color:var(--ok)}
+@media (max-width:700px){.aq .opts{grid-template-columns:1fr}.aq .k{width:100%}}
 .outbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 #nav button{all:unset;cursor:pointer;display:flex;gap:10px;align-items:center;border-radius:8px}
 #nav i{font-style:normal;font-family:var(--f-mono);font-size:12px;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);color:var(--muted);flex:none}
@@ -150,6 +160,7 @@ button{border-radius:8px;padding:6px 12px}
       <button data-p="build"><i>2</i><span>Build a paper<small id="navPaper">0 questions</small></span></button>
       <button data-p="own"><i>3</i><span>My questions<small id="navOwn">Paste your own</small></span></button>
       <button data-p="pat"><i>4</i><span>Patterns &amp; dictation<small>For weak students</small></span></button>
+      <button data-p="add"><i>5</i><span>Add a paper<small id="navAdd">Upload MC + Long Q</small></span></button>
     </nav>
   </aside>
 <main class="wrap">
@@ -300,6 +311,44 @@ button{border-radius:8px;padding:6px 12px}
     </div>
   </section>
 
+  </div>
+
+  <div class="panel" data-panel="add">
+  <div class="ph"><h2>Add a paper</h2><p>Upload a whole paper. Gemini copies out every MC and Long Q, you check them here, then the Sheet adds them to the question bank.</p></div>
+  <p class="empty" id="needBank3">Load the question bank first in <a href="#" data-go="setup">Bank &amp; AI</a>, so new questions get the same topics and nothing is added twice.</p>
+  <section class="card hide" id="addCard">
+    <h3>1 · The paper · 試卷</h3>
+    <div class="row">
+      <label class="f">Exam<select id="aExam">
+        <option value="DSE">DSE</option><option value="DSEPP">DSE Practice</option><option value="DSESP">DSE Sample</option>
+        <option value="CE">HKCEE</option><option value="AL">HKALE</option><option value="MOCK">Mock / school paper</option></select></label>
+      <label class="f">Year<input type="number" id="aYear" min="1980" max="2100" style="width:90px"></label>
+      <label class="f">Paper<select id="aPaper"><option value="P1">Paper 1</option><option value="P2">Paper 2</option></select></label>
+      <label class="f hide" id="aNameF">Name of the paper<input type="text" id="aName" placeholder="e.g. S6 Mock 2025" style="width:170px"></label>
+      <label class="f">What is in it<select id="aKind"><option value="mcq">MC only</option><option value="lq">Long Q only</option><option value="both">MC and Long Q</option></select></label>
+      <label class="f">Question numbers start with<input type="text" id="aPrefix" style="width:170px;font-family:var(--f-mono)"></label>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <label class="f">Question paper (PDF or photos) · 題目<input type="file" id="aQf" accept="application/pdf,image/*" multiple></label>
+      <label class="f">Answer key / marking scheme (optional) · 答案<input type="file" id="aKf" accept="application/pdf,image/*" multiple></label>
+    </div>
+    <label class="f" style="margin-top:8px"><span>MC answers, if you would rather type them (optional) · e.g. <code>BCADA DBBCA …</code> or <code>1B 2C 3A</code></span><input type="text" id="aKeyTxt" style="font-family:var(--f-mono)"></label>
+    <p class="sub">Answers come only from the key. Without a key, Gemini's own answer is marked <span class="tag">check</span> and must be ticked before it can go into the bank. Long Q marking schemes are copied from the key only, never written by Gemini.</p>
+    <div class="row"><button class="pri" id="aRead">Read the paper</button><button id="aCopy">Copy prompt instead</button><span class="msg" id="aMsg"></span></div>
+  </section>
+  <section class="card hide" id="aRev">
+    <h3>2 · Check · 檢查</h3>
+    <div class="row" style="margin-bottom:8px"><span id="aSum" class="sub" style="flex:1 1 300px"></span>
+      <button id="aAll">Tick all</button><button id="aNone">Untick all</button><button id="aClear">Start again</button></div>
+    <div id="aList"></div>
+    <h3 class="sep">3 · Into the bank · 加入題庫</h3>
+    <div class="row"><button class="pri" id="aDown">Download for the Sheet</button><span class="msg" id="aDMsg"></span></div>
+    <ol class="sub" style="margin:8px 0 0;padding-left:18px">
+      <li>In the Google Sheet, run <b>tyneconbuddy → Add a paper from the paper builder…</b> and choose the file you just downloaded.</li>
+      <li>It adds the ticked questions to the Bank tab and skips any number already there. Students see them on their next page load.</li>
+      <li>Export the question bank again and open it in Bank &amp; AI to use the new questions here.</li>
+    </ol>
+  </section>
   </div>
 
   <section class="card hide" id="out"><div class="outbar"><b>Preview</b><button id="outClose">Close preview</button></div><div id="paper"></div></section>
@@ -732,30 +781,34 @@ $('gTest').addEventListener('click',async()=>{ $('gMsg').textContent='Testing…
 function parseJson(t){ t=String(t||'').replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'');
   const a=t.indexOf('{'), b=t.lastIndexOf('}'); if(a<0||b<a) throw new Error('no JSON in the answer');
   return JSON.parse(t.slice(a,b+1)); }
-async function aiCall(prompt,temp){
+/* files: [{mime,data(base64)}] sent with the prompt (a whole paper as PDF). */
+async function aiCall(prompt,temp,files,maxTok){
   if(!AI.key) throw new Error('no key');
   const models=AI.models.split(/[\s,]+/).filter(Boolean); let last='';
   for(const m of models){
     let r; try{ r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':generateContent',{method:'POST',
         headers:{'Content-Type':'application/json','x-goog-api-key':AI.key},
-        body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:temp,maxOutputTokens:16384,responseMimeType:'application/json'}})}); }
+        body:JSON.stringify({contents:[{role:'user',parts:(files||[]).map(f=>({inline_data:{mime_type:f.mime,data:f.data}})).concat([{text:prompt}])}],
+          generationConfig:{temperature:temp,maxOutputTokens:maxTok||16384,responseMimeType:'application/json'}})}); }
     catch(e){ last='network: '+e.message; continue; }
     const j=await r.json().catch(()=>({}));
-    if(r.ok){ const t=(((j.candidates||[])[0]||{}).content||{}).parts; const out=parseJson((t||[]).map(p=>p.text||'').join('')); out._model=m; return out; }
+    if(r.ok){ const c=(j.candidates||[])[0]||{}, t=(c.content||{}).parts;
+      if(c.finishReason==='MAX_TOKENS') throw new Error('the answer was too long and got cut off');
+      const out=parseJson((t||[]).map(p=>p.text||'').join('')); out._model=m; return out; }
     last=m+': '+r.status+' '+((j.error&&j.error.message)||'').slice(0,140);
     if(r.status===400||r.status===401||r.status===403) break;
   }
   throw new Error(last||'no model answered');
 }
 /* Runs prompt with the key, or opens copy-paste; onOk gets the parsed JSON. */
-function aiRun(prompt,temp,msg,onOk,forceCopy){
+function aiRun(prompt,temp,msg,onOk,forceCopy,files,maxTok,wait){
   const copy=why=>{ if(why) msg.textContent=why+' · use copy-paste instead.';
     $('cpPrompt').value=prompt; $('cpAns').value=''; $('cpMsg').textContent='';
     $('cpUse').onclick=()=>{ try{ const r=parseJson($('cpAns').value); $('cpDlg').close(); onOk(r); }catch(e){ $('cpMsg').textContent='Could not read that answer: '+e.message; } };
     $('cpDlg').showModal(); };
   if(forceCopy||!AI.key) return copy('');
-  msg.textContent='Asking Gemini…';
-  aiCall(prompt,temp).then(r=>{ msg.textContent=''; onOk(r); }).catch(e=>copy('Gemini failed ('+e.message+')'));
+  msg.textContent=wait||'Asking Gemini…';
+  aiCall(prompt,temp,files,maxTok).then(r=>{ msg.textContent=''; onOk(r); }).catch(e=>copy('Gemini failed ('+e.message+')'));
 }
 $('cpCopy').addEventListener('click',()=>{ navigator.clipboard.writeText($('cpPrompt').value).then(()=>{ $('cpMsg').textContent='Copied.'; },()=>{ $('cpPrompt').select(); }); });
 $('cpClose').addEventListener('click',()=>$('cpDlg').close());
@@ -945,6 +998,174 @@ function dictGo(fn){ if(!CUR||!PATS[CUR]){ $('dMsg').textContent='Find or load p
 $('dPrev').addEventListener('click',()=>dictGo(B=>{ show(B); $('out').scrollIntoView({behavior:'smooth'}); }));
 $('dPdf').addEventListener('click',()=>dictGo(B=>printPdf(B,dictName(),$('dMsg'))));
 $('dDoc').addEventListener('click',()=>dictGo(B=>saveDocx(B,dictName(),$('dMsg'),$('dDoc'))));
+/* -------------------------------------------------------- add a paper ---- */
+/* The teacher uploads a whole paper (and its key). Gemini copies out every
+   question; the teacher checks each one here; the ticked ones download as a
+   file that the Sheet's "Add a paper from the paper builder…" adds to the
+   Bank tab (PaperImport.gs). Nothing here writes to the Sheet itself. */
+const ADD={items:[],src:''};
+const KINDDEF={DSE:{P1:'mcq',P2:'lq'},DSEPP:{P1:'mcq',P2:'lq'},DSESP:{P1:'mcq',P2:'lq'},CE:{P1:'lq',P2:'mcq'},AL:{P1:'both',P2:'both'},MOCK:{P1:'both',P2:'both'}};
+function addPrefix(){ const ex=$('aExam').value, y=$('aYear').value.trim(), p=$('aPaper').value;
+  if(ex==='MOCK'){ const n=$('aName').value.trim().replace(/[^\w一-鿿]+/g,'-').replace(/^-|-$/g,'');
+    return 'MOCK/'+(n||'paper')+(y?'-'+y:'')+'/'+p; }
+  return ex+(y||'YYYY')+'/'+p; }
+function addSync(kindToo){ $('aNameF').classList.toggle('hide',$('aExam').value!=='MOCK');
+  if(kindToo) $('aKind').value=KINDDEF[$('aExam').value][$('aPaper').value];
+  $('aPrefix').value=addPrefix(); }
+['aExam','aPaper'].forEach(id=>$(id).addEventListener('change',()=>addSync(true)));
+['aYear','aName'].forEach(id=>$(id).addEventListener('input',()=>addSync(false)));
+$('aYear').value=new Date().getFullYear(); addSync(true);
+
+/* Topics the bank already uses, by type, in chapter order: a new question
+   gets one of these so it lands in the same drill section as its siblings. */
+function addTopics(type){
+  const n={}; BANK.forEach(q=>{ if(q._type!==type||/^OWN\//.test(q.key)||!q._page||!q.topic) return; const k=q._page+'|'+q.topic; n[k]=(n[k]||0)+1; });
+  let ks=Object.keys(n); if(!ks.length) ks=[].concat(...CHAPTERS.map(c=>c[3].map(t=>c[2]+'|'+t)));
+  const ci=k=>{ const [p,t]=k.split('|'), c=chapOf(p,t); const i=CHAPTERS.findIndex(x=>x[0]===c); return i<0?99:i; };
+  return ks.sort((a,b)=>ci(a)-ci(b)||a.localeCompare(b)).map(k=>{ const [page,topic]=k.split('|'), c=CHAPTERS.find(x=>x[0]===chapOf(page,topic));
+    return {k,page,topic,ch:c?c[1]:page,n:n[k]||0}; });
+}
+function addPrompt(kind,hasKey,typed){
+  const want=kind==='both'?'every MC question and every Long Question':kind==='mcq'?'every MC question':'every Long Question';
+  const list=t=>addTopics(t).map((x,i)=>(i+1)+'. '+x.ch+' > '+x.topic).join('\n');
+  let s=RULES+'\nTask: the attached file(s) are a whole Hong Kong Economics exam paper ('+$('aPrefix').value+')'
+   +(hasKey?', followed by its answer key / marking scheme':'')+'. Copy out '+want+' exactly as printed, in order.\n'
+   +'- Copy each question word for word. Do not rewrite, shorten, correct, translate or add anything.\n'
+   +'- Put numbered statements such as (1) (2) (3) on their own lines. Write a printed table as rows of cells separated by " | ", one row per line.\n'
+   +'- If a question needs a diagram, graph or picture to be answered, describe it briefly in "fig"; otherwise "fig" is "".\n'
+   +'- "n" is the question number printed on the paper.\n';
+  if(kind!=='lq') s+='\nMC questions: "opts" are the four options A to D without the letters. '
+   +(typed?'The teacher has typed the answers, so leave "ans" as "" and "ans_from" as "teacher".\n'
+     :hasKey?'"ans" comes ONLY from the answer key, with "ans_from":"key". If the key does not show a question, give your best answer with "ans_from":"guess". Never write "key" for a guess.\n'
+     :'There is no answer key: give your best answer in "ans" with "ans_from":"guess".\n')
+   +'"why" is one or two plain English sentences explaining the answer for a student.\n'
+   +'"topic" is the number of the best topic from this list:\n'+list('mcq')+'\n';
+  if(kind!=='mcq') s+='\nLong Questions: one item per whole question, with every part (a), (b), (c)… and the marks for each part as printed. "marks" is the total. "cmd" is the main command word (e.g. Explain, Illustrate, Compare). '
+   +(hasKey?'"scheme" is the marking scheme for the whole question copied from the key, every part, one point per line, with the marks as printed; if the key has nothing for it, "scheme" is "".\n'
+     :'There is no marking scheme: "scheme" is "". Never write your own scheme.\n')
+   +'"topic" is the number of the best topic from this list:\n'+list('lq')+'\n';
+  s+='\nAnswer with JSON only, in this shape:\n{"mcq":['+(kind==='lq'?'':'{"n":1,"q":"…","opts":["…","…","…","…"],"ans":"B","ans_from":"key","why":"…","topic":3,"fig":""}')+'],'
+   +'"lq":['+(kind==='mcq'?'':'{"n":9,"q":"(a) … (2 marks)\\n(b) … (4 marks)","marks":6,"cmd":"Explain","scheme":"(a) …","topic":5,"fig":""}')+']}';
+  return s;
+}
+/* "BCADA DBBCA" or "1B 2C 3. A" → {1:'B',2:'C',…} */
+function addKeys(t){ t=String(t||'').toUpperCase(); const out={};
+  if(/\d/.test(t)){ for(const m of t.matchAll(/(\d{1,3})\s*[.):\-]?\s*([A-D])\b/g)) out[Number(m[1])]=m[2]; }
+  else [...t.replace(/[^A-D]/g,'')].forEach((c,i)=>out[i+1]=c);
+  return out; }
+function fileB64(f){ return new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok({mime:f.type||'application/pdf',data:String(r.result).split(',')[1]}); r.onerror=()=>no(r.error); r.readAsDataURL(f); }); }
+async function addGo(copy){
+  const qf=[...$('aQf').files], kf=[...$('aKf').files], typed=addKeys($('aKeyTxt').value), kind=$('aKind').value;
+  if(!qf.length&&!copy){ $('aMsg').textContent='Choose the question paper file first.'; return; }
+  const big=qf.concat(kf).reduce((n,f)=>n+f.size,0); if(big>18e6){ $('aMsg').textContent='The files are '+(big/1e6).toFixed(0)+' MB; Gemini takes up to about 18 MB at a time. Split the paper or scan at a lower quality.'; return; }
+  let files=[]; try{ files=await Promise.all(qf.concat(kf).map(fileB64)); }catch(e){ $('aMsg').textContent='Could not read the file: '+e.message; return; }
+  const n=Object.keys(typed).length, prompt=addPrompt(kind,!!kf.length,n>0);
+  ADD.src=$('aPrefix').value.trim().replace(/\/+$/,'');
+  aiRun(copy?'Attach the question paper'+(kf.length?' and then the answer key':'')+' to this Gemini chat, then send this prompt.\n\n'+prompt:prompt,0.1,$('aMsg'),r=>addTake(r,typed,kind),copy,files,65536,
+    'Gemini is reading the whole paper. This can take one or two minutes…');
+}
+$('aRead').addEventListener('click',()=>addGo(false));
+$('aCopy').addEventListener('click',()=>addGo(true));
+
+function addTake(r,typed,kind){
+  const tm=addTopics('mcq'), tl=addTopics('lq'), pre=ADD.src, items=[];
+  const pick=(list,v)=>{ const x=list[Number(v)-1]; return x?x.k:''; };
+  if(kind!=='lq') (r.mcq||[]).forEach(m=>{ const n=parseInt(m.n,10)||items.length+1, L=typed[n]||String(m.ans||'').trim().toUpperCase().charAt(0);
+    const opts=(m.opts||[]).map(o=>String(o||'').replace(/^\s*\(?[A-D][.)]\s+/,'').trim()).slice(0,4);
+    items.push({type:'mcq',key:pre+'/Q'+n,n,q:String(m.q||'').trim(),opts,ans:'ABCD'.indexOf(L),
+      from:typed[n]?'teacher':m.ans_from==='key'?'key':'guess',why:String(m.why||'').trim(),t:pick(tm,m.topic),fig:String(m.fig||'').trim(),img:'',keep:true,ok:false}); });
+  if(kind!=='mcq') (r.lq||[]).forEach(m=>{ const n=parseInt(m.n,10)||items.length+1;
+    items.push({type:'lq',key:pre+'/Q'+n,n,q:String(m.q||'').trim(),marks:Number(m.marks)||'',cmd:String(m.cmd||'').trim(),
+      scheme:String(m.scheme||'').trim(),t:pick(tl,m.topic),fig:String(m.fig||'').trim(),keep:true}); });
+  if(!items.length){ $('aMsg').textContent='Gemini found no questions in that file. Check the file, or try "What is in it".'; return; }
+  items.forEach(it=>{ if(BYKEY[it.key]) it.keep=false; });
+  ADD.items=items; idb.set('addDraft',{src:ADD.src,items}); addDraw();
+  $('aMsg').textContent='Read '+items.length+' questions'+(r._model?' with '+r._model:'')+'. Check them below.';
+  $('aRev').scrollIntoView({behavior:'smooth'});
+}
+function addDraw(){
+  const it=ADD.items; $('aRev').classList.toggle('hide',!it.length); addCount(); if(!it.length){ $('aList').innerHTML=''; return; }
+  const tops={mcq:addTopics('mcq'),lq:addTopics('lq')};
+  const sel=(type,v)=>{ let g='', h='<option value="">Choose a topic…</option>';
+    tops[type].forEach(x=>{ if(x.ch!==g){ if(g) h+='</optgroup>'; g=x.ch; h+='<optgroup label="'+esc(g)+'">'; }
+      h+='<option value="'+esc(x.k)+'"'+(x.k===v?' selected':'')+'>'+esc(x.topic)+(x.n?' ('+x.n+')':'')+'</option>'; });
+    return h+(g?'</optgroup>':''); };
+  $('aList').innerHTML=it.map((x,i)=>{ const dup=!!BYKEY[x.key];
+    let h='<div class="aq'+(x.keep?'':' off')+'" data-i="'+i+'"><div class="row">'
+     +'<label><input type="checkbox" data-f="keep"'+(x.keep?' checked':'')+'> Add</label>'
+     +'<input type="text" class="k" data-f="key" value="'+esc(x.key)+'">'
+     +'<span class="tag">'+(x.type==='mcq'?'MC':'Long Q')+'</span>'
+     +(dup?'<span class="tag warn">Already in the bank</span>':'')
+     +(x.fig?'<span class="tag warn">Diagram</span>':'')
+     +'<select data-f="t" style="flex:1 1 220px">'+sel(x.type,x.t)+'</select></div>'
+     +'<textarea data-f="q" rows="'+Math.min(10,Math.max(3,x.q.split('\n').length+1))+'">'+esc(x.q)+'</textarea>';
+    if(x.type==='mcq'){
+      h+='<div class="opts">'+[0,1,2,3].map(j=>'<label class="f">'+LAB[j]+'<input type="text" data-f="o'+j+'" value="'+esc(x.opts[j]||'')+'"></label>').join('')+'</div>'
+       +'<div class="row"><label class="f">Answer<select data-f="ans"><option value="-1">?</option>'+[0,1,2,3].map(j=>'<option value="'+j+'"'+(x.ans===j?' selected':'')+'>'+LAB[j]+'</option>').join('')+'</select></label>'
+       +(x.from==='guess'?'<span class="tag warn">check · Gemini\'s answer, not from the key</span><label><input type="checkbox" data-f="ok"'+(x.ok?' checked':'')+'> I checked this answer</label>'
+         :'<span class="tag ok">from the '+(x.from==='teacher'?'answers you typed':'key')+'</span>')+'</div>'
+       +'<label class="f">Explanation (why)<textarea data-f="why" rows="2">'+esc(x.why)+'</textarea></label>';
+    } else {
+      h+='<div class="row"><label class="f">Marks<input type="number" data-f="marks" min="1" max="40" style="width:80px" value="'+esc(x.marks)+'"></label>'
+       +'<label class="f">Command word<input type="text" data-f="cmd" value="'+esc(x.cmd)+'" style="width:140px"></label>'
+       +(x.scheme?'':'<span class="tag warn">No marking scheme in the key</span>')+'</div>'
+       +'<label class="f">Marking scheme<textarea data-f="scheme" rows="'+Math.min(12,Math.max(3,x.scheme.split('\n').length+1))+'">'+esc(x.scheme)+'</textarea></label>';
+    }
+    if(x.fig) h+='<div class="sub">Diagram: '+esc(x.fig)+'</div>'
+      +(x.type==='mcq'?'<label class="f">Picture of the whole question (link, optional) · students then see the picture<input type="text" data-f="img" value="'+esc(x.img||'')+'" placeholder="https://…"></label>':'');
+    return h+'<div class="why"></div></div>'; }).join('');
+}
+function addCount(){ const it=ADD.items, k=it.filter(x=>x.keep), m=k.filter(x=>x.type==='mcq').length,
+    g=k.filter(x=>x.type==='mcq'&&x.from==='guess'&&!x.ok).length, d=it.filter(x=>BYKEY[x.key]).length;
+  $('aSum').textContent=k.length+' of '+it.length+' ticked ('+m+' MC, '+(k.length-m)+' Long Q)'+(g?' · '+g+' MC answers still to check':'')+(d?' · '+d+' already in the bank, left unticked':'');
+  $('navAdd').textContent=it.length?k.length+' to add':'Upload MC + Long Q'; }
+function addEdit(e){ const box=e.target.closest('.aq'), f=e.target.dataset.f; if(!box||!f) return;
+  const x=ADD.items[Number(box.dataset.i)], v=e.target.type==='checkbox'?e.target.checked:e.target.value;
+  if(/^o\d$/.test(f)) x.opts[Number(f[1])]=v.trim(); else if(f==='ans') x.ans=Number(v); else if(f==='marks') x.marks=Number(v)||''; else x[f]=v;
+  if(f==='keep') box.classList.toggle('off',!v);
+  box.classList.remove('bad'); box.querySelector('.why').textContent='';
+  idb.set('addDraft',{src:ADD.src,items:ADD.items}); addCount(); }
+$('aList').addEventListener('input',addEdit); $('aList').addEventListener('change',addEdit);
+$('aAll').addEventListener('click',()=>{ ADD.items.forEach(x=>x.keep=true); addDraw(); idb.set('addDraft',{src:ADD.src,items:ADD.items}); });
+$('aNone').addEventListener('click',()=>{ ADD.items.forEach(x=>x.keep=false); addDraw(); idb.set('addDraft',{src:ADD.src,items:ADD.items}); });
+$('aClear').addEventListener('click',()=>{ ADD.items=[]; idb.set('addDraft',null); addDraw(); $('aMsg').textContent=''; $('aDMsg').textContent=''; });
+
+/* Same checks the Sheet makes (PaperImport.gs), so nothing is refused there. */
+function addProblem(x,seen){ const key=x.key.trim();
+  if(!/^[^\s\/]+(\/[^\s\/]+)+$/.test(key)) return 'the question number should look like DSE2025/P1/Q1';
+  if(seen[key]) return 'two questions have the number '+key; seen[key]=1;
+  if(BYKEY[key]) return key+' is already in the bank: change the number or untick it';
+  if(!x.t) return 'choose a topic';
+  if(!x.q.trim()&&!(x.img||'').trim()) return 'the question is empty';
+  if(x.type==='mcq'){ const n=x.opts.filter(Boolean).length;
+    if(n<2&&!(x.img||'').trim()) return 'an MC question needs at least options A and B';
+    if(x.ans<0) return 'choose the answer';
+    if(n&&!x.opts[x.ans]) return 'the answer points at an empty option';
+    if(x.from==='guess'&&!x.ok) return 'tick "I checked this answer", or untick the question'; }
+  return ''; }
+function addRow(x){ const [page,topic]=x.t.split('|'), key=x.key.trim();
+  if(x.type==='mcq'){ const it={id:key,key,q:x.q.trim(),opts:x.opts.filter(Boolean),ans:x.ans,why:x.why.trim(),topic,_page:page};
+    if((x.img||'').trim()) it.img=x.img.trim(); return [key,'mcq',page,topic,JSON.stringify(it)]; }
+  const it={id:key,key,topic,concept:topic,marks:Number(x.marks)||null,cmd:x.cmd.trim(),q:x.q.trim(),fig:x.fig||'',structure:[],scheme:x.scheme.trim()};
+  return [key,'lq',page,topic,JSON.stringify(it)]; }
+$('aDown').addEventListener('click',()=>{
+  const seen={}, bad=[]; let first=null;
+  document.querySelectorAll('#aList .aq').forEach(box=>{ const x=ADD.items[Number(box.dataset.i)]; if(!x.keep) return;
+    const p=addProblem(x,seen); box.classList.toggle('bad',!!p); box.querySelector('.why').textContent=p;
+    if(p){ bad.push(x.key); first=first||box; } });
+  const keep=ADD.items.filter(x=>x.keep);
+  if(!keep.length){ $('aDMsg').textContent='Tick at least one question.'; return; }
+  if(bad.length){ $('aDMsg').className='msg bad'; $('aDMsg').textContent=bad.length+' question'+(bad.length>1?'s need':' needs')+' a look (red border): '+bad.slice(0,6).join(', ')+(bad.length>6?'…':'');
+    first.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  const file={kind:'tyneconbuddy-paper',v:1,source:ADD.src,made:new Date().toISOString(),rows:keep.map(addRow)};
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(file)],{type:'application/json'}));
+  a.download='paper-'+ADD.src.replace(/[^\w-]+/g,'-')+'.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  $('aDMsg').className='msg'; $('aDMsg').textContent='Saved '+a.download+' ('+keep.length+' questions). Now open the Sheet, step 1 below.';
+});
+function addShow(){ $('needBank3').classList.toggle('hide',!!BANK.length); $('addCard').classList.toggle('hide',!BANK.length);
+  if(BANK.length&&ADD.items.length) addDraw(); else addCount(); }
+idb.get('addDraft').then(d=>{ if(d&&d.items&&d.items.length){ ADD.src=d.src; ADD.items=d.items; } addShow(); });
+{ const nv=navStat; navStat=function(){ nv(); addShow(); }; }
 </script>
 </body>
 </html>

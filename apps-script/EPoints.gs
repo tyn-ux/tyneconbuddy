@@ -786,6 +786,7 @@ function onOpen() {
     .addItem('Build Dashboard', 'buildDashboard')
     .addSeparator()
     .addItem('Export question bank for the paper builder', 'epExportBank')
+    .addItem('Add a paper from the paper builder…', 'paperImportMenu')
     .addSeparator()
     .addItem('Choose tabs to show…', 'epChooseTabs')
     .addItem('Show all tabs', 'epShowAllTabs')
