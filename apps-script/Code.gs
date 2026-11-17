@@ -1,4 +1,4 @@
-var BUILD = '2026-11-10a';   // bump when you paste a new version; ?ping=1 echoes it
+var BUILD = '2026-11-17a';   // bump when you paste a new version; ?ping=1 echoes it
 /*****************************************************************************
  * tyneconbuddy — Apps Script backend  (v2)
  * ---------------------------------------------------------------------------
@@ -38,7 +38,8 @@ var BUILD = '2026-11-10a';   // bump when you paste a new version; ?ping=1 echoe
 
 var SHEET_ID   = '130td46ZXxU0HaQDWOhsR49RJgw5ofxraqqfyX4sb58k';
 var SCHOOL_HD  = '';   // '' = any Google account. Set to e.g. 'lkss.edu.hk' to gate by domain.
-var USE_ROSTER = false; // true = only emails listed in the Roster tab may write.
+var USE_ROSTER = false; // true = always class-list only. Normally leave false and use the menu
+                        // "Turn the class list on / off" (Script Property ROSTER_ONLY, Access.gs).
 var TOP_N      = 10;
 var SESSION_HOURS = 12;
 
@@ -157,7 +158,7 @@ function verifyIdToken_(idToken) {
   // student cannot slip through by being on the right domain.
   if (isBlocked_(p.email)) return { email: String(p.email), denied: 'blocked' };
   if (SCHOOL_HD && String(p.hd || '') !== SCHOOL_HD) return { email: String(p.email), denied: 'domain' };
-  if (USE_ROSTER && !onRoster_(p.email)) return { email: String(p.email), denied: 'roster' };
+  if (!rosterOk_(p.email)) return { email: String(p.email), denied: 'roster' };
   return { email: String(p.email), name: String(p.name || p.email) };
 }
 
@@ -314,6 +315,7 @@ function startSession_(idToken, nonce) {
     if (who.denied) {
       sh.appendRow([String(nonce).slice(0, 64), 'DENIED:' + who.denied, '', normEmail,
                     new Date(Date.now() + 600000)]);
+      accessLog_(normEmail, 'refused:' + who.denied, '');
       return;
     }
 
@@ -324,6 +326,7 @@ function startSession_(idToken, nonce) {
       normEmail,
       new Date(Date.now() + SESSION_HOURS * 3600 * 1000)
     ]);
+    accessLog_(normEmail, 'sign-in', who.name || '');
   } catch (err) {
     authErr_('startSession_ threw: ' + err);
   } finally {
@@ -354,6 +357,7 @@ function sessionOf_(t) {
       if (String(t).indexOf('DENIED:') === 0) return null;
       if (new Date(v[i][4]).getTime() < Date.now()) return null;
       if (isBlocked_(v[i][3])) return null;   // blocked mid-session: out now
+      if (!rosterOk_(v[i][3])) return null;   // taken off the class list: out within a minute
       return { uid: String(v[i][2]), email: String(v[i][3]) };
     }
   }
@@ -1433,6 +1437,7 @@ function route_(p) {
             bank: (function () { try { return bankSheet_().getLastRow() - 1; } catch (e) { return -1; } })(),
             ai_key: !!props.getProperty('GEMINI_KEY'), ai_model: aiModel_(), ai_models: aiModels_(),
             teachers_set: !!props.getProperty('TEACHER_EMAILS'),
+            class_list_only: rosterOn_(),
             backup_ai_set: !!props.getProperty('CA_KEY'),
             auth_last_error: redact_(props.getProperty('AUTH_LAST_ERROR')),
             ai_last_error: redact_(props.getProperty('AI_LAST_ERROR')) };
